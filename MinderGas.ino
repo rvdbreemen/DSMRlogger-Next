@@ -180,14 +180,7 @@ void handleMindergas()
       
     case MG_DO_COUNTDOWN:
       //The FSM should never be run faster than once per minute, otherwise time 
-      if (TIME_LEFT_MIN(MGminuten)>0)
-      {
-        DebugTf("Mindergas State: MG_DO_COUNTDOWN (%d minuten te gaan)\r\n", TIME_LEFT_MIN(MGminuten));        
-      } 
-      else
-      {
-        DebugTf("Mindergas State: MG_DO_COUNTDOWN (%d seconden te gaan)\r\n", TIME_LEFT_SEC(MGminuten));
-      }
+      DebugTf("Mindergas State: MG_DO_COUNTDOWN (%d minuten te gaan)\r\n", TIME_LEFT_MIN(MGminuten));        
       sprintf(timeLastResponse, "@%02d|%02d:%02d -> ", day(), hour(), minute());
       strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "countdown for sending");
       intStatuscodeMindergas = TIME_LEFT_MIN(MGminuten);
