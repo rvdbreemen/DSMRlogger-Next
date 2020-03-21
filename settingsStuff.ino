@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : settingsStuff, part of DSMRloggerAPI
-**  Version  : v0.3.4
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -24,11 +24,12 @@ void writeSettings()
   yield();
 
   if (strlen(settingIndexPage) < 7) strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), "DSMRindex.html");
-  if (settingIntervalTelegram < 3)  settingIntervalTelegram = 10;
+  if (settingTelegramInterval < 2)  settingTelegramInterval = 10;
   if (settingMQTTbrokerPort < 1)    settingMQTTbrokerPort = 1883;
     
   DebugT(F("Start writing setting data "));
 
+  file.print("Hostname = ");          file.println(settingHostname);            Debug(F("."));
   file.print("EnergyDeliveredT1 = "); file.println(String(settingEDT1, 5));     Debug(F("."));
   file.print("EnergyDeliveredT2 = "); file.println(String(settingEDT2, 5));     Debug(F("."));
   file.print("EnergyReturnedT1 = ");  file.println(String(settingERT1, 5));     Debug(F("."));
@@ -37,7 +38,7 @@ void writeSettings()
   file.print("EnergyVasteKosten = "); file.println(String(settingENBK, 2));     Debug(F("."));
   file.print("GasVasteKosten = ");    file.println(String(settingGNBK, 2));     Debug(F("."));
   file.print("SleepTime = ");         file.println(settingSleepTime);           Debug(F("."));
-  file.print("TelegramInterval = ");  file.println(settingIntervalTelegram);    Debug(F("."));
+  file.print("TelegramInterval = ");  file.println(settingTelegramInterval);    Debug(F("."));
   file.print("IndexPage = ");         file.println(settingIndexPage);           Debug(F("."));
 
 #ifdef USE_MQTT
@@ -68,7 +69,7 @@ file.close();
     DebugT(F("EnergyVasteKosten = ")); Debugln(String(settingENBK, 2));    
     DebugT(F("GasVasteKosten = "));    Debugln(String(settingGNBK, 2));    
     DebugT(F("SleepTime = "));         Debugln(settingSleepTime);           
-    DebugT(F("TelegramInterval = "));  Debugln(settingIntervalTelegram);            
+    DebugT(F("TelegramInterval = "));  Debugln(settingTelegramInterval);            
     DebugT(F("IndexPage = "));         Debugln(settingIndexPage);             
 
 #ifdef USE_MQTT
@@ -101,26 +102,28 @@ void readSettings(bool show)
 {
   String sTmp, nColor;
   String words[10];
+  
   File file;
   
   DebugTf(" %s ..\r\n", SETTINGS_FILE);
 
-  settingEDT1       = 0.1;
-  settingEDT2       = 0.2;
-  settingERT1       = 0.3;
-  settingERT2       = 0.4;
-  settingGDT        = 0.5;
-  settingENBK       = 15.15;
-  settingGNBK       = 11.11;
-  settingIntervalTelegram   = 10; // seconds
+  snprintf(settingHostname, sizeof(settingHostname), "%s", _DEFAULT_HOSTNAME);
+  settingEDT1               = 0.1;
+  settingEDT2               = 0.2;
+  settingERT1               = 0.3;
+  settingERT2               = 0.4;
+  settingGDT                = 0.5;
+  settingENBK               = 15.15;
+  settingGNBK               = 11.11;
+  settingTelegramInterval   = 10; // seconds
   settingSleepTime          =  0; // infinite
   strCopy(settingIndexPage, sizeof(settingIndexPage), "DSMRindex.html");
   settingMQTTbroker[0]     = '\0';
   settingMQTTbrokerPort    = 1883;
   settingMQTTuser[0]       = '\0';
   settingMQTTpasswd[0]     = '\0';
-  settingMQTTinterval      = 60;
-  sprintf(settingMQTTtopTopic, "%s", _HOSTNAME);
+  settingMQTTinterval      =  0;
+  snprintf(settingMQTTtopTopic, sizeof(settingMQTTtopTopic), "%s", settingHostname);
 
 #ifdef USE_MINDERGAS
   settingMindergasToken[0] = '\0';
@@ -153,6 +156,7 @@ void readSettings(bool show)
     words[0].toLowerCase();
     nColor    = words[1].substring(0,15);
 
+    if (words[0].equalsIgnoreCase("Hostname"))            strCopy(settingHostname, 29, words[1].c_str());
     if (words[0].equalsIgnoreCase("EnergyDeliveredT1"))   settingEDT1         = strToFloat(words[1].c_str(), 5);  
     if (words[0].equalsIgnoreCase("EnergyDeliveredT2"))   settingEDT2         = strToFloat(words[1].c_str(), 5);
     if (words[0].equalsIgnoreCase("EnergyReturnedT1"))    settingERT1         = strToFloat(words[1].c_str(), 5);
@@ -171,8 +175,8 @@ void readSettings(bool show)
     
     if (words[0].equalsIgnoreCase("TelegramInterval"))   
     {
-      settingIntervalTelegram     = words[1].toInt(); 
-      CHANGE_INTERVAL_SEC(timerTelegram, settingIntervalTelegram); 
+      settingTelegramInterval     = words[1].toInt(); 
+      CHANGE_INTERVAL_SEC(nextTelegram, settingTelegramInterval); 
     }
 
     if (words[0].equalsIgnoreCase("IndexPage"))           strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), words[1].c_str());  
@@ -193,28 +197,29 @@ void readSettings(bool show)
     if (words[0].equalsIgnoreCase("MQTTinterval"))        settingMQTTinterval        = words[1].toInt(); 
     if (words[0].equalsIgnoreCase("MQTTtopTopic"))        strCopy(settingMQTTtopTopic, 20, words[1].c_str());  
     
-    if (settingMQTTinterval == settingIntervalTelegram) 
-    {
-      // special case, if telegram interval = mqtt interval, then mqtt
-      // interval needs to be shorter (does it??)
-      settingMQTTinterval = settingIntervalTelegram -1;
-    }
-    CHANGE_INTERVAL_SEC(timeMQTTPublish,  settingMQTTinterval);
+    CHANGE_INTERVAL_SEC(publishMQTTtimer, settingMQTTinterval);
+    CHANGE_INTERVAL_MIN(reconnectMQTTtimer, 1);
 #endif
     
   } // while available()
-
+  
   file.close();  
+
+  //--- this will take some time to settle in
+  //--- probably need a reboot before that to happen :-(
+  MDNS.setHostname(settingHostname);    // start advertising with new(?) settingHostname
+
   DebugTln(F(" .. done\r"));
 
 
   if (strlen(settingIndexPage) < 7) strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), "DSMRindex.html");
-  if (settingIntervalTelegram < 3)  settingIntervalTelegram = 10;
-  if (settingMQTTbrokerPort < 1)    settingMQTTbrokerPort = 1883;
+  if (settingTelegramInterval  < 2) settingTelegramInterval = 10;
+  if (settingMQTTbrokerPort    < 1) settingMQTTbrokerPort   = 1883;
 
   if (!show) return;
   
   Debugln(F("\r\n==== Settings ===================================================\r"));
+  Debugf("                    Hostname : %s\r\n",   settingHostname);
   Debugf("   Energy Delivered Tarief 1 : %9.7f\r\n",  settingEDT1);
   Debugf("   Energy Delivered Tarief 2 : %9.7f\r\n",  settingEDT2);
   Debugf("   Energy Delivered Tarief 1 : %9.7f\r\n",  settingERT1);
@@ -222,7 +227,7 @@ void readSettings(bool show)
   Debugf("        Gas Delivered Tarief : %9.7f\r\n",  settingGDT);
   Debugf("     Energy Netbeheer Kosten : %9.2f\r\n",  settingENBK);
   Debugf("        Gas Netbeheer Kosten : %9.2f\r\n",  settingGNBK);
-  Debugf("   Telegram Process Interval : %d\r\n",     settingIntervalTelegram);
+  Debugf("   Telegram Process Interval : %d\r\n",     settingTelegramInterval);
   Debugf("OLED Sleep Min. (0=oneindig) : %d\r\n",     settingSleepTime);
   Debugf("                  Index Page : %s\r\n",     settingIndexPage);
 
@@ -255,6 +260,18 @@ void updateSetting(const char *field, const char *newValue)
 {
   DebugTf("-> field[%s], newValue[%s]\r\n", field, newValue);
 
+  if (!stricmp(field, "Hostname")) {
+    strCopy(settingHostname, 29, newValue); 
+    if (strlen(settingHostname) < 1) strCopy(settingHostname, 29, _DEFAULT_HOSTNAME); 
+    char *dotPntr = strchr(settingHostname, '.') ;
+    if (dotPntr != NULL)
+    {
+      byte dotPos = (dotPntr-settingHostname);
+      if (dotPos > 0)  settingHostname[dotPos] = '\0';
+    }
+    Debugln();
+    DebugTf("Need reboot before new %s.local will be available!\r\n\n", settingHostname);
+  }
   if (!stricmp(field, "ed_tariff1"))        settingEDT1         = String(newValue).toFloat();  
   if (!stricmp(field, "ed_tariff2"))        settingEDT2         = String(newValue).toFloat();  
   if (!stricmp(field, "er_tariff1"))        settingERT1         = String(newValue).toFloat();  
@@ -274,8 +291,8 @@ void updateSetting(const char *field, const char *newValue)
   
   if (!stricmp(field, "tlgrm_interval"))    
   {
-    settingIntervalTelegram     = String(newValue).toInt();  
-    CHANGE_INTERVAL_SEC(timerTelegram, settingIntervalTelegram)
+    settingTelegramInterval     = String(newValue).toInt();  
+    CHANGE_INTERVAL_SEC(nextTelegram, settingTelegramInterval)
   }
 
   if (!stricmp(field, "index_page"))        strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), newValue);  
@@ -290,11 +307,28 @@ void updateSetting(const char *field, const char *newValue)
     memset(settingMQTTbroker, '\0', sizeof(settingMQTTbroker));
     strCopy(settingMQTTbroker, 100, newValue);
     Debugf("[%s]\r\n", settingMQTTbroker);
+    mqttIsConnected = false;
+    CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
   }
-  if (!stricmp(field, "mqtt_broker_port"))  settingMQTTbrokerPort = String(newValue).toInt();  
-  if (!stricmp(field, "mqtt_user"))         strCopy(settingMQTTuser    ,35, newValue);  
-  if (!stricmp(field, "mqtt_passwd"))       strCopy(settingMQTTpasswd  ,25, newValue);  
-  if (!stricmp(field, "mqtt_interval"))     settingMQTTinterval   = String(newValue).toInt();  
+  if (!stricmp(field, "mqtt_broker_port")) {
+    settingMQTTbrokerPort = String(newValue).toInt();  
+    mqttIsConnected = false;
+    CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
+  }
+  if (!stricmp(field, "mqtt_user")) {
+    strCopy(settingMQTTuser    ,35, newValue);  
+    mqttIsConnected = false;
+    CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
+  }
+  if (!stricmp(field, "mqtt_passwd")) {
+    strCopy(settingMQTTpasswd  ,25, newValue);  
+    mqttIsConnected = false;
+    CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
+  }
+  if (!stricmp(field, "mqtt_interval")) {
+    settingMQTTinterval   = String(newValue).toInt();  
+    CHANGE_INTERVAL_SEC(publishMQTTtimer, settingMQTTinterval);
+  }
   if (!stricmp(field, "mqtt_toptopic"))     strCopy(settingMQTTtopTopic, 20, newValue);  
 #endif
 

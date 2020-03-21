@@ -32,7 +32,7 @@ void handleTestdata()
   time_t nt;
   int16_t slot;
  
-  if (!forceBuildRingFiles && ( DUE( telegramTimer) )  return;   // not yet time for new Telegram
+  if (!forceBuildRingFiles && ( !DUE( telegramTimer) ) )  return;   // not yet time for new Telegram
 
 //  DebugTf("Time for a new Telegram ..");
   if (forceBuildRingFiles)
@@ -116,7 +116,7 @@ void handleTestdata()
       int16_t len = buildTelegram40(line, telegramLine);  // also: prints to DSMRsend
       calcCRC = decodeTelegram(len);
     } 
-    sprintf(cMsg, "!%04X\r\n\r\n", (calcCRC & 0xFFFF));
+    snprintf(cMsg, sizeof(cMsg), "!%04X\r\n\r\n", (calcCRC & 0xFFFF));
     if (Verbose2) Debug(cMsg);
     strConcat(telegram, sizeof(telegram), cMsg);
     
@@ -139,10 +139,6 @@ void handleTestdata()
   // Succesfully parsed, now process the data!
 
   processTelegram();
-  if (!forceBuildRingFiles)
-  {
-      sendMQTTData();
-  }
   
   Debugf("==>> act date/time [%s] is [%s]\r\n\n", actTimestamp, buildDateTimeString(actTimestamp, sizeof(actTimestamp)).c_str());
 

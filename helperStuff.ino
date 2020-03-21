@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : helperStuff, part of DSMRloggerAPI
-**  Version  : v0.3.4
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -143,7 +143,8 @@ String upTime()
 {
   char    calcUptime[20];
 
-  sprintf(calcUptime, "%d(d):%02d(h):%02d", int((upTimeSeconds / (60 * 60 * 24)) % 365)
+  snprintf(calcUptime, sizeof(calcUptime), "%d(d):%02d(h):%02d"
+                                          , int((upTimeSeconds / (60 * 60 * 24)) % 365)
                                           , int((upTimeSeconds / (60 * 60)) % 24)
                                           , int((upTimeSeconds / (60)) % 60));
 

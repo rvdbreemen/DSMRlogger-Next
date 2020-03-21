@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : Debug.h, part of DSMRloggerAPI
-**  Version  : v0.3.4
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **  Met dank aan Erik
@@ -45,7 +45,7 @@ char _bol[128];
 void _debugBOL(const char *fn, int line)
 {
    
-  sprintf(_bol, "[%02d:%02d:%02d][%7u|%6u] %-12.12s(%4d): ", \
+  snprintf(_bol, sizeof(_bol), "[%02d:%02d:%02d][%7u|%6u] %-12.12s(%4d): ", \
                 hour(), minute(), second(), \
                 ESP.getFreeHeap(), ESP.getMaxFreeBlockSize(),\
                 fn, line);

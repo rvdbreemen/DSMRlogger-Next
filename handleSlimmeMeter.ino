@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
-**  Program  : processTelegram - part of DSMRloggerAPI
-**  Version  : v0.3.4
+**  Program  : handleSlimmeMeter - part of DSMRloggerAPI
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -44,7 +44,7 @@ void processSlimmemeterRaw()
     oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
     oled_Print_Msg(1, "-------------------------",0);
     oled_Print_Msg(2, "Raw Format",0);
-    sprintf(cMsg, "Raw Count %4d", showRawCount);
+    snprintf(cMsg, sizeof(cMsg), "Raw Count %4d", showRawCount);
     oled_Print_Msg(3, cMsg, 0);
   #endif
 
@@ -93,8 +93,8 @@ void processSlimmemeter()
   slimmeMeter.loop();
   if (slimmeMeter.available()) 
   {
-    DebugTf("processSlimmerMeter telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
-    DebugTln(F("\r\n[Time----][FreeHeap/mBlck][Function----(line):\r"));
+    DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
+    Debugln(F("\r\n[Time----][FreeHeap/mBlck][Function----(line):\r"));
     // Voorbeeld: [21:00:11][   9880/  8960] loop        ( 997): read telegram [28] => [140307210001S]
     telegramCount++;
         
@@ -103,16 +103,52 @@ void processSlimmemeter()
         
     if (slimmeMeter.parse(&DSMRdata, &DSMRerror))   // Parse succesful, print result
     {
-      if (telegramCount > (UINT32_MAX - 1)) 
+      if (telegramCount > (UINT32_MAX - 10)) 
       {
         delay(1000);
         ESP.reset();
         delay(1000);
       }
       digitalWrite(LED_BUILTIN, LED_OFF);
+      if (DSMRdata.identification_present)
+      {
+        //--- this is a hack! The identification can have a backslash in it
+        //--- that will ruin javascript processing :-(
+        for(int i=0; i<DSMRdata.identification.length(); i++)
+        {
+          if (DSMRdata.identification[i] == '\\') DSMRdata.identification[i] = '=';
+          yield();
+        }
+      }
+#ifdef SM_HAS_NO_FASE_INFO
+      if (DSMRdata.power_delivered_present && !DSMRdata.power_delivered_l1_present)
+      {
+        DSMRdata.power_delivered_l1 = DSMRdata.power_delivered;
+        DSMRdata.power_delivered_l1_present = true;
+        DSMRdata.power_delivered_l2_present = true;
+        DSMRdata.power_delivered_l3_present = true;
+      }
+      if (DSMRdata.power_returned_present && !DSMRdata.power_returned_l1_present)
+      {
+        DSMRdata.power_returned_l1 = DSMRdata.power_returned;
+        DSMRdata.power_returned_l1_present = true;
+        DSMRdata.power_returned_l2_present = true;
+        DSMRdata.power_returned_l3_present = true;
+      }
+#endif
+
+#ifdef USE_NTP_TIME
+      if (!DSMRdata.timestamp_present)                        //USE_NTP
+      {                                                       //USE_NTP
+        sprintf(cMsg, "%02d%02d%02d%02d%02d%02dW\0\0"         //USE_NTP
+                        , (year() - 2000), month(), day()     //USE_NTP
+                        , hour(), minute(), second());        //USE_NTP
+        DSMRdata.timestamp         = cMsg;                    //USE_NTP
+        DSMRdata.timestamp_present = true;                    //USE_NTP
+      }                                                       //USE_NTP
+#endif
+
       processTelegram();
-      sendMQTTData();      
-      
       if (Verbose2) 
       {
         DSMRdata.applyEach(showValues());
@@ -122,12 +158,23 @@ void processSlimmemeter()
     else                  // Parser error, print error
     {
       telegramErrors++;
+      #ifdef USE_SYSLOGGER
+        sysLog.writef("Parse error\r\n%s\r\n\r\n", DSMRerror.c_str());
+      #endif
       DebugTf("Parse error\r\n%s\r\n\r\n", DSMRerror.c_str());
+      //--- set DTR to get a new telegram as soon as possible
       slimmeMeter.enable(true);
+      slimmeMeter.loop();
+    }
+
+    if ( (telegramCount > 25) && (telegramCount % (2100 / (settingTelegramInterval + 1)) == 0) )
+    {
+      DebugTf("Processed [%d] telegrams ([%d] errors)\r\n", telegramCount, telegramErrors);
+      writeToSysLog("Processed [%d] telegrams ([%d] errors)", telegramCount, telegramErrors);
     }
         
   } // if (slimmeMeter.available()) 
-      
+  
 } // handleSlimmeMeter()
 
 #endif

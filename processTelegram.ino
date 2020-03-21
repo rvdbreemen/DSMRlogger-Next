@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : processTelegram, part of DSMRloggerAPI
-**  Version  : v0.3.4
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -18,11 +18,11 @@ void processTelegram()
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
     String DT   = buildDateTimeString(DSMRdata.timestamp.c_str(), sizeof(DSMRdata.timestamp));
 
-    sprintf(cMsg, "%s - %s", DT.substring(0, 10).c_str(), DT.substring(11, 16).c_str());
+    snprintf(cMsg, sizeof(cMsg), "%s - %s", DT.substring(0, 10).c_str(), DT.substring(11, 16).c_str());
     oled_Print_Msg(0, cMsg, 0);
-    sprintf(cMsg, "-Power%7d Watt", (int)(DSMRdata.power_delivered *1000));
+    snprintf(cMsg, sizeof(cMsg), "-Power%7d Watt", (int)(DSMRdata.power_delivered *1000));
     oled_Print_Msg(1, cMsg, 0);
-    sprintf(cMsg, "+Power%7d Watt", (int)(DSMRdata.power_returned *1000));
+    snprintf(cMsg, sizeof(cMsg), "+Power%7d Watt", (int)(DSMRdata.power_returned *1000));
     oled_Print_Msg(2, cMsg, 0);
 #endif  // has_oled_ssd1206
                                                     
@@ -48,9 +48,15 @@ void processTelegram()
        ||   (day(actT) != day(newT)   ) 
        || (month(actT) != month(newT) ) )
   {
+    writeToSysLog("Update RING-files");
     writeDataToFiles();
     writeLastStatus();
   }
+
+  if ( DUE(publishMQTTtimer) )
+  {
+    sendMQTTData();      
+  }    
 
 } // processTelegram()
 

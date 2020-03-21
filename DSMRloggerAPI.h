@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : DSMRloggerAPI.h - definitions for DSMRloggerAPI
-**  Version  : v0.3.4
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -10,28 +10,36 @@
 */  
 
 #include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
-#include <TelnetStream.h>       // Version 0.0.1 - https://github.com/jandrassy/TelnetStream
+#include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "safeTimers.h"
 
-#ifdef USE_PRE40_PROTOCOL                                       //PRE40
+#ifdef USE_SYSLOGGER
+  #include "ESP_SysLogger.h"      // https://github.com/mrWheel/ESP_SysLogger
+  ESPSL sysLog;                   // Create instance of the ESPSL object
+  #define writeToSysLog(...) ({ sysLog.writeDbg( sysLog.buildD("[%02d:%02d:%02d][%7d][%-12.12s] " \
+                                                               , hour(), minute(), second()     \
+                                                               , ESP.getFreeHeap()              \
+                                                               , __FUNCTION__)                  \
+                                                               ,__VA_ARGS__); })
+#else
+  #define writeToSysLog(...)  // nothing
+#endif
+
+#if defined( USE_PRE40_PROTOCOL )                               //PRE40
   //  https://github.com/mrWheel/arduino-dsmr30.git             //PRE40
   #include <dsmr30.h>                                           //PRE40
+#elif defined( USE_BELGIUM_PROTOCOL )                           //Belgium
+  //  https://github.com/mrWheel/arduino-dsmr-be.git            //Belgium
+  #include <dsmr-be.h>                                          //Belgium
 #else                                                           //else
   //  https://github.com/matthijskooijman/arduino-dsmr
   #include <dsmr.h>               // Version 0.1 - Commit f79c906 on 18 Sep 2018
 #endif
 
-#ifdef ARDUINO_ESP8266_GENERIC
-  #define _HOSTNAME     "DSMR-API"  
-  #ifdef IS_ESP12
+#define _DEFAULT_HOSTNAME  "DSMR-API"  
+#ifdef USE_REQUEST_PIN
     #define DTR_ENABLE  12
-  #endif  // is_esp12
-#else // not arduino_esp8266_generic
-  #define _HOSTNAME     "ESP12-DSMR"
-  #ifdef IS_ESP12
-    #define DTR_ENABLE  12
-  #endif
-#endif  // arduino_esp8266_generic
+#endif  // is_esp12
 
 #define SETTINGS_FILE      "/DSMRsettings.ini"
 
@@ -39,6 +47,8 @@
 #define LED_OFF          HIGH
 #define FLASH_BUTTON        0
 #define MAXCOLORNAME       15
+#define JSON_BUFF_MAX     255
+#define MQTT_BUFF_MAX     200
 
 //-------------------------.........1....1....2....2....3....3....4....4....5....5....6....6....7....7
 //-------------------------1...5....0....5....0....5....0....5....0....5....0....5....0....5....0....5
@@ -188,6 +198,12 @@ void delayms(unsigned long);
   int8_t      showRawCount = 0;
 
 
+#ifdef USE_MQTT
+  #include <PubSubClient.h>           // MQTT client publish and subscribe functionality
+  
+  static PubSubClient MQTTclient(wifiClient);
+#endif
+
 #ifdef USE_MINDERGAS
   static char      settingMindergasToken[21] = "";
   static uint16_t  intStatuscodeMindergas    = 0; 
@@ -207,13 +223,24 @@ uint64_t  upTimeSeconds;
 IPAddress ipDNS, ipGateWay, ipSubnet;
 float     settingEDT1, settingEDT2, settingERT1, settingERT2, settingGDT;
 float     settingENBK, settingGNBK;
-uint8_t   settingIntervalTelegram;
+uint8_t   settingTelegramInterval;
+char      settingHostname[30];
 char      settingIndexPage[50];
 char      settingMQTTbroker[101], settingMQTTuser[40], settingMQTTpasswd[30], settingMQTTtopTopic[21];
 int32_t   settingMQTTinterval, settingMQTTbrokerPort;
 String    pTimestamp;
 
-
+//===========================================================================================
+// setup timers 
+DECLARE_TIMER_SEC(updateSeconds,       1, CATCH_UP_MISSED_TICKS);
+DECLARE_TIMER_SEC(updateDisplay,       5);
+DECLARE_TIMER_MIN(reconnectWiFi,      30);
+DECLARE_TIMER_SEC(synchrNTP,          30);
+DECLARE_TIMER_SEC(nextTelegram,       10);
+DECLARE_TIMER_MIN(reconnectMQTTtimer,  2); // try reconnecting cyclus timer
+DECLARE_TIMER_SEC(publishMQTTtimer,   60, SKIP_MISSED_TICKS); // interval time between MQTT messages  
+DECLARE_TIMER_MIN(minderGasTimer,     10, CATCH_UP_MISSED_TICKS); 
+DECLARE_TIMER_SEC(antiWearTimer,      61);
 
 /***************************************************************************
 *

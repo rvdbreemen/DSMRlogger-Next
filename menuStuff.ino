@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : menuStuff, part of DSMRloggerAPI
-**  Version  : v0.3.4
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -49,8 +49,8 @@ void displayBoardInfo()
   Debug(F("]\r\n         compiled with [dsmr.h"));
 #endif
   Debug(F("]\r\n              #defines "));
-#ifdef IS_ESP12
-  Debug(F("[IS_ESP12]"));
+#ifdef USE_REQUEST_PIN
+  Debug(F("[USE_REQUEST_PIN]"));
 #endif
 #ifdef USE_UPDATE_SERVER
   Debug(F("[USE_UPDATE_SERVER]"));
@@ -61,6 +61,9 @@ void displayBoardInfo()
 #ifdef USE_MINDERGAS
   Debug(F("[USE_MINDERGAS]"));
 #endif
+#ifdef USE_SYSLOGGER
+  Debug(F("[USE_SYSLOGGER]"));
+#endif
 #ifdef USE_NTP_TIME
   Debug(F("[USE_NTP_TIME]"));
 #endif
@@ -69,6 +72,9 @@ void displayBoardInfo()
 #endif
 #if defined( HAS_OLED_SH1106 )
   Debug(F("[HAS_OLED_SH1106]"));
+#endif
+#ifdef USE_BELGIUM_PROTOCOL
+  Debug(F("[USE_BELGIUM_PROTOCOL]"));
 #endif
 #ifdef SM_HAS_NO_FASE_INFO
   Debug(F("[SM_HAS_NO_FASE_INFO]"));
@@ -89,8 +95,8 @@ void displayBoardInfo()
   Debug(F("]\r\nFree Sketch Space (kB) ["));  Debug( ESP.getFreeSketchSpace() / 1024.0 );
 
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
-        sprintf(cMsg, "%08X (PUYA)", ESP.getFlashChipId());
-  else  sprintf(cMsg, "%08X", ESP.getFlashChipId());
+        snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
+  else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
 
   SPIFFS.info(SPIFFSinfo);
 
@@ -126,7 +132,7 @@ void displayBoardInfo()
   Debug(F("]\r\n               PSK key [**********"));
 #endif
   Debug(F("]\r\n            IP Address ["));  Debug( WiFi.localIP().toString() );
-  Debug(F("]\r\n              Hostname ["));  Debug( _HOSTNAME );
+  Debug(F("]\r\n              Hostname ["));  Debug( settingHostname );
   Debug(F("]\r\n     Last reset reason ["));  Debug( ESP.getResetReason() );
   Debug(F("]\r\n                upTime ["));  Debug( upTime() );
   Debugln(F("]\r"));
@@ -184,7 +190,7 @@ void handleKeyInput()
       case 'M':     displayMonthsHist(true);
                     break;
                     
-      case 'W':     Debugf("\r\nConnect to AP [%s] and go to ip address shown in the AP-name\r\n", _HOSTNAME);
+      case 'W':     Debugf("\r\nConnect to AP [%s] and go to ip address shown in the AP-name\r\n", settingHostname);
                     delay(1000);
                     WiFi.disconnect(true);  // deletes credentials !
                     //setupWiFi(true);
@@ -206,7 +212,7 @@ void handleKeyInput()
 #endif
       case 'p':
       case 'P':     showRaw = !showRaw;
-                 #ifdef IS_ESP12
+                 #ifdef USE_REQUEST_PIN
                     if (showRaw)  digitalWrite(DTR_ENABLE, HIGH);
                     else          digitalWrite(DTR_ENABLE, LOW);
                  #endif
@@ -241,10 +247,22 @@ void handleKeyInput()
                       Verbose2 = false;
                     }
                     break;
-//    case 'X':     convertPRD2RING();
-//                  break;
-      case 'Z':     slotErrors  = 0;
-                    nrReboots   = 0;
+#ifdef USE_SYSLOGGER
+      case 'q':
+      case 'Q':     sysLog.setDebugLvl(0);
+                    sysLog.dumpLogFile();
+                    sysLog.setDebugLvl(1);
+                    break;
+#endif
+      case 'Z':     slotErrors      = 0;
+                    nrReboots       = 0;
+                    telegramCount   = 0;
+                    telegramErrors  = 0;
+                    writeLastStatus();
+                    #ifdef USE_SYSLOGGER
+                      sysLog = {};
+                      openSysLog(true);
+                    #endif
                     break;
       default:      Debugln(F("\r\nCommands are:\r\n"));
                     Debugln(F("   B - Board Info\r"));
@@ -267,6 +285,9 @@ void handleKeyInput()
                       showRawCount = 0;
                     }
                     Debugln(F("  *W - Force Re-Config WiFi\r"));
+#ifdef USE_SYSLOGGER
+                    Debugln(F("   Q - dump sysLog file\r"));
+#endif
                     Debugln(F("  *R - Reboot\r"));
                     Debugln(F("   S - File info on SPIFFS\r"));
                     Debugln(F("  *U - Update SPIFFS (save Data-files)\r"));

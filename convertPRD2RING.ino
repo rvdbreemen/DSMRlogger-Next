@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : convertPRD2RING, part of DSMRloggerAPI
-**  Version  : v0.3.4
+**  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -121,7 +121,7 @@ void writeToRINGfile(int8_t fileType, const char *key, float EDT1, float EDT2
                   
   } // switch()
 
-  sprintf(record, (char*)DATA_FORMAT, newKey , (float)EDT1
+  snprintf(record, sizeof(record), (char*)DATA_FORMAT, newKey , (float)EDT1
                                              , (float)EDT2
                                              , (float)ERT1
                                              , (float)ERT2
