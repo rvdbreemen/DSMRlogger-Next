@@ -111,7 +111,7 @@ void displayBoardInfo()
   Debug(F("]\r\n      Sketch Size (kB) ["));  Debug( ESP.getSketchSize() / 1024.0 );
   Debug(F("]\r\nFree Sketch Space (kB) ["));  Debug( ESP.getFreeSketchSpace() / 1024.0 );
   Debug(F("]\r\n              FreeHeap ["));  Debug( ESP_GET_FREE_HEAP() );
-  Debug(F("]\r\n             max.Block ["));  Debug( ESP_ESP_GET_FREE_BLOCK() );
+  Debug(F("]\r\n             max.Block ["));  Debug( ESP_GET_FREE_BLOCK() );
 
 #if defined(ESP8266) 
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 

@@ -1,5 +1,3 @@
-
-
 /*
 ***************************************************************************  
 **  Program  : networkStuff.h, part of DSMRloggerAPI
@@ -27,7 +25,7 @@
       #include "UpdateServerHtml.h"
     #endif
     
-    #include <WiFiManager.h>        // version 0.14.0 - https://github.com/tzapu/WiFiManager
+    #include <ESP_WiFiManager.h>        // version 0.14.0 - https://github.com/tzapu/WiFiManager
     #include <FS.h>                 // part of ESP8266 Core https://github.com/esp8266/Arduino
 
     ESP8266WebServer        httpServer (80);
@@ -63,27 +61,27 @@
       #error unexpected / unsupported architecture, make sure to compile for ESP32 or ESP8266
 #endif
 
-//static      FSInfo SPIFFSinfo;
+static      FSInfo SPIFFSinfo;
 bool        SPIFFSmounted = false ; 
-//bool        isConnected = false;
+bool        isConnected = false;
 
 //gets called when WiFiManager enters configuration mode
 //===========================================================================================
-void configModeCallback (ESP_WiFiManager *myWiFiManager) 
-{
-  DebugTln(F("Entered config mode\r"));
-  DebugTln(WiFi.softAPIP().toString());
-  //if you used auto generated SSID, print it
-  DebugTln(myWiFiManager->getConfigPortalSSID());
-  #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
-      oled_Clear();
-      oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
-      oled_Print_Msg(1, "AP mode active", 0);
-      oled_Print_Msg(2, "Connect to:", 0);
-      oled_Print_Msg(3, myWiFiManager->getConfigPortalSSID(), 0);
-  #endif
-
-} // configModeCallback()
+//void configModeCallback (ESP_WiFiManager *myWiFiManager) 
+//{
+//  DebugTln(F("Entered config mode\r"));
+//  DebugTln(WiFi.softAPIP().toString());
+//  //if you used auto generated SSID, print it
+//  DebugTln(myWiFiManager->getConfigPortalSSID());
+//  #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
+//      oled_Clear();
+//      oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
+//      oled_Print_Msg(1, "AP mode active", 0);
+//      oled_Print_Msg(2, "Connect to:", 0);
+//      oled_Print_Msg(3, myWiFiManager->getConfigPortalSSID(), 0);
+//  #endif
+//
+//} // configModeCallback()
 
 
 //===========================================================================================
