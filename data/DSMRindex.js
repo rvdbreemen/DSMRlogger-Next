@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : DSMRindex.js, part of DSMRfirmwareAPI
-**  Version  : v1.1.0
+**  Version  : v1.1.2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -20,9 +20,10 @@
   let tabTimer              = 0;
   let actualTimer           = 0;
   let timeTimer             = 0;
-  var GitHubVersion         = "-";
+  var GitHubVersion         = 0;
+  var GitHubVersion_dspl    = "-";
+  var firmwareVersion       = 0;
   var firmwareVersion_dspl  = "-";
-  var firmwareVersion       = "-";
   
   var tlgrmInterval         = 10;
   var ed_tariff1            = 0;
@@ -60,7 +61,7 @@
                   ];
                     
   var humanFieldsMain = [ "Slimme Meter ID","P1 Versie","timestamp","Equipment ID"
-                    ,"Energie Gebruikt tarief 1","Energy Gebruikt tarief 2"
+                    ,"Energie Gebruikt tarief 1","Energie Gebruikt tarief 2"
                     ,"Energie Opgewekt tarief 1","Energie Opgewekt tarief 2","Electriciteit tarief"
                     ,"Vermogen Gebruikt","Vermogen Opgewekt"
                     ,"electricity_threshold","electricity_switch_position"
@@ -111,16 +112,18 @@
                   ];
                     
   var monthNames = [ "indxNul","Januari","Februari","Maart","April","Mei","Juni"
-                    ,"Juli","Augustus","September","Oktober","November","december"
+                    ,"Juli","Augustus","September","Oktober","November","December"
                     ,"\0"
                    ];
   
   window.onload=bootsTrapMain;
+  /*
   window.onfocus = function() {
     if (needBootsTrapMain) {
       window.location.reload(true);
     }
   };
+  */
     
   //============================================================================  
   function bootsTrapMain() {
@@ -155,14 +158,15 @@
     refreshDevTime();
     getDevSettings();
     refreshDevInfo();
-    readGitHubVersion();
     
+    clearInterval(timeTimer);  
     timeTimer = setInterval(refreshDevTime, 10 * 1000); // repeat every 10s
 
     openPage("mainPage");
     openTab("ActualTab");
     initActualGraph();
     setPresentationType('TAB');
+    readGitHubVersion();
       
   } // bootsTrapMain()
   
@@ -183,8 +187,6 @@
                                                 {saveData();});
     refreshDevTime();
     refreshDevInfo();
-    
-    timeTimer = setInterval(refreshDevTime, 10 * 1000); // repeat every 10s
     
     openPage("settingsPage");
 
@@ -235,12 +237,14 @@
     //document.getElementById(bID).style.background='lightgray';
     document.getElementById(tabName).style.display = "block";  
     if (tabName != "ActualTab") {
+      clearInterval(actualTimer);
       actualTimer = setInterval(refreshSmActual, 60 * 1000);                  // repeat every 60s
     }
     
     if (tabName == "ActualTab") {
       console.log("newTab: ActualTab");
       refreshSmActual();
+      clearInterval(actualTimer);
       if (tlgrmInterval < 10)
             actualTimer = setInterval(refreshSmActual, 10 * 1000);            // repeat every 10s
       else  actualTimer = setInterval(refreshSmActual, tlgrmInterval * 1000); // repeat every tlgrmInterval seconds
@@ -248,41 +252,37 @@
     } else if (tabName == "HoursTab") {
       console.log("newTab: HoursTab");
       refreshHours();
+      clearInterval(tabTimer);
       tabTimer = setInterval(refreshHours, 58 * 1000); // repeat every 58s
 
     } else if (tabName == "DaysTab") {
       console.log("newTab: DaysTab");
       refreshDays();
+      clearInterval(tabTimer);
       tabTimer = setInterval(refreshDays, 58 * 1000); // repeat every 58s
-      /***
-      console.log("ed_tariff1["+ed_tariff1+"]");
-      console.log("ed_tariff2["+ed_tariff2+"]");
-      console.log("er_tariff1["+er_tariff1+"]");
-      console.log("er_tariff2["+er_tariff2+"]");
-      console.log(" gd_tariff["+gd_tariff+"]");
-      console.log("electr_netw_costs["+electr_netw_costs+"]");
-      console.log("   gas_netw_costs["+gas_netw_costs+"]");    
-      ***/
 
     } else if (tabName == "MonthsTab") {
       console.log("newTab: MonthsTab");
       refreshMonths();
+      clearInterval(tabTimer);
       tabTimer = setInterval(refreshMonths, 118 * 1000); // repeat every 118s
     
     } else if (tabName == "SysInfoTab") {
       console.log("newTab: SysInfoTab");
       refreshDevInfo();
+      clearInterval(tabTimer);
       tabTimer = setInterval(refreshDevInfo, 58 * 1000); // repeat every 58s
 
     } else if (tabName == "FieldsTab") {
       console.log("newTab: FieldsTab");
       refreshSmFields();
+      clearInterval(tabTimer);
       tabTimer = setInterval(refreshSmFields, 58 * 1000); // repeat every 58s
 
     } else if (tabName == "TelegramTab") {
       console.log("newTab: TelegramTab");
       refreshSmTelegram();
-      //tabTimer = setInterval(refreshSmTelegram, 60 * 1000); // do not repeat!
+      clearInterval(tabTimer); // do not repeat!
 
     } else if (tabName == "APIdocTab") {
       console.log("newTab: APIdocTab");
@@ -366,12 +366,16 @@
             {
               document.getElementById('devVersion').innerHTML = json.devinfo[i].value;
               var tmpFW = json.devinfo[i].value;
-              firmwareVersion = tmpFW.substring(1, tmpFW.indexOf(' '));
-              console.log("GitHubVersion["+GitHubVersion+"], firmwareVersion["+firmwareVersion+"]");
-              if (GitHubVersion == "-" || firmwareVersion == GitHubVersion)
-                    tmpFW = "";
-              else  firmwareVersion_dspl = "v" +firmwareVersion + " nieuwe versie beschikbaar (v"+GitHubVersion+")";
+              tmpX = tmpFW.substring(1, tmpFW.indexOf(' '));
+              tmpN = tmpX.split(".");
+              firmwareVersion = tmpN[0]*10000 + tmpN[1]*1;
+              console.log("firmwareVersion["+firmwareVersion+"] >= GitHubVersion["+GitHubVersion+"]");
+              if (GitHubVersion == 0 || firmwareVersion >= GitHubVersion)
+                    firmwareVersion_dspl = "";
+              else  firmwareVersion_dspl = tmpFW + " nieuwere versie ("+GitHubVersion_dspl+") beschikbaar";
               document.getElementById('message').innerHTML = firmwareVersion_dspl;
+              console.log(firmwareVersion_dspl);
+
             } else if (data[i].name == 'hostname')
             {
               document.getElementById('devName').innerHTML = data[i].value;
@@ -405,6 +409,7 @@
   //============================================================================  
   function refreshDevTime()
   {
+    //console.log("Refresh api/v1/dev/time ..");
     fetch(APIGW+"v1/dev/time")
       .then(response => response.json())
       .then(json => {
@@ -942,14 +947,14 @@
       tableCells[1].style.textAlign = "center";
       tableCells[1].innerHTML = "20"+data[i].recid.substring(0,2);          // jaar
       tableCells[2].style.textAlign = "right";
-      tableCells[2].innerHTML = (data[i].costs_e).toFixed(2);               // kosten electra
+      tableCells[2].innerHTML = (data[i].costs_e *1).toFixed(2);            // kosten electra
       tableCells[3].style.textAlign = "right";
-      tableCells[3].innerHTML = (data[i].costs_g).toFixed(2);               // kosten gas
+      tableCells[3].innerHTML = (data[i].costs_g *1).toFixed(2);            // kosten gas
       tableCells[4].style.textAlign = "right";
-      tableCells[4].innerHTML = (data[i].costs_nw).toFixed(2);              // netw kosten
+      tableCells[4].innerHTML = (data[i].costs_nw *1).toFixed(2);           // netw kosten
       tableCells[5].style.textAlign = "right";
       tableCells[5].style.fontWeight = 'bold';
-      tableCells[5].innerHTML = "€ " + (data[i].costs_tt).toFixed(2);       // kosten totaal
+      tableCells[5].innerHTML = "€ " + (data[i].costs_tt *1).toFixed(2);    // kosten totaal
       //--- omdat de actuele maand net begonnen kan zijn tellen we deze
       //--- niet mee, maar tellen we de laatste maand van de voorgaand periode
       if (i > 0)
@@ -957,16 +962,16 @@
       else  totalCost += data[i+12].costs_tt;
 
       tableCells[6].style.textAlign = "center";
-      tableCells[6].innerHTML = "20"+data[i+12].recid.substring(0,2);       // jaar
+      tableCells[6].innerHTML = "20"+data[i+12].recid.substring(0,2);         // jaar
       tableCells[7].style.textAlign = "right";
-      tableCells[7].innerHTML = (data[i+12].costs_e).toFixed(2);            // kosten electra
+      tableCells[7].innerHTML = (data[i+12].costs_e *1).toFixed(2);           // kosten electra
       tableCells[8].style.textAlign = "right";
-      tableCells[8].innerHTML = (data[i+12].costs_g).toFixed(2);            // kosten gas
+      tableCells[8].innerHTML = (data[i+12].costs_g *1).toFixed(2);           // kosten gas
       tableCells[9].style.textAlign = "right";
-      tableCells[9].innerHTML = (data[i+12].costs_nw).toFixed(2);           // netw kosten
+      tableCells[9].innerHTML = (data[i+12].costs_nw *1).toFixed(2);          // netw kosten
       tableCells[10].style.textAlign = "right";
       tableCells[10].style.fontWeight = 'bold';
-      tableCells[10].innerHTML = "€ " + (data[i+12].costs_tt).toFixed(2);   // kosten totaal
+      tableCells[10].innerHTML = "€ " + (data[i+12].costs_tt *1).toFixed(2);  // kosten totaal
       totalCost_1 += data[i+12].costs_tt;
 
     };
@@ -1078,6 +1083,7 @@
       presentationType = pType;
       document.getElementById('aGRAPH').checked = true;
       document.getElementById('aTAB').checked   = false;
+      initActualGraph();
       document.getElementById('hGRAPH').checked = true;
       document.getElementById('hTAB').checked   = false;
       document.getElementById('dGRAPH').checked = true;
@@ -1102,7 +1108,7 @@
       document.getElementById('mCOST').checked  = false;
 
     } else {
-      console.log("setPresentationType to ["+pType+"] is quit shitty! Set to TAB");
+      console.log("setPresentationType to ["+pType+"] is quite shitty! Set to TAB");
       presentationType = "TAB";
     }
 
@@ -1142,27 +1148,27 @@
     
   //============================================================================  
   function showAPIdoc() {
-    console.log("Show API doc ..");
+    console.log("Show API doc ..@["+location.host+"]");
     document.getElementById("APIdocTab").style.display = "block";
-    addAPIdoc("/api/v1/dev/info", "Device info in JSON format", true);
-    addAPIdoc("/api/v1/dev/time", "Device time (epoch) in JSON format", true);
-    addAPIdoc("/api/v1/dev/settings", "Device settings in JSON format", true);
-    addAPIdoc("/api/v1/dev/settings{jsonObj}", "[POST] update Device settings in JSON format\
+    addAPIdoc("v1/dev/info",      "Device info in JSON format", true);
+    addAPIdoc("v1/dev/time",      "Device time (epoch) in JSON format", true);
+    addAPIdoc("v1/dev/settings",  "Device settings in JSON format", true);
+    addAPIdoc("v1/dev/settings{jsonObj}", "[POST] update Device settings in JSON format\
         <br>test with:\
         <pre>curl -X POST -H \"Content-Type: application/json\" --data '{\"name\":\"mqtt_broker\",\"value\":\"hassio.local\"}' \
 http://DSMR-API.local/api/v1/dev/settings</pre>", false);
     
-    addAPIdoc("/api/v1/sm/info", "Smart Meter info in JSON format", true);
-    addAPIdoc("/api/v1/sm/actual", "Smart Meter Actual data in JSON format", true);
-    addAPIdoc("/api/v1/sm/fields", "Smart Meter all fields data in JSON format\
+    addAPIdoc("v1/sm/info",       "Smart Meter info in JSON format", true);
+    addAPIdoc("v1/sm/actual",     "Smart Meter Actual data in JSON format", true);
+    addAPIdoc("v1/sm/fields",     "Smart Meter all fields data in JSON format\
         <br>JSON format: {\"fields\":[{\"name\":\"&lt;fieldName&gt;\",\"value\":&lt;value&gt;,\"unit\":\"&lt;unit&gt;\"}]} ", true);
-    addAPIdoc("/api/v1/sm/fields/{fieldName}", "Smart Meter one field data in JSON format", false);
+    addAPIdoc("v1/sm/fields/{fieldName}", "Smart Meter one field data in JSON format", false);
 
-    addAPIdoc("/api/v1/sm/telegram", "raw telegram as send by the Smart Meter including all \"\\r\\n\" line endings", false);
+    addAPIdoc("v1/sm/telegram",   "raw telegram as send by the Smart Meter including all \"\\r\\n\" line endings", false);
 
-    addAPIdoc("/api/v1/hist/hours", "History data per hour in JSON format", true);
-    addAPIdoc("/api/v1/hist/days", "History data per day in JSON format", true);
-    addAPIdoc("/api/v1/hist/months", "History data per month in JSON format", true);
+    addAPIdoc("v1/hist/hours",    "History data per hour in JSON format", true);
+    addAPIdoc("v1/hist/days",     "History data per day in JSON format", true);
+    addAPIdoc("v1/hist/months",   "History data per month in JSON format", true);
 
   } // showAPIdoc()
 
@@ -1176,20 +1182,19 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
       br.setAttribute("id", restAPI, 0);
       br.setAttribute("style", "clear: left;");
       
-      // <div class='div1'><a href="http://dsmr-api.local/api/v1/dev/time" target="_blank">/api/v1/dev/time</a></div>
       var div1 = document.createElement("DIV"); 
       div1.setAttribute("class", "div1", 0);
       var aTag = document.createElement('a');
       if (linkURL)
       {
-        aTag.setAttribute('href',"http://" +hostName +".local" +restAPI);
+        aTag.setAttribute('href',APIGW +restAPI);
         aTag.target = '_blank';
       }
       else
       {
         aTag.setAttribute('href',"#");
       }
-      aTag.innerText = restAPI;
+      aTag.innerText = "/api/"+restAPI;
       aTag.style.fontWeight = 'bold';
       div1.appendChild(aTag);
 
@@ -1332,9 +1337,10 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
       allChildren.removeChild(allChildren.firstChild);
     }
     
+    console.log("Now fill the DOM!");    
     for (let i=0; i<data.length; i++)
     {
-      //console.log("["+i+"] >>>["+data[i].recid+"]");
+      //console.log("["+i+"] >>>["+data[i].EEYY+"-"+data[i].MM+"]");
       var em = document.getElementById('editMonths');
 
       if( ( document.getElementById("em_R"+i)) == null )
@@ -1425,38 +1431,67 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
               }
               div1.appendChild(span2);
               em.appendChild(div1);
-      }
-      
+      } // document.getElementById("em_R"+i)) == null 
+
       //--- year
-      document.getElementById("em_YY_"+i).style.background = "white";
       document.getElementById("em_YY_"+i).value = data[i].EEYY;
       document.getElementById("em_YY_"+i).style.background = "white";
       //--- month
-      document.getElementById("em_MM_"+i).style.background = "white";
       document.getElementById("em_MM_"+i).value = data[i].MM;
       document.getElementById("em_MM_"+i).style.background = "white";
       
       if (type == "ED")
       {
         document.getElementById("em_in1_"+i).style.background = "white";
-        document.getElementById("em_in1_"+i).value = data[i].edt1.toFixed(3);
+        document.getElementById("em_in1_"+i).value = (data[i].edt1 *1).toFixed(3);
         document.getElementById("em_in2_"+i).style.background = "white";
-        document.getElementById("em_in2_"+i).value = data[i].edt2.toFixed(3);
+        document.getElementById("em_in2_"+i).value = (data[i].edt2 *1).toFixed(3);
       }
       else if (type == "ER")
       {
         document.getElementById("em_in1_"+i).style.background = "white";
-        document.getElementById("em_in1_"+i).value = data[i].ert1.toFixed(3);
+        document.getElementById("em_in1_"+i).value = (data[i].ert1 *1).toFixed(3);
         document.getElementById("em_in2_"+i).style.background = "white";
-        document.getElementById("em_in2_"+i).value = data[i].ert2.toFixed(3);
+        document.getElementById("em_in2_"+i).value = (data[i].ert2 *1).toFixed(3);
       }
       else if (type == "GD")
       {
         document.getElementById("em_in1_"+i).style.background = "white";
-        document.getElementById("em_in1_"+i).value = data[i].gdt.toFixed(3);
+        document.getElementById("em_in1_"+i).value = (data[i].gdt *1).toFixed(3);
       }
       
     } // for all elements in data
+    
+    console.log("Now sequence EEYY/MM values ..(data.length="+data.length+")");
+    //--- sequence EEYY and MM data
+    var changed = false;
+    for (let i=0; i<(data.length -1); i++)
+      {
+      //--- month
+      if (data[i+1].MM == 0)
+      {
+        data[i+1].MM    = data[i].MM -1;
+        changed = true;
+        if (data[i+1].MM < 1) {
+          data[i+1].MM   = 12;
+          if (data[i+1].EEYY == 2000) {
+            data[i+1].EEYY = data[i].EEYY -1;
+            document.getElementById("em_YY_"+(i+1)).value = data[i+1].EEYY;
+            //document.getElementById("em_YY_"+(i+1)).style.background = "lightgray";
+          }
+        }
+        document.getElementById("em_MM_"+(i+1)).value = data[i+1].MM;
+        //document.getElementById("em_MM_"+(i+1)).style.background = "lightgray";
+      }
+      if (data[i+1].EEYY == 2000) {
+        data[i+1].EEYY = data[i].EEYY;
+        changed = true;
+        document.getElementById("em_YY_"+(i+1)).value = data[i+1].EEYY;
+        //document.getElementById("em_YY_"+(i+1)).style.background = "lightgray";
+      }
+      if (changed) sendPostReading((i+1), data);
+
+    } // sequence EEYY and MM
 
   } // showMonths()
 
@@ -1470,11 +1505,6 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
       data[i].MM   = {};
       data[i].EEYY = parseInt("20"+data[i].recid.substring(0,2));
       data[i].MM   = parseInt(data[i].recid.substring(2,4));
-      //data[i].edt1 = data[i].edt1.toFixed(3);
-      //data[i].edt2 = data[i].edt2.toFixed(3);
-      //data[i].ert1 = data[i].ert1.toFixed(3);
-      //data[i].ert2 = data[i].ert2.toFixed(3);
-      //data[i].gdt  = data[i].gdt.toFixed(3);
     }
 
   } // expandDataSettings()
@@ -1612,36 +1642,42 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
     
     for (let i=0; i<(data.length -1); i++)
     {
+      //--- reset background for the years
       if (getBackGround("em_YY_"+i) == "red")
       {
         setBackGround("em_YY_"+i, "lightgray");
       }
+      //--- zelfde jaar, dan prevMM := (MM -1)
       if ( data[i].EEYY == data[i+1].EEYY )
       {
-        console.log("["+i+"].EEYY == ["+(i+1)+"].EEYY => ["+data[i].EEYY+"] prevMM["+(data[i].MM -1)+"]");
         prevMM = data[i].MM -1;
+        //console.log("["+i+"].EEYY == ["+(i+1)+"].EEYY => ["+data[i].EEYY+"] prevMM["+prevMM+"]");
       }
+      //--- jaar == volgend jaar + 1
       else if ( data[i].EEYY == (data[i+1].EEYY +1) )
       {
-        console.log("["+i+"].EEYY == ["+(i+1)+"].EEYY +1 => ["+data[i].EEYY+"]/["+data[i+1].EEYY+"] (12)");
         prevMM = 12;
+        //console.log("["+i+"].EEYY == ["+(i+1)+"].EEYY +1 => ["+data[i].EEYY+"]/["+data[i+1].EEYY+"] ("+prevMM+")");
       }
       else
       {
-        setBackGround("em_YY_"+i, "red");
+        setBackGround("em_YY_"+(i+1), "red");
         withErrors = true;
-        console.log("["+i+"].EEYY == ["+(i+1)+"].EEYY +1 => ["+data[i].EEYY+"]/["+data[i+1].EEYY+"] (?)");
         prevMM = data[i].MM -1;
+        //console.log("["+i+"].EEYY == ["+(i+1)+"].EEYY +1 => ["+data[i].EEYY+"]/["+data[i+1].EEYY+"] (error)");
       }
       
+      //--- reset background for the months
       if (getBackGround("em_MM_"+(i+1)) == "red")
       {
         setBackGround("em_MM_"+(i+1), "lightgray");
       }
+      //--- if next month != prevMM and this MM != next MM
       if (data[i+1].MM != prevMM && data[i].MM != data[i+1].MM)
       {
         setBackGround("em_MM_"+(i+1), "red");
         withErrors = true;
+        //console.log("(["+(i+1)+"].MM != ["+prevMM+"].prevMM) && => ["+data[i].MM+"]/["+data[i+1].MM+"] (error)");
       }
       else
       {
@@ -1722,7 +1758,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
     }
     if (row[i].MM < 10)
           sMM = "0"+(row[i].MM).toString();
-    else  sMM = (row[i].MM).toString();
+    else  sMM = ((row[i].MM * 1)).toString();
     let sDDHH = "0101";
     let recId = sYY + sMM + sDDHH;
     console.log("send["+i+"] => ["+recId+"]");
@@ -1750,7 +1786,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
   //============================================================================  
   function readGitHubVersion()
   {
-    if (GitHubVersion != "-") return;
+    if (GitHubVersion != 0) return;
     
     fetch("https://cdn.jsdelivr.net/gh/mrWheel/DSMRloggerAPI@master/data/DSMRversion.dat")
       .then(response => {
@@ -1762,21 +1798,24 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
         }
       })
       .then(text => {
-        GitHubVersion = text.replace(/(\r\n|\n|\r)/gm, "");;
-        console.log("parsed: GitHubVersion is ["+GitHubVersion+"]");
-        var tmpFW     = GitHubVersion;
-        GitHubVersion = tmpFW.substring(1, tmpFW.indexOf(' '));
+        var tmpFW     = text.replace(/(\r\n|\n|\r)/gm, "");;
+        console.log("parsed: GitHubVersion is ["+tmpFW+"]");
+        tmpX = tmpFW.substring(1, tmpFW.indexOf(' '));
+        tmpN = tmpX.split(".");
+        GitHubVersion = tmpN[0]*10000 + tmpN[1]*1;
         
-        console.log("GitHubVersion["+GitHubVersion+"], firmwareVersion["+firmwareVersion+"]");
-        if (firmwareVersion == "-" || firmwareVersion == GitHubVersion)
-              tmpFW = "";
-        else  firmwareVersion_dspl = "v" + firmwareVersion + " nieuwe versie beschikbaar (v"+GitHubVersion+")";
+        console.log("firmwareVersion["+firmwareVersion+"] >= GitHubVersion["+GitHubVersion+"]");
+        if (firmwareVersion == 0 || firmwareVersion >= GitHubVersion)
+              firmwareVersion_dspl = "";
+        else  firmwareVersion_dspl = tmpFW + " nieuwere versie ("+GitHubVersion_dspl+") beschikbaar!";
         document.getElementById('message').innerHTML = firmwareVersion_dspl;
+        console.log(firmwareVersion_dspl);
 
       })
       .catch(function(error) {
         console.log(error);
-        GitHubVersion   = "";
+        GitHubVersion_dspl   = "";
+        GitHubVersion        = 0;
       });     
 
   } // readGitHubVersion()

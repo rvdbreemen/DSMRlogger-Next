@@ -2,7 +2,7 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v1.1.1 (21-03-2020)"
+#define _FW_VERSION "v1.1.2 (27-03-2020)"
 /*
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -35,7 +35,7 @@
 */
 /******************** compiler options  ********************************************/
 #define USE_REQUEST_PIN           // define if it's a esp8266 with GPIO 12 connected to SM DTR pin
-#define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
+//#define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
 #define HAS_OLED_SSD1306          // define if a 0.96" OLED display is present
 //  #define HAS_OLED_SH1106           // define if a 1.3" OLED display is present
 //  #define USE_BELGIUM_PROTOCOL      // define if Slimme Meter is a Belgium Smart Meter
@@ -45,9 +45,13 @@
 //  #define HAS_NO_SLIMMEMETER        // define for testing only!
 #define USE_MQTT                  // define if you want to use MQTT (configure through webinterface)
 #define USE_MINDERGAS             // define if you want to update mindergas (configure through webinterface)
-#define USE_SYSLOGGER             // define if you want to use the sysLog library for debugging
+//  #define USE_SYSLOGGER             // define if you want to use the sysLog library for debugging
 //  #define SHOW_PASSWRDS             // well .. show the PSK key and MQTT password, what else?
 /******************** don't change anything below this comment **********************/
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
 
 #include "DSMRloggerAPI.h"
 
@@ -124,7 +128,7 @@ void openSysLog(bool empty)
   {
     sysLog.write("******************************************************************************************************");
   }
-  writeToSysLog("Last Reset Reason [%s]", ESP.getResetReason().c_str());
+  writeToSysLog("Last Reset Reason [%s]", ESP_RESET_REASON_CSTR());
   writeToSysLog("actTimestamp[%s], nrReboots[%u], Errors[%u]", actTimestamp
                                                              , nrReboots
                                                              , slotErrors);
@@ -152,7 +156,11 @@ void setup()
   //--- setup randomseed the right way
   //--- This is 8266 HWRNG used to seed the Random PRNG
   //--- Read more: https://config9.com/arduino/getting-a-truly-random-number-in-arduino/
-  randomSeed(RANDOM_REG32); 
+  #if defined(ESP8266) 
+    randomSeed(RANDOM_REG32); 
+  #elif defined(ESP32)
+    randomSeed(esp_random());
+  #endif
   snprintf(settingHostname, sizeof(settingHostname), "%s", _DEFAULT_HOSTNAME);
   Serial.printf("\n\nBooting....[%s]\r\n\r\n", String(_FW_VERSION).c_str());
 
@@ -174,7 +182,9 @@ void setup()
   }
 #endif
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
-  lastReset     = ESP.getResetReason();
+
+  
+  lastReset     = ESP_RESET_REASON_CSTR();
 
   startTelnet();
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
@@ -289,7 +299,7 @@ void setup()
 #endif  //USE_NTP_TIME                                      //USE_NTP
 //================ end NTP =========================================
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON_CSTR());
   DebugTln(cMsg);
 
   Serial.print("\nGebruik 'telnet ");
@@ -320,8 +330,6 @@ void setup()
     DSMRfileExist("/DSMRindex.js",    false);
     DSMRfileExist("/DSMRindex.css",   false);
     DSMRfileExist("/DSMRgraphics.js", false);
-    DSMRfileExist("/DSMReditor.html", false);
-    DSMRfileExist("/DSMReditor.js",   false);
   }
   if (!DSMRfileExist("/FSexplorer.html", true))
   {
@@ -449,8 +457,7 @@ void setup()
 
 
 //================ The final part of the Setup =====================
-
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON_CSTR());
   DebugTln(cMsg);
 
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
@@ -467,7 +474,9 @@ void setup()
 #if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
     DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
     DebugFlush();
+#if defined(ESP8266)
     Serial.swap();
+#endif
 #endif // is_esp12
 
   delay(100);
@@ -513,14 +522,16 @@ void doTaskTelegram()
 //===[ Do System tasks ]=============================================================
 void doSystemTasks()
 {
-  #ifndef HAS_NO_SLIMMEMETER
-    slimmeMeter.loop();
-  #endif
-  #ifdef USE_MQTT
-    MQTTclient.loop();
-  #endif
+#ifndef HAS_NO_SLIMMEMETER
+  slimmeMeter.loop();
+#endif
+#ifdef USE_MQTT
+  MQTTclient.loop();
+#endif
   httpServer.handleClient();
+#if defined(ESP8266)
   MDNS.update();
+#endif
   handleKeyInput();
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
   checkFlashButton();

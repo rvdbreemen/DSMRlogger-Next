@@ -85,11 +85,6 @@
  * DUE(timername) 
  *  returns false (0) if interval hasn't elapsed since last DUE-time
  *          true (current millis) if it has
- *  updates <timername>_last
- *  
- *  Usage example:
- *  
- *  DECLARE_TIMER(screenUpdate, 200) // update screen every 200 ms
  *  updates <timername>_due
  *  
  *  Usage example:
