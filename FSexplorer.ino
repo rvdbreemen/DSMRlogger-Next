@@ -200,11 +200,13 @@ void ESP32_APIlistFiles()
     } /* end for */
   } /* end for */
 
-  for (int8_t x = 0; x < fileNr; x++)  
+  DebugTln(F("\r\n"));
+  for(int f=0; f<fileNr; f++)
   {
-    DebugTln(dirMap[x].Name);
+    Debugf("%-25s %6d bytes \r\n", dirMap[f].Name, dirMap[f].Size);
+    yield();
   }
-
+  
   String temp = "[";
   for (int f=0; f < fileNr; f++)  
   {

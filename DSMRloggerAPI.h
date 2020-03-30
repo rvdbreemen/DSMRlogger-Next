@@ -11,6 +11,7 @@
 */  
 
 #if defined(ESP8266)
+  #define ESP_RESET()             ESP.reset()
   #define ESP_RESET_REASON_CSTR() ESP.getResetReason().c_str()
   #define ESP_GET_FREE_HEAP()     ESP.getFreeHeap() 
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxFreeBlockSize()
@@ -19,6 +20,7 @@
 //    #define LED_ON      LOW
 //    #define LED_OFF     HIGH
 #elif defined(ESP32)
+  #define ESP_RESET()             ESP.restart()
   #define ESP_RESET_REASON_CSTR() esp_reset_reason()
   #define ESP_GET_FREE_HEAP()     ESP.getFreeHeap()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()

@@ -207,7 +207,9 @@ void readSettings(bool show)
 
   //--- this will take some time to settle in
   //--- probably need a reboot before that to happen :-(
+#if defined(ESP8266) 
   MDNS.setHostname(settingHostname);    // start advertising with new(?) settingHostname
+#endif
 
   DebugTln(F(" .. done\r"));
 

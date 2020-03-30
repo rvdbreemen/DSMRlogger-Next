@@ -477,18 +477,21 @@ uint16_t timestampToMonthSlot(const char * TS, int8_t len)
 //===========================================================================================
 int32_t freeSpace() 
 {
-  int32_t space;
-  
-  SPIFFS.info(SPIFFSinfo);
-
-  space = (int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes);
-
-  return space;
+  #if defined(ESP8266)
+    FSInfo SPIFFSinfo;
+    SPIFFS.info(SPIFFSinfo);  
+    Debugln((int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes)) + " bytes ruimte in SPIFFS");
+    return (int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes);
+  #elif defined(ESP32)
+    return (SPIFFS.totalBytes() - SPIFFS.usedBytes());
+  #endif
   
 } // freeSpace()
 
 //===========================================================================================
-void listSPIFFS() 
+#if defined(ESP8266)
+
+void ESP8266_listFiles() 
 {
    typedef struct _fileMeta {
     char    Name[20];     
@@ -540,8 +543,93 @@ void listSPIFFS()
   Debugf("      SPIFFS page Size [%6d]bytes\r\n", SPIFFSinfo.pageSize);
   Debugf(" SPIFFS max.Open Files [%6d]\r\n\r\n", SPIFFSinfo.maxOpenFiles);
 
+}// ESP8266_listFiles()
 
-} // listSPIFFS()
+#elif defined(ESP32)
+
+void ESP32_listFiles()
+{ 
+   typedef struct _fileMeta {
+    char    Name[20];     
+    int32_t Size;
+  } fileMeta;
+
+  _fileMeta dirMap[30];
+  int fileNr = 0;
+  
+  File root = SPIFFS.open("/");         // List files on SPIFFS
+  if(!root){
+      DebugTln("- failed to open directory");
+      return;
+  }
+  if(!root.isDirectory()){
+      DebugTln(" - not a directory");
+      return;
+  }
+
+  File file = root.openNextFile();
+  while(file){
+    if(file.isDirectory()){
+        DebugT("  DIR : ");
+        DebugTln(file.name());
+        // directory is skipped
+    } else {
+      DebugT("  FILE: ");
+      DebugT(file.name());
+      DebugT("\tSIZE: ");
+      DebugTln(file.size());
+      dirMap[fileNr].Name[0] = '\0';
+      strncat(dirMap[fileNr].Name, file.name(), 29); // first copy file.name() to dirMap
+      memmove(dirMap[fileNr].Name, dirMap[fileNr].Name+1, strlen(dirMap[fileNr].Name)); // remove leading '/'
+      dirMap[fileNr].Size = file.size();
+    }
+    file = root.openNextFile();
+    fileNr++;
+  }
+
+  // -- bubble sort dirMap op .Name--
+  for (int8_t y = 0; y < fileNr; y++) {
+    yield();
+    for (int8_t x = y + 1; x < fileNr; x++)  {
+      //DebugTf("y[%d], x[%d] => seq[x][%s] ", y, x, dirMap[x].Name);
+      if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
+      {
+        fileMeta temp = dirMap[y];
+        dirMap[y]     = dirMap[x];
+        dirMap[x]     = temp;
+      } /* end if */
+      //Debugln();
+    } /* end for */
+  } /* end for */
+
+  DebugTln(F("\r\n"));
+  for(int f=0; f<fileNr; f++)
+  {
+    Debugf("%-25s %6d bytes \r\n", dirMap[f].Name, dirMap[f].Size);
+    yield();
+  }
+
+  Debugln(F("\r"));
+  Debugf("Available SPIFFS space [%6d]kB\r\n", (freeSpace() / 1024));
+  Debugf("           SPIFFS Size [%6d]kB\r\n", (SPIFFS.totalBytes() / 1024));
+//  Debugf("     SPIFFS block Size [%6d]bytes\r\n", SPIFFS.blockSize());
+//  Debugf("      SPIFFS page Size [%6d]bytes\r\n", SPIFFS.pageSize());
+//  Debugf(" SPIFFS max.Open Files [%6d]\r\n\r\n", SPIFFS.maxOpenFiles());
+  
+}// ESP32_listFiles()
+#endif
+
+
+void listFiles()             // Senden aller Daten an den Client
+{   
+#if defined(ESP8266)
+  ESP8266_listFiles();
+#elif defined(ESP32)
+  ESP32_listFiles();
+#endif
+} // APIlistFiles()
+
+
 
 
 //===========================================================================================
