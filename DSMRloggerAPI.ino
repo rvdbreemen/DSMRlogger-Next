@@ -36,7 +36,7 @@
 /******************** compiler options  ********************************************/
 #define USE_REQUEST_PIN           // define if it's a esp8266 with GPIO 12 connected to SM DTR pin
 //#define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
-#define HAS_OLED_SSD1306          // define if a 0.96" OLED display is present
+//#define HAS_OLED_SSD1306          // define if a 0.96" OLED display is present
 //  #define HAS_OLED_SH1106           // define if a 1.3" OLED display is present
 //  #define USE_BELGIUM_PROTOCOL      // define if Slimme Meter is a Belgium Smart Meter
 //  #define USE_PRE40_PROTOCOL        // define if Slimme Meter is pre DSMR 4.0 (2.2 .. 3.0)
@@ -178,15 +178,19 @@ void setup()
   for(int I=0; I<8; I++) 
   {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    Serial.printf("%x\n", I);
     delay(500);
   }
 #endif
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
+  Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
 
-  
   lastReset     = ESP_RESET_REASON_CSTR();
+  Serial.printf("\n\nReset reason....[%s]\r\n", lastReset);
 
+  Serial.println("Starting Telnet");
   startTelnet();
+  Serial.println("Debug open for business on port 23!");
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
   oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
   oled_Print_Msg(3, "telnet (poort 23)", 2500);
