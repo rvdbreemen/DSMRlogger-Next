@@ -38,7 +38,10 @@ void displayMonthsHist(bool Telnet=true)
 void displayBoardInfo() 
 {
   Debugln(F("\r\n==================================================================\r"));
-  Debug(F(" \r\n            (c)2019 by [Willem Aandewiel"));
+  Debug(F(" \r\n            (c)2020 by Willem Aandewiel"));
+#if defined(ESP32)
+  Debug(F(" \r\n            (c)2020 ESP32 port by Robert van den Breemen"));
+#endif
   Debug(F("]\r\n      Firmware Version ["));  Debug( _FW_VERSION );
   Debug(F("]\r\n              Compiled ["));  Debug( __DATE__ ); 
                                                Debug( "  " );
@@ -118,15 +121,17 @@ void displayBoardInfo()
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
   Debug(F("]\r\n         Flash Chip ID ["));  Debug( cMsg );
+  SPIFFS.info(SPIFFSinfo);
 #endif
   
-  SPIFFS.info(SPIFFSinfo);
 
   Debug(F("]\r\n  Flash Chip Size (kB) ["));  Debug( ESP.getFlashChipSize() / 1024 );
 #if defined(ESP8266) 
   Debug(F("]\r\n   Chip Real Size (kB) ["));  Debug( ESP.getFlashChipRealSize() / 1024 );
-#endif
   Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFSinfo.totalBytes / 1024 );
+#elif defined(ESP32)
+  Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFS.totalBytes() / 1024 );
+#endif
 
   Debug(F("]\r\n      Flash Chip Speed ["));  Debug( ESP.getFlashChipSpeed() / 1000 / 1000 );
   FlashMode_t ideMode = ESP.getFlashChipMode();

@@ -39,6 +39,7 @@ const char Helper[] = R"(
 const char Header[] = "HTTP/1.1 303 OK\r\nLocation:FSexplorer.html\r\nCache-Control: no-cache\r\n";
 
 //=====================================================================================
+
 void setupFSexplorer()    // Funktionsaufruf "spiffs();" muss im Setup eingebunden werden
 {    
   SPIFFS.begin();
@@ -79,8 +80,11 @@ void setupFSexplorer()    // Funktionsaufruf "spiffs();" muss im Setup eingebund
 } // setupFSexplorer()
 
 
+
 //=====================================================================================
-void APIlistFiles()             // Senden aller Daten an den Client
+#if defined(ESP8266)
+
+void ESP8266_APIlistFiles()
 {   
   FSInfo SPIFFSinfo;
 
@@ -134,6 +138,96 @@ void APIlistFiles()             // Senden aller Daten an den Client
           (SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05)) + R"("}])";               // Berechnet den freien Speicherplatz + 5% Sicherheitsaufschlag
   httpServer.send(200, "application/json", temp);
   
+}// ESP8266_APIlistFiles()
+
+#elif defined(ESP32)
+
+void ESP32_APIlistFiles()
+{   
+//  FSInfo SPIFFSinfo;
+
+  typedef struct _fileMeta {
+    char    Name[30];     
+    int32_t Size;
+  } fileMeta;
+
+  _fileMeta dirMap[30];
+  int fileNr = 0;
+  
+  File root = SPIFFS.open("/");         // List files on SPIFFS
+  if(!root){
+      DebugTln("- failed to open directory");
+      return;
+  }
+  if(!root.isDirectory()){
+      DebugTln(" - not a directory");
+      return;
+  }
+
+  File file = root.openNextFile();
+  while(file){
+    if(file.isDirectory()){
+        DebugT("  DIR : ");
+        DebugTln(file.name());
+        // directory is skipped
+    } else {
+      DebugT("  FILE: ");
+      DebugT(file.name());
+      DebugT("\tSIZE: ");
+      DebugTln(file.size());
+      dirMap[fileNr].Name[0] = '\0';
+      strncat(dirMap[fileNr].Name, file.name(), 29); // first copy file.name() to dirMap
+      memmove(dirMap[fileNr].Name, dirMap[fileNr].Name+1, strlen(dirMap[fileNr].Name)); // remove leading '/'
+      dirMap[fileNr].Size = file.size();
+    }
+    file = root.openNextFile();
+    fileNr++;
+  }
+
+  // -- bubble sort dirMap op .Name--
+  for (int8_t y = 0; y < fileNr; y++) {
+    yield();
+    for (int8_t x = y + 1; x < fileNr; x++)  {
+      //DebugTf("y[%d], x[%d] => seq[y][%s] / seq[x][%s] ", y, x, dirMap[y].Name, dirMap[x].Name);
+      if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
+      {
+        //Debug(" !switch!");
+        fileMeta temp = dirMap[y];
+        dirMap[y] = dirMap[x];
+        dirMap[x] = temp;
+      } /* end if */
+      //Debugln();
+    } /* end for */
+  } /* end for */
+
+  for (int8_t x = 0; x < fileNr; x++)  
+  {
+    DebugTln(dirMap[x].Name);
+  }
+
+  String temp = "[";
+  for (int f=0; f < fileNr; f++)  
+  {
+    if (temp != "[") temp += ",";
+    temp += R"({"name":")" + String(dirMap[f].Name) + R"(","size":")" + formatBytes(dirMap[f].Size) + R"("})";
+  }
+  //SPIFFS.info(SPIFFSinfo);
+  temp += R"(,{"usedBytes":")" + formatBytes(SPIFFS.usedBytes() * 1.05) + R"(",)" +       // Berechnet den verwendeten Speicherplatz + 5% Sicherheitsaufschlag
+          R"("totalBytes":")" + formatBytes(SPIFFS.totalBytes()) + R"(","freeBytes":")" + // Zeigt die Größe des Speichers
+          (SPIFFS.totalBytes() - (SPIFFS.usedBytes() * 1.05)) + R"("}])";               // Berechnet den freien Speicherplatz + 5% Sicherheitsaufschlag
+  httpServer.send(200, "application/json", temp);
+  
+}// ESP32_APIlistFiles()
+#endif
+
+
+void APIlistFiles()             // Senden aller Daten an den Client
+{   
+#if defined(ESP8266)
+  ESP8266_APIlistFiles();
+#elif defined(ESP32)
+  ESP32_APIlistFiles();
+#endif
 } // APIlistFiles()
 
 
@@ -209,6 +303,8 @@ const String &contentType(String& filename)
   else if (filename.endsWith(".css")) filename = "text/css";
   else if (filename.endsWith(".js")) filename = "application/javascript";
   else if (filename.endsWith(".json")) filename = "application/json";
+  else if (filename.endsWith(".htm")) filename = "text/html";
+  else if (filename.endsWith(".html")) filename = "text/html";
   else if (filename.endsWith(".png")) filename = "image/png";
   else if (filename.endsWith(".gif")) filename = "image/gif";
   else if (filename.endsWith(".jpg")) filename = "image/jpeg";
@@ -216,20 +312,23 @@ const String &contentType(String& filename)
   else if (filename.endsWith(".xml")) filename = "text/xml";
   else if (filename.endsWith(".pdf")) filename = "application/x-pdf";
   else if (filename.endsWith(".zip")) filename = "application/x-zip";
-  else if (filename.endsWith(".gz")) filename = "application/x-gzip";
+  else if (filename.endsWith(".gz")) filename = "application/x-gzip";\
   else filename = "text/plain";
   return filename;
-  
 } // &contentType()
+
 
 //=====================================================================================
 bool freeSpace(uint16_t const& printsize) 
 {    
-  FSInfo SPIFFSinfo;
-  SPIFFS.info(SPIFFSinfo);
-  Debugln(formatBytes(SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05)) + " im Spiffs frei");
-  return (SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05) > printsize) ? true : false;
-  
+  #if defined(ESP8266)
+    FSInfo SPIFFSinfo;
+    SPIFFS.info(SPIFFSinfo);
+    Debugln(formatBytes(SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05)) + " bytes ruimte in SPIFFS");
+    return (SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05) > printsize) ? true : false;
+  #elif defined(ESP32)
+    return (SPIFFS.totalBytes() - (SPIFFS.usedBytes()* 1.05) > printsize) ? true : false;
+  #endif
 } // freeSpace()
 
 

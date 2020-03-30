@@ -354,41 +354,53 @@ void sendDeviceInfo()
   sendNestedJsonObj("hostname", settingHostname);
   sendNestedJsonObj("ipaddress", WiFi.localIP().toString().c_str());
   sendNestedJsonObj("indexfile", settingIndexPage);
-  sendNestedJsonObj("freeheap", ESP.getFreeHeap(), "bytes");
-  sendNestedJsonObj("maxfreeblock", ESP.getMaxFreeBlockSize(), "bytes");
-  sendNestedJsonObj("chipid", String( ESP.getChipId(), HEX ).c_str());
+
+
+
+  
+  sendNestedJsonObj("freeheap", ESP_GET_FREE_HEAP(), "bytes");
+  sendNestedJsonObj("maxfreeblock", ESP_GET_FREE_BLOCK(), "bytes");
+  sendNestedJsonObj("chipid", String( ESP_GET_CHIPID(), HEX ).c_str());
+#if defined(ESP8266) 
   sendNestedJsonObj("coreversion", String( ESP.getCoreVersion() ).c_str() );
+#elif defined(ESP32)
+  sendNestedJsonObj("coreversion", String( ESP.getChipRevision() ).c_str() );
+#endif
   sendNestedJsonObj("sdkversion", String( ESP.getSdkVersion() ).c_str());
   sendNestedJsonObj("cpufreq", ESP.getCpuFreqMHz(), "MHz");
   sendNestedJsonObj("sketchsize", formatFloat( (ESP.getSketchSize() / 1024.0), 3), "kB");
   sendNestedJsonObj("freesketchspace", formatFloat( (ESP.getFreeSketchSpace() / 1024.0), 3), "kB");
 
+#if defined(ESP8266) 
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
   sendNestedJsonObj("flashchipid", cMsg);  // flashChipId
+#endif
   sendNestedJsonObj("flashchipsize", formatFloat((ESP.getFlashChipSize() / 1024.0 / 1024.0), 3), "MB");
-  sendNestedJsonObj("flashchiprealsize", formatFloat((ESP.getFlashChipRealSize() / 1024.0 / 1024.0), 3), "MB");
 
+#if defined(ESP8266) 
+  sendNestedJsonObj("flashchiprealsize", formatFloat((ESP.getFlashChipRealSize() / 1024.0 / 1024.0), 3), "MB");
   SPIFFS.info(SPIFFSinfo);
   sendNestedJsonObj("spiffssize", formatFloat( (SPIFFSinfo.totalBytes / (1024.0 * 1024.0)), 0), "MB");
+#elif defined(ESP32)
+  sendNestedJsonObj("spiffssize", formatFloat( (SPIFFS.totalBytes() / (1024.0 * 1024.0)), 0), "MB");
+#endif
 
   sendNestedJsonObj("flashchipspeed", formatFloat((ESP.getFlashChipSpeed() / 1000.0 / 1000.0), 0), "MHz");
-
   FlashMode_t ideMode = ESP.getFlashChipMode();
   sendNestedJsonObj("flashchipmode", flashMode[ideMode]);
   sendNestedJsonObj("boardtype",
-#ifdef ARDUINO_ESP8266_NODEMCU
+#if defined(ARDUINO_ESP8266_NODEMCU)
      "ESP8266_NODEMCU"
-#endif
-#ifdef ARDUINO_ESP8266_GENERIC
+#elif defined(ARDUINO_ESP8266_GENERIC)
      "ESP8266_GENERIC"
-#endif
-#ifdef ESP8266_ESP01
+#elif defined(ESP8266_ESP01)
      "ESP8266_ESP01"
-#endif
-#ifdef ESP8266_ESP12
+#elif defined(ESP8266_ESP12)
      "ESP8266_ESP12"
+#elif defined(ESP32)
+     "ESP32"
 #endif
   );
   sendNestedJsonObj("compileoptions", compileOptions);

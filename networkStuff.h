@@ -9,11 +9,11 @@
 ***************************************************************************      
 */
 
-
 #if defined(ESP8266)
     // ESP8266 specific code here
 
     #include <ESP8266WiFi.h>        //ESP8266 Core WiFi Library         
+    #include <WiFiClient.h>
     #include <ESP8266WebServer.h>   // Version 1.0.0 - part of ESP8266 Core https://github.com/esp8266/Arduino
     #include <ESP8266mDNS.h>        // part of ESP8266 Core https://github.com/esp8266/Arduino
     #include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
@@ -34,13 +34,11 @@
     #endif
 
 #elif defined(ESP32) || defined(ARDUINO_ARCH_ESP32)
-    
-    //#include <esp_wifi.h>
     #include <WiFi.h>
     #include <WiFiClient.h>
-    #include <WiFi.h>      //ESP32 Core WiFi Library    
-    #include <WebServer.h> // part of ESP32 Core 
-    #include <ESPmDNS.h>   // part of ESP32 Core 
+    #include <WebServer.h>
+    #include <ESPmDNS.h>
+    #include <SPIFFS.h>
 
     #include <WiFiUdp.h>            // part of ESP32 Core
     #ifdef USE_UPDATE_SERVER
@@ -51,7 +49,6 @@
     #endif
     
     #include <ESP_WiFiManager.h>    // https://github.com/khoih-prog/ESP_WiFiManager   
-    #include <FS.h>                 // part of ESP32 Core
     
     WebServer        httpServer (80);
     #ifdef USE_UPDATE_SERVER
@@ -61,7 +58,11 @@
       #error unexpected / unsupported architecture, make sure to compile for ESP32 or ESP8266
 #endif
 
-static      FSInfo SPIFFSinfo;
+  #if defined(ESP8266)
+    static      FSInfo SPIFFSinfo;
+  #elif defined(ESP32)
+  #endif
+
 bool        SPIFFSmounted = false ; 
 bool        isConnected = false;
 
