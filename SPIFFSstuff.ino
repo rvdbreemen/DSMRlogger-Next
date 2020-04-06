@@ -51,8 +51,8 @@ void writeLastStatus()
 {
   if (ESP.getFreeHeap() < 8500) // to prevent firmware from crashing!
   {
-    DebugTf("Bailout due to low heap (%d bytes)\r\n", ESP_GET_FREE_HEAP());
-    writeToSysLog("Bailout low heap (%d bytes)", ESP_GET_FREE_HEAP());
+    DebugTf("Bailout due to low heap (%d bytes)\r\n", ESP.getFreeHeap());
+    writeToSysLog("Bailout low heap (%d bytes)", ESP.getFreeHeap());
     return;
   }
   char buffer[50] = "";

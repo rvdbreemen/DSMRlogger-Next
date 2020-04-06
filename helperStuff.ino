@@ -4,6 +4,7 @@
 **  Version  : v1.1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
+**  Some functions added by Robert van den Breemen
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      

@@ -12,8 +12,7 @@
 
 #if defined(ESP8266)
   #define ESP_RESET()             ESP.reset()
-  #define ESP_RESET_REASON_CSTR() ESP.getResetReason().c_str()
-  #define ESP_GET_FREE_HEAP()     ESP.getFreeHeap() 
+  #define ESP_RESET_REASON()      ESP.getResetReason().c_str()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxFreeBlockSize()
   #define ESP_GET_CHIPID()        ESP.getChipId()
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "Unknown" };
@@ -21,10 +20,10 @@
 //    #define LED_OFF     HIGH
 #elif defined(ESP32)
   #define ESP_RESET()             ESP.restart()
-  #define ESP_RESET_REASON_CSTR() esp_reset_reason()
-  #define ESP_GET_FREE_HEAP()     ESP.getFreeHeap()
+  #define ESP_RESET_REASON()      ((String)esp_reset_reason()).c_str()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()
   #define ESP_GET_CHIPID()        ((uint32_t)ESP.getEfuseMac()) //The chipID is essentially its MAC address (length: 6 bytes) 
+
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
 //    #define LED_ON      HIGH
 //    #define LED_OFF     LOW
@@ -42,7 +41,7 @@
   ESPSL sysLog;                   // Create instance of the ESPSL object
   #define writeToSysLog(...) ({ sysLog.writeDbg( sysLog.buildD("[%02d:%02d:%02d][%7d][%-12.12s] " \
                                                                , hour(), minute(), second()     \
-                                                               , ESP_GET_FREE_HEAP()            \
+                                                               , ESP.getFreeHeap()            \
                                                                , __FUNCTION__)                  \
                                                                ,__VA_ARGS__); })
 #else

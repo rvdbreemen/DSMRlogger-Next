@@ -42,21 +42,22 @@ void processAPI()
   String words[10];
 
   char *URI = (char*)httpServer.uri().c_str();
-
+  DebugTf("URI [%s]\r\n", URI);
+  
   if (httpServer.method() == HTTP_GET)
         DebugTf("incoming URI from[%s] is [%s] method[GET] \r\n"
                                   , httpServer.client().remoteIP().toString().c_str()
-                                        , URI); 
+                                        , &URI); 
   else  DebugTf("incoming URI from[%s] is [%s] method[PUT] \r\n" 
                                   , httpServer.client().remoteIP().toString().c_str()
-                                        , URI); 
+                                        , &URI); 
                                         
   if (ESP.getFreeHeap() < 9000) // to prevent firmware from crashing!
   {
     DebugTf("==> Bailout due to low heap (%d bytes))\r\n", ESP.getFreeHeap() );
     writeToSysLog("from[%s][%s] Bailout low heap (%d bytes)"
                                   , httpServer.client().remoteIP().toString().c_str()
-                                  , URI
+                                  , &URI
                                   , ESP.getFreeHeap() );
     httpServer.send(500, "text/plain", "500: internal server error (low heap)\r\n"); 
     return;
@@ -358,7 +359,7 @@ void sendDeviceInfo()
 
 
   
-  sendNestedJsonObj("freeheap", ESP_GET_FREE_HEAP(), "bytes");
+  sendNestedJsonObj("freeheap", ESP.getFreeHeap(), "bytes");
   sendNestedJsonObj("maxfreeblock", ESP_GET_FREE_BLOCK(), "bytes");
   sendNestedJsonObj("chipid", String( ESP_GET_CHIPID(), HEX ).c_str());
 #if defined(ESP8266) 

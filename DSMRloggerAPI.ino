@@ -128,7 +128,7 @@ void openSysLog(bool empty)
   {
     sysLog.write("******************************************************************************************************");
   }
-  writeToSysLog("Last Reset Reason [%s]", ESP_RESET_REASON_CSTR());
+  writeToSysLog("Last Reset Reason [%s]", ESP_RESET_REASON());
   writeToSysLog("actTimestamp[%s], nrReboots[%u], Errors[%u]", actTimestamp
                                                              , nrReboots
                                                              , slotErrors);
@@ -185,48 +185,8 @@ void setup()
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
   Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
 
-  lastReset     = ESP_RESET_REASON_CSTR();
+  lastReset     = ESP_RESET_REASON();
   Serial.printf("\n\nReset reason....[%s]\r\n", lastReset);
-
-  Serial.println("Starting Telnet");
-  startTelnet();
-  Serial.println("Debug open for business on port 23!");
-#if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
-  oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
-  oled_Print_Msg(3, "telnet (poort 23)", 2500);
-#endif  // has_oled_ssd1306
-
-//================ SPIFFS ===========================================
-  if (SPIFFS.begin()) 
-  {
-    DebugTln(F("SPIFFS Mount succesfull\r"));
-    SPIFFSmounted = true;
-#if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
-    oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
-    oled_Print_Msg(3, "SPIFFS mounted", 1500);
-#endif  // has_oled_ssd1306
-    
-  } else { 
-    DebugTln(F("SPIFFS Mount failed\r"));   // Serious problem with SPIFFS 
-    SPIFFSmounted = false;
-#if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
-    oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
-    oled_Print_Msg(3, "SPIFFS FAILED!", 2000);
-#endif  // has_oled_ssd1306
-  }
-
-//------ read status file for last Timestamp --------------------
-  strcpy(actTimestamp, "040302010101X");
-  //==========================================================//
-  // writeLastStatus();  // only for firsttime initialization //
-  //==========================================================//
-  readLastStatus(); // place it in actTimestamp
-  // set the time to actTimestamp!
-  actT = epoch(actTimestamp, strlen(actTimestamp), true);
-  DebugTf("===> actTimestamp[%s]-> nrReboots[%u] - Errors[%u]\r\n\n", actTimestamp
-                                                                    , nrReboots++
-                                                                    , slotErrors);                                                                    
-  readSettings(true);
 
 //=============start Networkstuff==================================
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
@@ -237,6 +197,8 @@ void setup()
 
   digitalWrite(LED_BUILTIN, LED_ON);
   startWiFi(settingHostname, 240);  // timeout 4 minuten
+  Serial.println("Wifi started..." + WiFi.SSID() + " IP: " + WiFi.localIP());
+  delay(3000);
 
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
   oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
@@ -273,14 +235,59 @@ void setup()
   oled_Print_Msg(3, "mDNS gestart", 1500);
 #endif  // has_oled_ssd1306
 
+  Serial.println("Starting Telnet");
+  startTelnet();
+  Serial.println("Debug open for business on port 23!");
+
 //=============end Networkstuff======================================
+
+
+#if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
+  oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
+  oled_Print_Msg(3, "telnet (poort 23)", 2500);
+#endif  // has_oled_ssd1306
+
+//================ SPIFFS ===========================================
+  if (SPIFFS.begin()) 
+  {
+    DebugTln(F("SPIFFS Mount succesfull\r"));
+    SPIFFSmounted = true;
+#if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
+    oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
+    oled_Print_Msg(3, "SPIFFS mounted", 1500);
+#endif  // has_oled_ssd1306
+    
+  } else { 
+    DebugTln(F("SPIFFS Mount failed\r"));   // Serious problem with SPIFFS 
+    SPIFFSmounted = false;
+#if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
+    oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
+    oled_Print_Msg(3, "SPIFFS FAILED!", 2000);
+#endif  // has_oled_ssd1306
+  }
+
+//------ read status file for last Timestamp --------------------
+  strcpy(actTimestamp, "040302010101X");
+  //==========================================================//
+  // writeLastStatus();  // only for firsttime initialization //
+  //==========================================================//
+  readLastStatus(); // place it in actTimestamp
+  // set the time to actTimestamp!
+  actT = epoch(actTimestamp, strlen(actTimestamp), true);
+  DebugTf("===> actTimestamp[%s]-> nrReboots[%u] - Errors[%u]\r\n\n", actTimestamp
+                                                                    , nrReboots++
+                                                                    , slotErrors);                                                                    
+
+  DebugTln(F("Read settings: Start"));
+  readSettings(true);
+  DebugTln(F("Read settings: Done"));   
 
 #if defined(USE_NTP_TIME)                                   //USE_NTP
 //================ startNTP =========================================
   #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )  
     oled_Print_Msg(3, "setup NTP server", 100);             //USE_NTP
   #endif  // has_oled_ssd1306                               //USE_NTP
-                                                            //USE_NTP
+  DebugTln(F("setup NTP server\r\n\r"));   //USE_NTP
   if (!startNTP())                                          //USE_NTP
   {                                                         //USE_NTP
     DebugTln(F("ERROR!!! No NTP server reached!\r\n\r"));   //USE_NTP
@@ -303,7 +310,7 @@ void setup()
 #endif  //USE_NTP_TIME                                      //USE_NTP
 //================ end NTP =========================================
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON_CSTR());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON());
   DebugTln(cMsg);
 
   Serial.print("\nGebruik 'telnet ");
@@ -461,8 +468,6 @@ void setup()
 
 
 //================ The final part of the Setup =====================
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON_CSTR());
-  DebugTln(cMsg);
 
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
     oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
