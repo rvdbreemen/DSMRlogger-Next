@@ -39,25 +39,28 @@ bool onlyIfPresent  = false;
 void processAPI() 
 {
   char fName[40] = "";
+  char URI[40] = "";
   String words[10];
 
-  char *URI = (char*)httpServer.uri().c_str();
+  //char *URI = (char*)httpServer.uri().c_str();
+  //char *URI = String(httpServer.uri()).c_str());
+  strncpy ( URI, httpServer.uri().c_str(), sizeof(URI));
   DebugTf("URI [%s]\r\n", URI);
   
   if (httpServer.method() == HTTP_GET)
-        DebugTf("incoming URI from[%s] is [%s] method[GET] \r\n"
+        DebugTf("incoming URI from [%s] is [%s] method[GET] \r\n"
                                   , httpServer.client().remoteIP().toString().c_str()
-                                        , &URI); 
-  else  DebugTf("incoming URI from[%s] is [%s] method[PUT] \r\n" 
+                                        , URI); 
+  else  DebugTf("incoming URI from [%s] is [%s] method[PUT] \r\n" 
                                   , httpServer.client().remoteIP().toString().c_str()
-                                        , &URI); 
+                                        , URI); 
                                         
   if (ESP.getFreeHeap() < 9000) // to prevent firmware from crashing!
   {
     DebugTf("==> Bailout due to low heap (%d bytes))\r\n", ESP.getFreeHeap() );
     writeToSysLog("from[%s][%s] Bailout low heap (%d bytes)"
                                   , httpServer.client().remoteIP().toString().c_str()
-                                  , &URI
+                                  , URI
                                   , ESP.getFreeHeap() );
     httpServer.send(500, "text/plain", "500: internal server error (low heap)\r\n"); 
     return;
