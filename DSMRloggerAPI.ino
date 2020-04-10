@@ -197,7 +197,7 @@ void setup()
 
   digitalWrite(LED_BUILTIN, LED_ON);
   startWiFi(settingHostname, 240);  // timeout 4 minuten
-  Serial.println("Wifi started..." + WiFi.SSID() + " IP: " + WiFi.localIP());
+  Serial.println("Wifi started..." + WiFi.SSID() + " IP: " + WiFi.localIP().toString().c_str());
   delay(3000);
 
 #if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
@@ -588,7 +588,7 @@ void loop ()
 #endif
 
   //--- if connection lost, try to reconnect to WiFi
-  if ( DUE(reconnectWiFi) && (WiFi.status() != WL_CONNECTED) )
+  if ((WiFi.status() != WL_CONNECTED) && DUE(reconnectWiFi))
   {
     writeToSysLog("Restart wifi with [%s]...", settingHostname);
     startWiFi(settingHostname, 10);

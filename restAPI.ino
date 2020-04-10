@@ -42,9 +42,8 @@ void processAPI()
   char URI[40] = "";
   String words[10];
 
-  //char *URI = (char*)httpServer.uri().c_str();
-  //char *URI = String(httpServer.uri()).c_str());
-  strncpy ( URI, httpServer.uri().c_str(), sizeof(URI));
+  //char *URI = (char*)httpServer.uri().c_str(); 
+  strncpy ( URI, httpServer.uri().c_str(), sizeof(URI)); /
   DebugTf("URI [%s]\r\n", URI);
   
   if (httpServer.method() == HTTP_GET)
