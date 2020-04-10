@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : DSMRloggerAPI.h - definitions for DSMRloggerAPI
-**  Version  : v1.1.0
+**  Version  : v1.2.1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **  Modified by Robert van den Breemen
@@ -91,13 +91,7 @@
 enum    { PERIOD_UNKNOWN, HOURS, DAYS, MONTHS, YEARS };
 
 #include "Debug.h"
-uint16_t  settingSleepTime; // needs to be declared before the oledStuff.h include
-#if defined( HAS_OLED_SSD1306 ) && defined( HAS_OLED_SH1106 )
-  #error Only one OLED display can be defined
-#endif
-#if defined( HAS_OLED_SSD1306 ) || defined( HAS_OLED_SH1106 )
-  #include "oledStuff.h"
-#endif
+#include "oledStuff.h"
 #include "networkStuff.h"
 
 /**
@@ -246,6 +240,7 @@ IPAddress ipDNS, ipGateWay, ipSubnet;
 float     settingEDT1, settingEDT2, settingERT1, settingERT2, settingGDT;
 float     settingENBK, settingGNBK;
 uint8_t   settingTelegramInterval;
+uint8_t   settingSmHasFaseInfo = 1;
 char      settingHostname[30];
 char      settingIndexPage[50];
 char      settingMQTTbroker[101], settingMQTTuser[40], settingMQTTpasswd[30], settingMQTTtopTopic[21];

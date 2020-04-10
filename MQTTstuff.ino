@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : MQTTstuff, part of DSMRloggerAPI
-**  Version  : v1.1.2
+**  Version  : v1.2.1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -221,7 +221,7 @@ void sendMQTTData()
 
   if (settingMQTTinterval == 0) return;
 
-  if (ESP.getFreeHeap()  < 9000) // to prevent firmware from crashing!
+  if (ESP.getFreeHeap() < 9000) // to prevent firmware from crashing!
   {
     DebugTf("==> Bailout due to low heap (%d bytes)\r\n",   ESP.getFreeHeap() );
     writeToSysLog("==> Bailout low heap (%d bytes)", ESP.getFreeHeap() );

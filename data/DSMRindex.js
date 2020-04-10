@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : DSMRindex.js, part of DSMRfirmwareAPI
-**  Version  : v1.1.2
+**  Version  : v1.2.2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -24,6 +24,7 @@
   var GitHubVersion_dspl    = "-";
   var firmwareVersion       = 0;
   var firmwareVersion_dspl  = "-";
+  var newVersionMsg         = "";
   
   var tlgrmInterval         = 10;
   var ed_tariff1            = 0;
@@ -36,80 +37,10 @@
   var hostName            =  "-";
   
   var data       = [];
-  
-  var longFieldsMain = [ "identification","p1_version","timestamp","equipment_id"
-                    ,"energy_delivered_tariff1","energy_delivered_tariff2"
-                    ,"energy_returned_tariff1","energy_returned_tariff2","electricity_tariff"
-                    ,"power_delivered","power_returned"
-                    ,"electricity_threshold","electricity_switch_position"
-                    ,"electricity_failures","electricity_long_failures","electricity_failure_log"
-                    ,"electricity_sags_l1","electricity_sags_l2","electricity_sags_l3"
-                    ,"electricity_swells_l1","electricity_swells_l2","electricity_swells_l3"
-                    ,"message_short","message_long"
-                    ,"voltage_l1","voltage_l2","voltage_l3"
-                    ,"current_l1","current_l2","current_l3"
-                    ,"power_delivered_l1","power_delivered_l2","power_delivered_l3"
-                    ,"power_returned_l1","power_returned_l2","power_returned_l3"
-                    ,"gas_device_type","gas_equipment_id","gas_valve_position","gas_delivered"
-                    ,"thermal_device_type","thermal_equipment_id"
-                    ,"thermal_valve_position","thermal_delivered"
-                    ,"water_device_type","water_equipment_id"
-                    ,"water_valve_position","water_delivered"
-                    ,"slave_device_type","slave_equipment_id"
-                    ,"slave_valve_position","slave_delivered"
-                    ,"\0"
-                  ];
-                    
-  var humanFieldsMain = [ "Slimme Meter ID","P1 Versie","timestamp","Equipment ID"
-                    ,"Energie Gebruikt tarief 1","Energie Gebruikt tarief 2"
-                    ,"Energie Opgewekt tarief 1","Energie Opgewekt tarief 2","Electriciteit tarief"
-                    ,"Vermogen Gebruikt","Vermogen Opgewekt"
-                    ,"electricity_threshold","electricity_switch_position"
-                    ,"electricity_failures","electricity_long_failures","electricity_failure_log"
-                    ,"electricity_sags_l1","electricity_sags_l2","electricity_sags_l3"
-                    ,"electricity_swells_l1","electricity_swells_l2","electricity_swells_l3"
-                    ,"message_short","message_long"
-                    ,"Voltage l1","Voltage l2","Voltage l3"
-                    ,"Current l1","Current l2","Current l3"
-                    ,"Vermogen Gebruikt l1","Vermogen Gebruikt l2","Vermogen Gebruikt l3"
-                    ,"Vermogen Opgewekt l1","Vermogen Opgewekt l2","Vermogen Opgewekt l3"
-                    ,"Gas Device Type","Gas Equipment ID","Gas Klep Positie","Gas Gebruikt"
-                    ,"thermal_device_type","thermal_equipment_id"
-                    ,"thermal_valve_position","thermal_delivered"
-                    ,"water_device_type","water_equipment_id"
-                    ,"water_valve_position","water_delivered"
-                    ,"slave_device_type","slave_equipment_id"
-                    ,"slave_valve_position","slave_delivered"
-                    ,"\0"
-                    ];
+                  
   let monthType        = "ED";
   let settingBgColor   = 'deepskyblue';
   let settingFontColor = 'white'
-
-  var longFieldsSettings = [ "ed_tariff1","ed_tariff2"
-                    ,"er_tariff1","er_tariff2"
-                    ,"gd_tariff","electr_netw_costs"
-                    ,"gas_netw_costs","tlgrm_interval","index_page"
-                    ,"oled_screen_time"
-                    ,"mqtt_broker","mqtt_broker_port"
-                    ,"mqtt_user","mqtt_passwd","mqtt_toptopic"
-                    ,"mqtt_interval","mindergas_token"
-                    ,"\0"
-                  ];
-                    
-  var humanFieldsSettings = [ "Energy Verbruik Tarief-1/kWh","Energy Verbruik Tarief-2/kWh"
-                    ,"Energy Opgewekt Tarief-1/kWh","Energy Opgewekt Tarief-2/kWh"
-                    ,"Gas Verbruik Tarief/m3","Netwerkkosten Energie/maand"
-                    ,"Netwerkkosten Gas/maand","Telegram Lees Interval (Sec.)"
-                    ,"Te Gebruiken index.html Pagina"
-                    ,"Oled Screen Time (Min., 0=infinite)"
-                    ,"MQTT Broker IP/URL","MQTT Broker Poort"
-                    ,"MQTT Gebruiker","Password MQTT Gebruiker"
-                    ,"MQTT Top Topic"
-                    ,"Verzend MQTT Berichten (Sec.)"
-                    ,"Mindergas Token"
-                    ,"\0"
-                  ];
                     
   var monthNames = [ "indxNul","Januari","Februari","Maart","April","Mei","Juni"
                     ,"Juli","Augustus","September","Oktober","November","December"
@@ -178,9 +109,9 @@
     document.getElementById('bTerug').addEventListener('click',function()
                                                 {openPage('mainPage');});
     document.getElementById('bEditMonths').addEventListener('click',function()
-                                                {openTab('tabMonths');});
+                                                {openTab('tabEditMonths');});
     document.getElementById('bEditSettings').addEventListener('click',function()
-                                                {openTab('tabSettings');});
+                                                {openTab('tabEditSettings');});
     document.getElementById('bUndo').addEventListener('click',function() 
                                                 {undoReload();});
     document.getElementById('bSave').addEventListener('click',function() 
@@ -190,7 +121,7 @@
     
     openPage("settingsPage");
 
-    //openTab("tabSettings");
+    //openTab("tabEditSettings");
     
     //---- update buttons in navigation bar ---
     let x = document.getElementsByClassName("editButton");
@@ -288,14 +219,14 @@
       console.log("newTab: APIdocTab");
       showAPIdoc();
       
-    } else if (tabName == "tabMonths") {
-      console.log("newTab: tabMonths");
+    } else if (tabName == "tabEditMonths") {
+      console.log("newTab: tabEditMonths");
       document.getElementById('tabMaanden').style.display = 'block';
       getMonths();
 
-    } else if (tabName == "tabSettings") {
-      console.log("newTab: tabSettings");
-      document.getElementById('tabSettings').style.display = 'block';
+    } else if (tabName == "tabEditSettings") {
+      console.log("newTab: tabEditSettings");
+      document.getElementById('tabEditSettings').style.display = 'block';
       refreshSettings();
     
     }
@@ -319,7 +250,7 @@
       document.getElementById("mainPage").style.display = "none";  
       data = {};
       needBootsTrapMain = true;
-      openTab('tabSettings');
+      openTab('tabEditSettings');
       if (needBootsTrapSettings)   bootsTrapSettings();
     }
     document.getElementById(pageName).style.display = "block";  
@@ -338,7 +269,8 @@
         for( let i in data )
         {
             var tableRef = document.getElementById('devInfoTable').getElementsByTagName('tbody')[0];
-            
+            data[i].humanName = translateToHuman(data[i].name);
+
             if( ( document.getElementById("devInfoTable_"+data[i].name)) == null )
             {
               //console.log("data["+i+"] => name["+data[i].name+"]");
@@ -354,7 +286,8 @@
               newCell.appendChild(newText);
             }
             tableCells = document.getElementById("devInfoTable_"+data[i].name).cells;
-            tableCells[0].innerHTML = data[i].name;
+            //tableCells[0].innerHTML = data[i].name;
+            tableCells[0].innerHTML = data[i].humanName;
             tableCells[1].innerHTML = data[i].value;
             if (data[i].hasOwnProperty('unit'))
             {
@@ -366,15 +299,16 @@
             {
               document.getElementById('devVersion').innerHTML = json.devinfo[i].value;
               var tmpFW = json.devinfo[i].value;
+              firmwareVersion_dspl = tmpFW;
               tmpX = tmpFW.substring(1, tmpFW.indexOf(' '));
               tmpN = tmpX.split(".");
               firmwareVersion = tmpN[0]*10000 + tmpN[1]*1;
               console.log("firmwareVersion["+firmwareVersion+"] >= GitHubVersion["+GitHubVersion+"]");
               if (GitHubVersion == 0 || firmwareVersion >= GitHubVersion)
-                    firmwareVersion_dspl = "";
-              else  firmwareVersion_dspl = tmpFW + " nieuwere versie ("+GitHubVersion_dspl+") beschikbaar";
-              document.getElementById('message').innerHTML = firmwareVersion_dspl;
-              console.log(firmwareVersion_dspl);
+                    newVersionMsg = "";
+              else  newVersionMsg = firmwareVersion_dspl + " nieuwere versie ("+GitHubVersion_dspl+") beschikbaar";
+              document.getElementById('message').innerHTML = newVersionMsg;
+              console.log(newVersionMsg);
 
             } else if (data[i].name == 'hostname')
             {
@@ -429,7 +363,7 @@
         );
       });     
       
-    document.getElementById('message').innerHTML = firmwareVersion_dspl;
+    document.getElementById('message').innerHTML = newVersionMsg;
 
   } // refreshDevTime()
   
@@ -467,7 +401,7 @@
           data = json.fields;
           for (var i in data) 
           {
-            data[i].shortName = smToHuman(data[i].name);
+            data[i].humanName = translateToHuman(data[i].name);
             var tableRef = document.getElementById('fieldsTable').getElementsByTagName('tbody')[0];
             if( ( document.getElementById("fieldsTable_"+data[i].name)) == null )
             {
@@ -477,7 +411,7 @@
               var newCell  = newRow.insertCell(0);                  // name
               var newText  = document.createTextNode('');
               newCell.appendChild(newText);
-              newCell  = newRow.insertCell(1);                      // shortName
+              newCell  = newRow.insertCell(1);                      // humanName
               newCell.appendChild(newText);
               newCell  = newRow.insertCell(2);                      // value
               newCell.appendChild(newText);
@@ -486,7 +420,7 @@
             }
             tableCells = document.getElementById("fieldsTable_"+data[i].name).cells;
             tableCells[0].innerHTML = data[i].name;
-            tableCells[1].innerHTML = data[i].shortName;
+            tableCells[1].innerHTML = data[i].humanName;
             if (data[i].name == "electricity_failure_log" && data[i].value.length > 50) 
             {
               tableCells[2].innerHTML = data[i].value.substring(0,50);
@@ -627,9 +561,23 @@
   //============================================================================  
   function expandData(data)
   {
-     //console.log("now in expandData() ..");
-     for (let i=0; i<data.length; i++)
-     {
+    //--- first check op volgordelijkheid ------    
+    if (activeTab == "HoursTab") {  
+    for (let i=0; i<(data.length -1); i++)
+    {
+      if (data[i].edt1 < data[i+1].edt1 || data[i].edt2 < data[i+1].edt2)
+      {
+        console.log("["+(i)+"] ["+data[i].recid+"] := ["+(i+1)+"]["+data[i+1].recid+"]"); 
+        data[i].edt1 = data[i+1].edt1 * 1.0;
+        data[i].edt2 = data[i+1].edt2 * 1.0;
+        data[i].ert1 = data[i+1].ert1 * 1.0;
+        data[i].ert2 = data[i+1].ert2 * 1.0;
+        data[i].gdt  = data[i+1].gdt  * 1.0;
+      }
+    } // for ...
+    }
+    for (let i=0; i<data.length; i++)
+    {
       var     costs     = 0;
       data[i].p_ed      = {};
       data[i].p_edw     = {};
@@ -648,7 +596,6 @@
         data[i].p_er  = ((data[i].ert1 +data[i].ert2)-(data[i+1].ert1 +data[i+1].ert2)).toFixed(3);
         data[i].p_erw = (data[i].p_er * 1000).toFixed(0);
         data[i].p_gd  = (data[i].gdt  -data[i+1].gdt).toFixed(3);
-        //var  day = data[i].recid.substring(4,6) * 1;
         //-- calculate Energy Delivered costs
         costs = ( (data[i].edt1 - data[i+1].edt1) * ed_tariff1 );
         costs = costs + ( (data[i].edt2 - data[i+1].edt2) * ed_tariff2 );
@@ -660,9 +607,7 @@
         data[i].costs_g = ( (data[i].gdt  - data[i+1].gdt)  * gd_tariff );
         //-- compute network costs
         data[i].costs_nw = (electr_netw_costs + gas_netw_costs);
-        //costs = (data[i].costs_e + data[i].costs_g + data[i].costs_nw);
         //-- compute total costs
-      //data[i].costs_tt = ( (data[i].costs_e + data[i].costs_g + data[i].costs_nw) * 1.0).toFixed(2);
         data[i].costs_tt = ( (data[i].costs_e + data[i].costs_g + data[i].costs_nw) * 1.0);
       }
       else
@@ -693,7 +638,7 @@
 
     for (var i in data) 
     {
-      data[i].shortName = smToHuman(data[i].name);
+      data[i].humanName = translateToHuman(data[i].name);
       var tableRef = document.getElementById('actualTable').getElementsByTagName('tbody')[0];
       if( ( document.getElementById("actualTable_"+data[i].name)) == null )
       {
@@ -709,7 +654,7 @@
         newCell.appendChild(newText);
       }
       tableCells = document.getElementById("actualTable_"+data[i].name).cells;
-      tableCells[0].innerHTML = data[i].shortName;
+      tableCells[0].innerHTML = data[i].humanName;
       tableCells[1].innerHTML = data[i].value;
       if (data[i].hasOwnProperty('unit'))
       {
@@ -736,6 +681,7 @@
     for (let i=0; i<(data.length -1); i++)
     {
       //console.log("showHistTable("+type+"): data["+i+"] => data["+i+"]name["+data[i].recid+"]");
+
       var tableRef = document.getElementById('last'+type+'Table').getElementsByTagName('tbody')[0];
       if( ( document.getElementById(type +"Table_"+type+"_R"+i)) == null )
       {
@@ -1244,7 +1190,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
                   fldDiv.setAttribute("style", "margin-right: 10px;");
                   fldDiv.style.width = "250px";
                   fldDiv.style.float = 'left';
-                  fldDiv.textContent = smToHuman(data[i].name);
+                  fldDiv.textContent = translateToHuman(data[i].name);
                   rowDiv.appendChild(fldDiv);
             //--- input ---
               var inputDiv = document.createElement("div");
@@ -1298,7 +1244,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
         );
       });     
 
-      document.getElementById('message').innerHTML = firmwareVersion_dspl;
+      document.getElementById('message').innerHTML = newVersionMsg;
 
   } // refreshSettings()
   
@@ -1322,7 +1268,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
         );
       });
 
-      document.getElementById('message').innerHTML = firmwareVersion_dspl;
+      document.getElementById('message').innerHTML = newVersionMsg;
       
   } // getMonths()
 
@@ -1513,10 +1459,10 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
   //============================================================================  
   function undoReload()
   {
-    if (activeTab == "tabMonths") {
+    if (activeTab == "tabEditMonths") {
       console.log("getMonths");
       getMonths();
-    } else if (activeTab == "tabSettings") {
+    } else if (activeTab == "tabEditSettings") {
       console.log("undoReload(): reload Settings..");
       data = {};
       refreshSettings();
@@ -1533,11 +1479,11 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
   {
     document.getElementById('message').innerHTML = "Gegevens worden opgeslagen ..";
 
-    if (activeTab == "tabSettings")
+    if (activeTab == "tabEditSettings")
     {
       saveSettings();
     } 
-    else if (activeTab == "tabMonths")
+    else if (activeTab == "tabEditMonths")
     {
       saveMeterReadings();
     }
@@ -1572,15 +1518,30 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
     console.log("Saving months-data ..");
     let changes = false;
     
+    /** skip this for now **
     if (!validateReadings(monthType))
     {
       return;
     }
+    **/
     
     //--- has anything changed?
     for (i in data)
     {
+      //console.log("saveMeterReadings["+i+"] ..");
       changes = false;
+
+      if (getBackGround("em_YY_"+i) == "lightgray")
+      {
+        setBackGround("em_YY_"+i, "white");
+        changes = true;
+      }
+      if (getBackGround("em_MM_"+i) == "lightgray")
+      {
+        setBackGround("em_MM_"+i, "white");
+        changes = true;
+      }
+
       if (document.getElementById("em_in1_"+i).style.background == 'lightgray')
       {
         changes = true;
@@ -1739,9 +1700,9 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
       }
       
     }
-    if (withErrors)
-          return false;
-    else  return true;
+    if (withErrors)  return false;
+
+    return true;
     
   } // validateReadings()
   
@@ -1749,9 +1710,10 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
   //============================================================================  
   function sendPostReading(i, row) 
   {
+    console.log("sendPostReadings["+i+"]..");
     let sYY = (row[i].EEYY - 2000).toString();
-    let sMM = "";
-    if (row[i].MM < 1 || row[i].MM > 12)
+    let sMM = "00";
+    if ((row[i].MM *1) < 1 || (row[i].MM *1) > 12)
     {
       console.log("send: ERROR MM["+row[i].MM+"]");
       return;
@@ -1798,25 +1760,19 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
         }
       })
       .then(text => {
-        var tmpFW     = text.replace(/(\r\n|\n|\r)/gm, "");;
-        console.log("parsed: GitHubVersion is ["+tmpFW+"]");
-        tmpX = tmpFW.substring(1, tmpFW.indexOf(' '));
+        var tmpGHF     = text.replace(/(\r\n|\n|\r)/gm, "");
+        GitHubVersion_dspl = tmpGHF;
+        console.log("parsed: GitHubVersion is ["+GitHubVersion_dspl+"]");
+        tmpX = tmpGHF.substring(1, tmpGHF.indexOf(' '));
         tmpN = tmpX.split(".");
         GitHubVersion = tmpN[0]*10000 + tmpN[1]*1;
         
         console.log("firmwareVersion["+firmwareVersion+"] >= GitHubVersion["+GitHubVersion+"]");
         if (firmwareVersion == 0 || firmwareVersion >= GitHubVersion)
-              firmwareVersion_dspl = "";
-        else  firmwareVersion_dspl = tmpFW + " nieuwere versie ("+GitHubVersion_dspl+") beschikbaar!";
-        document.getElementById('message').innerHTML = firmwareVersion_dspl;
-        console.log(firmwareVersion_dspl);
+        else  newVersionMsg = firmwareVersion_dspl + " nieuwere versie ("+GitHubVersion_dspl+") beschikbaar";
+        document.getElementById('message').innerHTML = newVersionMsg;
+        console.log(newVersionMsg);
 
-      })
-      .catch(function(error) {
-        console.log(error);
-        GitHubVersion_dspl   = "";
-        GitHubVersion        = 0;
-      });     
 
   } // readGitHubVersion()
 
@@ -1826,14 +1782,17 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
     if (eType == "ED") {
       console.log("Edit Energy Delivered!");
       monthType = eType;
+      getMonths()
       showMonths(data, monthType);
     } else if (eType == "ER") {
       console.log("Edit Energy Returned!");
       monthType = eType;
+      getMonths()
       showMonths(data, monthType);
     } else if (eType == "GD") {
       console.log("Edit Gas Delivered!");
       monthType = eType;
+      getMonths()
       showMonths(data, monthType);
     } else {
       console.log("setEditType to ["+eType+"] is quit shitty!");
@@ -1902,33 +1861,18 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
 
   
   //============================================================================  
-  function smToHuman(longName) {
-    //console.log("smToHuman("+longName+") for ["+longFieldsSettings.length+"] elements");
-    for(var index = 0; index < (longFieldsSettings.length -1); index++) 
+  function translateToHuman(longName) {
+    //for(var index = 0; index < (translateFields.length -1); index++) 
+    for(var index = 0; index < translateFields.length; index++) 
     {
-        if (longFieldsSettings[index] == longName)
+        if (translateFields[index][0] == longName)
         {
-          return humanFieldsSettings[index];
+          return translateFields[index][1];
         }
     };
     return longName;
     
-  } // smToHuman()
-
-  
-  //============================================================================  
-  function smToHuman(longName) {
-    //console.log("smToHuman("+longName+") for ["+longFieldsMain.length+"] elements");
-    for(var index = 0; index < (longFieldsMain.length -1); index++) 
-    {
-        if (longFieldsMain[index] == longName)
-        {
-          return humanFieldsMain[index];
-        }
-    };
-    return longName;
-    
-  } // smToHuman()
+  } // translateToHuman()
 
   
   //============================================================================  
@@ -1982,7 +1926,124 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
     var multiplier = Math.pow(10, precision || 0);
     return Math.round(value * multiplier) / multiplier;
   }
-  
+    
+  var translateFields = [
+           [ "author",                    "Auteur" ]
+          ,[ "identification",            "Slimme Meter ID" ]
+          ,[ "p1_version",                "P1 Versie" ]
+          ,[ "energy_delivered_tariff1",  "Energie Gebruikt tarief 1" ]
+          ,[ "energy_delivered_tariff2",  "Energie Gebruikt tarief 2" ]
+          ,[ "energy_returned_tariff1",   "Energie Opgewekt tarief 1" ]
+          ,[ "energy_returned_tariff2",   "Energie Opgewekt tarief 2" ]
+          ,[ "electricity_tariff",        "Electriciteit tarief" ]
+          ,[ "power_delivered",           "Vermogen Gebruikt" ]
+          ,[ "power_returned",            "Vermogen Opgewekt" ]
+          ,[ "electricity_threshold",     "Electricity Threshold" ]
+          ,[ "electricity_switch_position","Electricity Switch Position" ]
+          ,[ "electricity_failures",      "Electricity Failures" ]
+          ,[ "electricity_long_failures", "Electricity Long Failures" ]
+          ,[ "electricity_failure_log",   "Electricity Failure log" ]
+          ,[ "electricity_sags_l1",       "Electricity Sags l1" ]
+          ,[ "electricity_sags_l2",       "Electricity Sags l2" ]
+          ,[ "electricity_sags_l3",       "Electricity Sags l3" ]
+          ,[ "electricity_swells_l1",     "Electricity Swells l1" ]
+          ,[ "electricity_swells_l2",     "Electricity Swells l2" ]
+          ,[ "electricity_swells_l3",     "Electricity Swells l3" ]
+          ,[ "message_short",             "Korte Boodschap" ]
+          ,[ "message_long",              "Lange Boodschap" ]
+          ,[ "voltage_l1",                "Voltage l1" ]
+          ,[ "voltage_l2",                "Voltage l2" ]
+          ,[ "voltage_l3",                "Voltage l3" ]
+          ,[ "current_l1",                "Current l1" ]
+          ,[ "current_l2",                "Current l2" ]
+          ,[ "current_l3",                "Current l3" ]
+          ,[ "power_delivered_l1",        "Vermogen Gebruikt l1" ]
+          ,[ "power_delivered_l2",        "Vermogen Gebruikt l2" ]
+          ,[ "power_delivered_l3",        "Vermogen Gebruikt l3" ]
+          ,[ "power_returned_l1",         "Vermogen Opgewekt l1" ]
+          ,[ "power_returned_l2",         "Vermogen Opgewekt l2" ]
+          ,[ "power_returned_l3",         "Vermogen Opgewekt l3" ]
+          ,[ "gas_device_type",           "Gas Device Type" ]
+          ,[ "gas_equipment_id",          "Gas Equipment ID" ]
+          ,[ "gas_valve_position",        "Gas Klep Positie" ]
+          ,[ "gas_delivered",             "Gas Gebruikt" ]
+          ,[ "thermal_device_type",       "Thermal Device Type" ]
+          ,[ "thermal_equipment_id",      "Thermal Equipment ID" ]
+          ,[ "thermal_valve_position",    "Thermal Klep Positie" ]
+          ,[ "thermal_delivered",         "Thermal Gebruikt" ]
+          ,[ "water_device_type" ,        "Water Device Type" ]
+          ,[ "water_equipment_id",        "Water Equipment ID" ]
+          ,[ "water_valve_position",      "Water Klep Positie" ]
+          ,[ "water_delivered",           "Water Gebruikt" ]
+          ,[ "slave_device_type",         "Slave Device Type" ]
+          ,[ "slave_equipment_id",        "Slave Equipment ID" ]
+          ,[ "slave_valve_position",      "Slave Klep Positie" ]
+          ,[ "slave_delivered",           "Slave Gebruikt" ]
+          ,[ "ed_tariff1",                "Energy Verbruik Tarief-1/kWh" ]
+          ,[ "ed_tariff2",                "Energy Verbruik Tarief-2/kWh" ]
+          ,[ "er_tariff1",                "Energy Opgewekt Tarief-1/kWh" ]
+          ,[ "er_tariff2",                "Energy Opgewekt Tarief-2/kWh" ]
+          ,[ "gd_tariff" ,                "Gas Verbruik Tarief/m3" ]
+          ,[ "electr_netw_costs",         "Netwerkkosten Energie/maand" ]
+          ,[ "gas_netw_costs",            "Netwerkkosten Gas/maand" ]
+          
+          ,[ "smhasfaseinfo",             "SM Has Fase Info (0=No, 1=Yes)" ]
+          ,[ "sm_has_fase_info",          "SM Has Fase Info (0=No, 1=Yes)" ]
+          ,[ "oled_type",                 "OLED type (0=None, 1=SDD1306, 2=SH1106)" ]
+          ,[ "oled_flip_screen",          "Flip OLED scherm (0=No, 1=Yes)" ]
+          ,[ "tlgrm_interval",            "Telegram Lees Interval (Sec.)" ]
+          ,[ "telegraminterval",          "Telegram Lees Interval (Sec.)" ]
+          ,[ "index_page",                "Te Gebruiken index.html Pagina" ]
+          ,[ "oled_screen_time",          "Oled Screen Time (Min., 0=infinite)" ]
+          ,[ "mqttbroker",                "MQTT Broker IP/URL" ]
+          ,[ "mqtt_broker",               "MQTT Broker IP/URL" ]
+          ,[ "mqttbrokerport",            "MQTT Broker Poort" ]
+          ,[ "mqtt_broker_port",          "MQTT Broker Poort" ]
+          ,[ "mqttuser",                  "MQTT Gebruiker" ]
+          ,[ "mqtt_user",                 "MQTT Gebruiker" ]
+          ,[ "mqttpasswd",                "Password MQTT Gebruiker" ]
+          ,[ "mqtt_passwd",               "Password MQTT Gebruiker" ]
+          ,[ "mqtttoptopic",              "MQTT Top Topic" ]
+          ,[ "mqtt_toptopic",             "MQTT Top Topic" ]
+          ,[ "mqttinterval",              "Verzend MQTT Berichten (Sec.)" ]
+          ,[ "mqtt_interval",             "Verzend MQTT Berichten (Sec.)" ]
+          ,[ "mqttbroker_connected",      "MQTT broker connected" ]
+          ,[ "mindergas_token",           "Mindergas Token" ]
+          ,[ "mindergas_response",        "Mindergas Terugkoppeling" ]
+          ,[ "mindergas_status",          "Mindergas Status (@dag | tijd)" ]
+
+          ,[ "telegramcount",             "Telegrammen verwerkt" ]
+          ,[ "telegramerrors",            "Telegrammen met fouten" ]          
+          ,[ "fwversion",                 "Firmware Versie" ]
+          ,[ "compiled",                  "Gecompileerd" ]
+          ,[ "hostname",                  "HostName" ]
+          ,[ "ipaddress",                 "IP adres" ]
+          ,[ "macaddress",                "MAC adres" ]
+          ,[ "indexfile",                 "Te Gebruiken index.html Pagina" ]
+          ,[ "freeheap",                  "Free Heap Space" ]
+          ,[ "maxfreeblock",              "Max. Free Heap Blok" ]
+          ,[ "chipid",                    "Chip ID" ]
+          ,[ "coreversion",               "ESP8266 Core Versie" ]
+          ,[ "sdkversion",                "SDK versie" ]
+          ,[ "cpufreq",                   "CPU Frequency" ]
+          ,[ "sketchsize",                "Sketch Size" ]
+          ,[ "freesketchspace",           "Free Sketch Space" ]
+          ,[ "flashchipid",               "Flash Chip ID" ]
+          ,[ "flashchipsize",             "Flash Chip Size" ]
+          ,[ "flashchiprealsize",         "Flash Chip Real Size" ]
+          ,[ "spiffssize",                "SPIFFS Size" ]
+          ,[ "flashchipspeed",            "Flash Chip Speed" ]
+          ,[ "flashchipmode",             "Flash Chip Mode" ]
+          ,[ "boardtype",                 "Board Type" ]
+          ,[ "compileoptions",            "Compiler Opties" ]
+          ,[ "ssid",                      "WiFi SSID" ]
+          ,[ "wifirssi",                  "WiFi RSSI" ]
+          ,[ "uptime",                    "Up Time [dagen] - [hh:mm]" ]
+          ,[ "reboots",                   "Aantal keer opnieuw opgestart" ]
+          ,[ "lastreset",                 "Laatste Reset reden" ]
+          
+                        ];
+
 /*
 ***************************************************************************
 *

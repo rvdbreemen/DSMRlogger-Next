@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : restAPI, part of DSMRloggerAPI
-**  Version  : v1.1.2
+**  Version  : v1.2.1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -42,7 +42,7 @@ void processAPI()
   char URI[40] = "";
   String words[10];
 
-  //char *URI = (char*)httpServer.uri().c_str(); 
+   //char *URI = (char*)httpServer.uri().c_str(); 
   strncpy ( URI, httpServer.uri().c_str(), sizeof(URI)); /
   DebugTf("URI [%s]\r\n", URI);
   
@@ -54,7 +54,12 @@ void processAPI()
                                   , httpServer.client().remoteIP().toString().c_str()
                                         , URI); 
                                         
-  if (ESP.getFreeHeap() < 9000) // to prevent firmware from crashing!
+
+#ifdef USE_SYSLOGGER
+  if (ESP.getFreeHeap() < 5000) // to prevent firmware from crashing!
+#else
+  if (ESP.getFreeHeap() < 8500) // to prevent firmware from crashing!
+#endif
   {
     DebugTf("==> Bailout due to low heap (%d bytes))\r\n", ESP.getFreeHeap() );
     writeToSysLog("from[%s][%s] Bailout low heap (%d bytes)"
@@ -337,15 +342,6 @@ void sendDeviceInfo()
 #ifdef USE_NTP_TIME
     strConcat(compileOptions, sizeof(compileOptions), "[USE_NTP_TIME]");
 #endif
-#if defined( HAS_OLED_SSD1306 )
-    strConcat(compileOptions, sizeof(compileOptions), "[HAS_OLED_SSD1306]");
-#endif
-#if defined( HAS_OLED_SH1106 )
-    strConcat(compileOptions, sizeof(compileOptions), "[HAS_OLED_SH1106]");
-#endif
-#ifdef SM_HAS_NO_FASE_INFO
-    strConcat(compileOptions, sizeof(compileOptions), "[SM_HAS_NO_FASE_INFO]");
-#endif
 
   sendStartJsonObj("devinfo");
 
@@ -356,6 +352,7 @@ void sendDeviceInfo()
   sendNestedJsonObj("compiled", cMsg);
   sendNestedJsonObj("hostname", settingHostname);
   sendNestedJsonObj("ipaddress", WiFi.localIP().toString().c_str());
+  sendNestedJsonObj("macaddress", WiFi.macAddress().c_str());
   sendNestedJsonObj("indexfile", settingIndexPage);
 
 
@@ -413,6 +410,9 @@ void sendDeviceInfo()
 #endif
   sendNestedJsonObj("wifirssi", WiFi.RSSI());
   sendNestedJsonObj("uptime", upTime());
+  sendNestedJsonObj("oled_type",        (int)settingOledType);
+  sendNestedJsonObj("oled_flip_screen", (int)settingOledFlip);
+  sendNestedJsonObj("smhasfaseinfo",    (int)settingSmHasFaseInfo);
   sendNestedJsonObj("telegraminterval", (int)settingTelegramInterval);
   sendNestedJsonObj("telegramcount",    (int)telegramCount);
   sendNestedJsonObj("telegramerrors",   (int)telegramErrors);
@@ -443,6 +443,7 @@ void sendDeviceInfo()
 void sendDeviceTime() 
 {
   sendStartJsonObj("devtime");
+  sendNestedJsonObj("timestamp", actTimestamp); 
   sendNestedJsonObj("time", buildDateTimeString(actTimestamp, sizeof(actTimestamp)).c_str()); 
   sendNestedJsonObj("epoch", (int)now());
 
@@ -466,8 +467,11 @@ void sendDeviceSettings()
   sendJsonSettingObj("gd_tariff",         settingGDT,             "f", 0, 10,  5);
   sendJsonSettingObj("electr_netw_costs", settingENBK,            "f", 0, 100, 2);
   sendJsonSettingObj("gas_netw_costs",    settingGNBK,            "f", 0, 100, 2);
+  sendJsonSettingObj("sm_has_fase_info",  settingSmHasFaseInfo,   "i", 0, 1);
   sendJsonSettingObj("tlgrm_interval",    settingTelegramInterval,"i", 2, 60);
-  sendJsonSettingObj("oled_screen_time",  settingSleepTime,       "i", 1, 300);
+  sendJsonSettingObj("oled_type",         settingOledType,        "i", 0, 2);
+  sendJsonSettingObj("oled_screen_time",  settingOledSleep,       "i", 1, 300);
+  sendJsonSettingObj("oled_flip_screen",  settingOledFlip,        "i", 0, 1);
   sendJsonSettingObj("index_page",        settingIndexPage,       "s", sizeof(settingIndexPage) -1);
   sendJsonSettingObj("mqtt_broker",       settingMQTTbroker,      "s", sizeof(settingMQTTbroker) -1);
   sendJsonSettingObj("mqtt_broker_port",  settingMQTTbrokerPort,  "i", 1, 9999);

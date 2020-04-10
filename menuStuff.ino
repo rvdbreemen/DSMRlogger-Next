@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : menuStuff, part of DSMRloggerAPI
-**  Version  : v1.1.0
+**  Version  : v1.2.1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -70,17 +70,8 @@ void displayBoardInfo()
 #ifdef USE_NTP_TIME
   Debug(F("[USE_NTP_TIME]"));
 #endif
-#if defined( HAS_OLED_SSD1306 )
-  Debug(F("[HAS_OLED_SSD1306]"));
-#endif
-#if defined( HAS_OLED_SH1106 )
-  Debug(F("[HAS_OLED_SH1106]"));
-#endif
 #ifdef USE_BELGIUM_PROTOCOL
   Debug(F("[USE_BELGIUM_PROTOCOL]"));
-#endif
-#ifdef SM_HAS_NO_FASE_INFO
-  Debug(F("[SM_HAS_NO_FASE_INFO]"));
 #endif
 #ifdef SHOW_PASSWRDS
   Debug(F("[SHOW_PASSWRDS]"));
