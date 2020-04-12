@@ -24,13 +24,11 @@
   #define ESP_RESET_REASON()      ((String)esp_reset_reason()).c_str()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()
   #define ESP_GET_CHIPID()        ((uint32_t)ESP.getEfuseMac()) //The chipID is essentially its MAC address (length: 6 bytes) 
-
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
 //    #define LED_ON      HIGH
 //    #define LED_OFF     LOW
   #define SMserial Serial2
   #include "SPIFFS.h"
-
 #endif
 
 

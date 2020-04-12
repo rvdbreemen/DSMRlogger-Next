@@ -143,8 +143,7 @@ void openSysLog(bool empty)
 void setup() 
 {
 //================ Serial Devices (Debug en Smart Meter) =======
-Serial.begin(115200, SERIAL_8N1);                                                   // Setup regular debug first
-
+Serial.begin(115200, SERIAL_8N1);                                                         //DEBUG
 #if defined(ESP8266) 
   #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
   //Serial.begin(115200);                                                           //DEBUG
@@ -156,12 +155,12 @@ Serial.begin(115200, SERIAL_8N1);                                               
   #define RXD2 13     // prototype ESP32 is SM aangesloten op RX op GPIO13
   #define TXD2 1
   #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-  //Serial.begin(115200);                                                           //DEBUG
     SMserial.begin(9600, SERIAL_7E1, RXD2, TXD2););                                                 //PRE40
   #else   // not use_dsmr_30                                                        //PRE40
     SMserial.begin(115200, SERIAL_8N1, RXD2, TXD2);
   #endif  // use_dsmr_30
 #endif
+Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
 #ifdef DTR_ENABLE
   pinMode(DTR_ENABLE, OUTPUT);
 #endif
@@ -179,7 +178,7 @@ Serial.begin(115200, SERIAL_8N1);                                               
   snprintf(settingHostname, sizeof(settingHostname), "%s", _DEFAULT_HOSTNAME);
   Serial.printf("\n\nBooting....[%s]\r\n\r\n", String(_FW_VERSION).c_str());
 
-//================ oLed ================================ =======
+//================ oLed =======================================
   if (settingOledType > 0)
   {
     oled_Init();
@@ -202,12 +201,11 @@ Serial.begin(115200, SERIAL_8N1);                                               
     }
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
-  Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
 
   lastReset     = ESP_RESET_REASON();
   Serial.printf("\n\nReset reason....[%s]\r\n", lastReset);  
  
-//  //startTelnet before startWiFi.... That works only if wifi has been setup before.
+    //startTelnet before startWiFi.... That works only if wifi has been setup before.
 //  startTelnet();
 //  if (settingOledType > 0)
 //  {
