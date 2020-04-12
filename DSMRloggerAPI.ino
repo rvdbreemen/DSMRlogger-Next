@@ -2,7 +2,8 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v1.2.3 (08-04-2020)"
+#define _FW_VERSION "v1.2.3 ESP32 (11-04-2020)"
+
 /*
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -34,8 +35,8 @@
 **   https://mrwheel.github.io/DSMRloggerWS/
 */
 /******************** compiler options  ********************************************/
-#define USE_REQUEST_PIN           // define if it's a esp8266 with GPIO 12 connected to SM DTR pin
-#define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
+#define USE_REQUEST_PIN               // define if it's a esp8266 with GPIO 12 connected to SM DTR pin
+//  #define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
 //  #define USE_BELGIUM_PROTOCOL      // define if Slimme Meter is a Belgium Smart Meter
 //  #define USE_PRE40_PROTOCOL        // define if Slimme Meter is pre DSMR 4.0 (2.2 .. 3.0)
 //  #define USE_NTP_TIME              // define to generate Timestamp from NTP (Only Winter Time for now)
@@ -141,22 +142,36 @@ void openSysLog(bool empty)
 //===========================================================================================
 void setup() 
 {
-#ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-//Serial.begin(115200);                                                           //DEBUG
-  Serial.begin(9600, SERIAL_7E1);                                                 //PRE40
-#else   // not use_dsmr_30                                                        //PRE40
-  Serial.begin(115200, SERIAL_8N1);
-#endif  // use_dsmr_30
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(FLASH_BUTTON, INPUT);
+//================ Serial Devices (Debug en Smart Meter) =======
+Serial.begin(115200, SERIAL_8N1);                                                   // Setup regular debug first
+
+#if defined(ESP8266) 
+  #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
+  //Serial.begin(115200);                                                           //DEBUG
+    SMserial.begin(9600, SERIAL_7E1);                                                 //PRE40
+  #else   // not use_dsmr_30                                                        //PRE40
+    SMserial.begin(115200, SERIAL_8N1);
+  #endif  // use_dsmr_30
+#elif defined(ESP32)
+  #define RXD2 13     // prototype ESP32 is SM aangesloten op RX op GPIO13
+  #define TXD2 1
+  #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
+  //Serial.begin(115200);                                                           //DEBUG
+    SMserial.begin(9600, SERIAL_7E1, RXD2, TXD2););                                                 //PRE40
+  #else   // not use_dsmr_30                                                        //PRE40
+    SMserial.begin(115200, SERIAL_8N1, RXD2, TXD2);
+  #endif  // use_dsmr_30
+#endif
 #ifdef DTR_ENABLE
   pinMode(DTR_ENABLE, OUTPUT);
 #endif
-  
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(FLASH_BUTTON, INPUT);
+
   //--- setup randomseed the right way
-  //--- This is 8266 HWRNG used to seed the Random PRNG
-  //--- Read more: https://config9.com/arduino/getting-a-truly-random-number-in-arduino/
   #if defined(ESP8266) 
+    //--- This is 8266 HWRNG used to seed the Random PRNG
+    //--- Read more: https://config9.com/arduino/getting-a-truly-random-number-in-arduino/
     randomSeed(RANDOM_REG32); 
   #elif defined(ESP32)
     randomSeed(esp_random());
@@ -164,6 +179,7 @@ void setup()
   snprintf(settingHostname, sizeof(settingHostname), "%s", _DEFAULT_HOSTNAME);
   Serial.printf("\n\nBooting....[%s]\r\n\r\n", String(_FW_VERSION).c_str());
 
+//================ oLed ================================ =======
   if (settingOledType > 0)
   {
     oled_Init();
@@ -178,11 +194,11 @@ void setup()
   }
   else  // don't blink if oled-screen attatched
   {
-    for(int i=8; i>0; i-) 
+    for(int i=8; i>0; i--) 
     {
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       Serial.printf("%x\n", i);
-      delay(500);
+      delay(250);
     }
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
@@ -191,13 +207,13 @@ void setup()
   lastReset     = ESP_RESET_REASON();
   Serial.printf("\n\nReset reason....[%s]\r\n", lastReset);  
  
-  //startTelnet before startWiFi.... That works only if wifi has been setup before.
-  startTelnet();
-  if (settingOledType > 0)
-  {
-    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
-    oled_Print_Msg(3, "telnet (poort 23)", 2500);
-  }
+//  //startTelnet before startWiFi.... That works only if wifi has been setup before.
+//  startTelnet();
+//  if (settingOledType > 0)
+//  {
+//    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
+//    oled_Print_Msg(3, "telnet (poort 23)", 2500);
+//  }
   
 //================ SPIFFS ===========================================
   if (SPIFFS.begin()) 
@@ -532,7 +548,7 @@ void setup()
 
 //================ The final part of the Setup =====================
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_GET_RESETREASON());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON());
   DebugTln(cMsg);
 
   if (settingOledType > 0)
@@ -548,9 +564,10 @@ void setup()
   DebugTln(F("Enable slimmeMeter..\r"));
 
 #if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
+
+#if defined(ESP8266)
     DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
     DebugFlush();
-#if defined(ESP8266)
     Serial.swap();
 #endif
 #endif // is_esp12

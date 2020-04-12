@@ -13,7 +13,13 @@
 #include "SSD1306AsciiWire.h"   // Version 1.2.x - Commit 97a05cd on 24 Mar 2019
 
 // 0X3C+SA0 - 0x3C or 0x3D
-#define I2C_ADDRESS 0x3C
+#if defined (ESP8266)
+  #define I2C_ADDRESS 0x3C
+#elif defined( ESP32)
+  #define I2C_SDA 4 //definitie prototype
+  #define I2C_SCL 5 //definitie prototype
+  #define I2C_ADDRESS 0x3C
+#endif
 
 // Define proper RST_PIN if required.
 #define RST_PIN -1
@@ -25,7 +31,7 @@ void oled_Print_Msg(uint8_t, String, uint16_t);
 static bool     buttonState = LOW;
 static uint8_t  msgMode = 0;
 static bool     boolDisplay = true; 
-static uint8_t  settingOledType = 1;  // 0=none, 1=SSD1306, 2=SH1106
+static uint8_t  settingOledType = 0;  // 0=none, 1=SSD1306, 2=SH1106
 static uint16_t settingOledSleep; 
 static uint8_t  settingOledFlip;  
 
@@ -76,7 +82,11 @@ void checkFlashButton()
 //===========================================================================================
 void oled_Init() 
 {
+#if defined(ESP8266)
     Wire.begin();
+#elif defined(ESP32)
+    Wire.begin(I2C_SDA, I2C_SCL, 100000);
+#endif
     if (settingOledType == 2)
           oled.begin(&SH1106_128x64, I2C_ADDRESS);
     else  oled.begin(&Adafruit128x64, I2C_ADDRESS);

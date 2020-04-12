@@ -42,9 +42,12 @@ void processAPI()
   char URI[40] = "";
   String words[10];
 
-   //char *URI = (char*)httpServer.uri().c_str(); 
-  strncpy ( URI, httpServer.uri().c_str(), sizeof(URI)); /
-  DebugTf("URI [%s]\r\n", URI);
+//  #if defined(ESP8266)
+//    char *URI = (char*)httpServer.uri().c_str(); 
+//  #elif defined(ESP32)
+    strncpy ( URI, httpServer.uri().c_str(), sizeof(URI)); 
+    DebugTf("URI [%s]\r\n", URI);
+//  #endif
   
   if (httpServer.method() == HTTP_GET)
         DebugTf("incoming URI from [%s] is [%s] method[GET] \r\n"
@@ -270,15 +273,15 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
   {
     showRaw = true;
     slimmeMeter.enable(true);
-    Serial.setTimeout(5000);  // 5 seconds must be enough ..
+    SMserial.setTimeout(5000);  // 5 seconds must be enough ..
     memset(tlgrm, 0, sizeof(tlgrm));
     int l = 0;
     // The terminator character is discarded from the serial buffer.
-    l = Serial.readBytesUntil('/', tlgrm, sizeof(tlgrm));
+    l = SMserial.readBytesUntil('/', tlgrm, sizeof(tlgrm));
     // now read from '/' to '!'
     // The terminator character is discarded from the serial buffer.
-    l = Serial.readBytesUntil('!', tlgrm, sizeof(tlgrm));
-    Serial.setTimeout(1000);  // seems to be the default ..
+    l = SMserial.readBytesUntil('!', tlgrm, sizeof(tlgrm));
+    SMserial.setTimeout(1000);  // seems to be the default ..
     DebugTf("read [%d] bytes\r\n", l);
     if (l == 0) 
     {
@@ -292,7 +295,7 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
     // next 6 bytes are "<CRC>\r\n"
     for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
     {
-      tlgrm[l++] = (char)Serial.read();
+      tlgrm[l++] = (char)SMserial.read();
     }
 #else
     tlgrm[l++]    = '\r';
@@ -353,11 +356,7 @@ void sendDeviceInfo()
   sendNestedJsonObj("hostname", settingHostname);
   sendNestedJsonObj("ipaddress", WiFi.localIP().toString().c_str());
   sendNestedJsonObj("macaddress", WiFi.macAddress().c_str());
-  sendNestedJsonObj("indexfile", settingIndexPage);
-
-
-
-  
+  sendNestedJsonObj("indexfile", settingIndexPage);  
   sendNestedJsonObj("freeheap", ESP.getFreeHeap(), "bytes");
   sendNestedJsonObj("maxfreeblock", ESP_GET_FREE_BLOCK(), "bytes");
   sendNestedJsonObj("chipid", String( ESP_GET_CHIPID(), HEX ).c_str());
