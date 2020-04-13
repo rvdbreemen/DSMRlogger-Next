@@ -36,7 +36,7 @@
 void connectMQTT() 
 {
 #ifdef USE_MQTT
-  
+  DebugTln(F("connectMQTT"));
   if (Verbose2) DebugTf("MQTTclient.connected(%d), mqttIsConnected[%d], stateMQTT [%d]\r\n"
                                               , MQTTclient.connected()
                                               , mqttIsConnected, stateMQTT);

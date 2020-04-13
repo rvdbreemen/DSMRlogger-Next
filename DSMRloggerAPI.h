@@ -18,7 +18,7 @@
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "Unknown" };
 //    #define LED_ON      LOW
 //    #define LED_OFF     HIGH
-  #define SMserial Serial
+  #define SM_SERIAL Serial
 #elif defined(ESP32)
   #define ESP_RESET()             ESP.restart()
   #define ESP_RESET_REASON()      ((String)esp_reset_reason()).c_str()
@@ -27,13 +27,14 @@
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
 //    #define LED_ON      HIGH
 //    #define LED_OFF     LOW
-  #define SMserial Serial2
+  #define SM_SERIAL Serial2
   #include "SPIFFS.h"
 #endif
 
 
 #include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
+#include "Debug.h"
 #include "safeTimers.h"
 
 #ifdef USE_SYSLOGGER
@@ -191,9 +192,9 @@ struct FSInfo {
 **/
 
 #ifdef DTR_ENABLE
-  P1Reader    slimmeMeter(&SMserial, DTR_ENABLE);
+  P1Reader    slimmeMeter(&SM_SERIAL, DTR_ENABLE);
 #else
-  P1Reader    slimmeMeter(&SMserial, 0);
+  P1Reader    slimmeMeter(&SM_SERIAL, 0);
 #endif
 
 //===========================prototype's=======================================

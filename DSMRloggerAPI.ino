@@ -142,28 +142,20 @@ void openSysLog(bool empty)
 //===========================================================================================
 void setup() 
 {
-//================ Serial Devices (Debug en Smart Meter) =======
-Serial.begin(115200, SERIAL_8N1);                                                         //DEBUG
-#if defined(ESP8266) 
-  #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-  //Serial.begin(115200);                                                           //DEBUG
-    SMserial.begin(9600, SERIAL_7E1);                                                 //PRE40
-  #else   // not use_dsmr_30                                                        //PRE40
-    SMserial.begin(115200, SERIAL_8N1);
-  #endif  // use_dsmr_30
-#elif defined(ESP32)
-  #define RXD2 13     // prototype ESP32 is SM aangesloten op RX op GPIO13
-  #define TXD2 1
-  #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-    SMserial.begin(9600, SERIAL_7E1, RXD2, TXD2););                                                 //PRE40
-  #else   // not use_dsmr_30                                                        //PRE40
-    SMserial.begin(115200, SERIAL_8N1, RXD2, TXD2);
-  #endif  // use_dsmr_30
-#endif
-Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
-#ifdef DTR_ENABLE
-  pinMode(DTR_ENABLE, OUTPUT);
-#endif
+  //================ Serial Debug ================================
+
+  DEBUG_PORT.begin(115200, SERIAL_8N1);                   //DEBUG
+  Debugf("\n\nBooting [%s]", String(_FW_VERSION).c_str());
+  for(int i=10; i>0; i--)
+  {
+    delay(100);
+    Debugf(".");
+    DebugFlush();  //flush out all serial data
+  }
+  Debugf("\r\n");
+  DebugFlush();  //flush out all serial data
+
+  //setup hardware buildin led and flash_button
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(FLASH_BUTTON, INPUT);
 
@@ -176,7 +168,6 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
     randomSeed(esp_random());
   #endif
   snprintf(settingHostname, sizeof(settingHostname), "%s", _DEFAULT_HOSTNAME);
-  Serial.printf("\n\nBooting....[%s]\r\n\r\n", String(_FW_VERSION).c_str());
 
 //================ oLed =======================================
   if (settingOledType > 0)
@@ -196,23 +187,14 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
     for(int i=8; i>0; i--) 
     {
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-      Serial.printf("%x\n", i);
       delay(250);
     }
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
 
   lastReset     = ESP_RESET_REASON();
-  Serial.printf("\n\nReset reason....[%s]\r\n", lastReset);  
- 
-    //startTelnet before startWiFi.... That works only if wifi has been setup before.
-//  startTelnet();
-//  if (settingOledType > 0)
-//  {
-//    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
-//    oled_Print_Msg(3, "telnet (poort 23)", 2500);
-//  }
-  
+  Debugf("\n\nReset reason....[%s]\r\n", lastReset);  
+
 //================ SPIFFS ===========================================
   if (SPIFFS.begin()) 
   {
@@ -257,8 +239,10 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
   }
   digitalWrite(LED_BUILTIN, LED_ON);
   startWiFi(settingHostname, 240);  // timeout 4 minuten
-  Serial.println("Wifi started..." + WiFi.SSID() + " IP: " + WiFi.localIP().toString().c_str());
-  delay(3000);
+  Debugln(F("Wifi started..."));
+  Debug(F("Connected to: " )); Debugln (WiFi.SSID());
+  Debug(F("IP address:   " ));  Debugln (WiFi.localIP());
+  Debug(F("IP gateway:   " ));  Debugln (WiFi.gatewayIP());
 
   if (settingOledType > 0)
   {
@@ -267,17 +251,13 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
     snprintf(cMsg, sizeof(cMsg), "IP %s", WiFi.localIP().toString().c_str());
     oled_Print_Msg(2, cMsg, 1500);
   }
-  digitalWrite(LED_BUILTIN, LED_OFF);
-  
-  Debugln();
-  Debug (F("Connected to " )); Debugln (WiFi.SSID());
-  Debug (F("IP address: " ));  Debugln (WiFi.localIP());
-  Debug (F("IP gateway: " ));  Debugln (WiFi.gatewayIP());
-  Debugln();
-
-  for (int L=0; L < 10; L++) {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    delay(200);
+  else
+  {
+    digitalWrite(LED_BUILTIN, LED_OFF);
+    for (int L=0; L < 10; L++) {
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      delay(200);
+    }   
   }
   digitalWrite(LED_BUILTIN, LED_OFF);
 
@@ -298,14 +278,14 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
   }
   
   
-  Serial.println("Starting Telnet");
+  Debugf("Starting Telnet");
   startTelnet();
   if (settingOledType > 0)
   {
     oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
     oled_Print_Msg(3, "telnet (poort 23)", 2500);
   }
-  Serial.println("Debug open for business on port 23!");
+  Debugln("Debug open for business on port 23");
 
 //=============end Networkstuff======================================
 
@@ -384,9 +364,7 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
   snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON());
   DebugTln(cMsg);
 
-  Serial.print("\nGebruik 'telnet ");
-  Serial.print (WiFi.localIP());
-  Serial.println("' voor verdere debugging\r\n");
+  Debugf("\nGebruik 'telnet %s ' voor verdere debugging\r\n",WiFi.localIP().toString().c_str());
 
 //=============now test if SPIFFS is correct populated!============
   if (DSMRfileExist(settingIndexPage, false) )
@@ -422,6 +400,8 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
     spiffsNotPopulated = true;
   }
 //=============end SPIFFS =========================================
+
+//============= start Syslogger ===================================
 #ifdef USE_SYSLOGGER
   if (spiffsNotPopulated)
   {
@@ -480,8 +460,14 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
       oled_Print_Msg(2, "Verder met normale", 0);
       oled_Print_Msg(3, "Verwerking ;-)", 2500);
     }
+
+    DebugTln( "HTTP server starting now\r" );
+    httpServer.begin();
+    DebugTln( "HTTP server is gestart\r" );
+
     if (hasAlternativeIndex)
     {
+      DebugTln(F("serveStatic hasAlternativeIndex"));
       httpServer.serveStatic("/",                 SPIFFS, settingIndexPage);
       httpServer.serveStatic("/index",            SPIFFS, settingIndexPage);
       httpServer.serveStatic("/index.html",       SPIFFS, settingIndexPage);
@@ -489,15 +475,17 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
     }
     else
     {
-      httpServer.serveStatic("/",                 SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/DSMRindex.html",   SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css");
-      httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js");
-      httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js");
+      DebugT(F("serveStatic /"));                 httpServer.serveStatic("/",                 SPIFFS , "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /DSMRindex.html"));   httpServer.serveStatic("/DSMRindex.html",   SPIFFS , "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /index"));            httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /index.html"));       httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /DSMRindex.css"));    httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css");    Debugln(".");
+      DebugT(F("serveStatic /DSMRindex.js"));     httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js");     Debugln(".");
+      DebugT(F("serveStatic /DSMRgraphics.js"));  httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js");  Debugln(".");
     }
-  } else {
+  } 
+  else 
+  {
     DebugTln(F("Oeps! not all files found on SPIFFS -> present FSexplorer!\r"));
     spiffsNotPopulated = true;
     if (settingOledType > 0)
@@ -508,15 +496,16 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
       oled_Print_Msg(3, "Start FSexplorer", 2000);
     }
   }
-
+  DebugTln( "Setup FSexplorer\r");
   setupFSexplorer();
   httpServer.serveStatic("/FSexplorer.png",   SPIFFS, "/FSexplorer.png");
 
+  DebugTln( "Handle processAPI\r");
   httpServer.on("/api", HTTP_GET, processAPI);
+  
   // all other api calls are catched in FSexplorer onNotFounD!
 
-  httpServer.begin();
-  DebugTln( "HTTP server gestart\r" );
+  
   if (settingOledType > 0)                                  //HAS_OLED
   {                                                         //HAS_OLED
     oled_Clear();                                           //HAS_OLED
@@ -524,11 +513,13 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
     oled_Print_Msg(2, "HTTP server ..", 0);                 //HAS_OLED
     oled_Print_Msg(3, "gestart (poort 80)", 0);             //HAS_OLED
   }                                                         //HAS_OLED
-
-  for (int i = 0; i< 10; i++) 
+  else 
   {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    delay(250);
+    for (int i = 0; i< 10; i++) 
+    {
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      delay(250);
+    }
   }
 //================ Start HTTP Server ================================
 
@@ -558,19 +549,8 @@ Serial.printf("\n\nBooting....[%s]\r\n", String(_FW_VERSION).c_str());
   }
 
 //================ Start Slimme Meter ===============================
-
-  DebugTln(F("Enable slimmeMeter..\r"));
-
-#if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
-
-#if defined(ESP8266)
-    DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
-    DebugFlush();
-    Serial.swap();
-#endif
-#endif // is_esp12
-
-  delay(100);
+  DebugTln(F("Start slimmeMeter...\r"));
+  initSlimmermeter();
   slimmeMeter.enable(true);
 
 } // setup()

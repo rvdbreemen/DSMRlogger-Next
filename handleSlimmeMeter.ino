@@ -9,9 +9,38 @@
 ***************************************************************************      
 */  
 
-#if !defined(HAS_NO_SLIMMEMETER)
+
+void initSlimmermeter()
+{
+#if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
+  #if defined(ESP8266) 
+      DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
+      DebugFlush();
+      SM_SERIAL.swap();      // swap to SmartMeter
+    #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
+      SM_SERIAL.begin(9600, SERIAL_7E1);                                                 //PRE40
+    #else   // not use_dsmr_30                                                        //PRE40
+      SM_SERIAL.begin(115200, SERIAL_8N1);
+    #endif  // use_dsmr_30
+  #elif defined(ESP32)
+    #define RXD2 13     // prototype ESP32 is SM aangesloten op RX op GPIO13
+    #define TXD2 1
+    #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
+      SM_SERIAL.begin(9600, SERIAL_7E1, RXD2, TXD2););                                //PRE40
+    #else   // not use_dsmr_30                                                        //PRE40
+      SM_SERIAL.begin(115200, SERIAL_8N1, RXD2, TXD2);
+    #endif  // use_dsmr_30
+  #endif
+
+  #ifdef DTR_ENABLE
+    pinMode(DTR_ENABLE, OUTPUT);
+  #endif
+#endif // USE_REQUEST_PIN && !HAS_NO_SLIMMEMETER 
+}
+
 //==================================================================================
-void handleSlimmemeter()
+#ifndef HAS_NO_SLIMMEMETER    
+void handleSlimmemeter()  
 {
   //DebugTf("showRaw (%s)\r\n", showRaw ?"true":"false");
   if (showRaw) {
@@ -51,15 +80,15 @@ void processSlimmemeterRaw()
 
   slimmeMeter.enable(true);
 
-  SMserial.setTimeout(5000);  // 5 seconds must be enough ..  
+  SM_SERIAL.setTimeout(5000);  // 5 seconds must be enough ..  
   memset(tlgrm, 0, sizeof(tlgrm));
   int l = 0;
   // The terminator character is discarded from the serial buffer.
-  l = SMserial.readBytesUntil('/', tlgrm, sizeof(tlgrm));
+  l = SM_SERIAL.readBytesUntil('/', tlgrm, sizeof(tlgrm));
   // now read from '/' to '!'
   // The terminator character is discarded from the serial buffer.
-  l = SMserial.readBytesUntil('!', tlgrm, sizeof(tlgrm));
-  SMserial.setTimeout(1000);  // seems to be the default ..
+  l = SM_SERIAL.readBytesUntil('!', tlgrm, sizeof(tlgrm));
+  SM_SERIAL.setTimeout(1000);  // seems to be the default ..
 //  DebugTf("read [%d] bytes\r\n", l);
   if (l == 0) 
   {
@@ -72,7 +101,7 @@ void processSlimmemeterRaw()
   // next 6 bytes are "<CRC>\r\n"
   for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
   {
-    tlgrm[l++] = (char)SMserial.read();
+    tlgrm[l++] = (char)SM_SERIAL.read();
   }
 #else
   tlgrm[l++]    = '\r';

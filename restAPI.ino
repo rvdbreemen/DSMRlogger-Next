@@ -273,15 +273,15 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
   {
     showRaw = true;
     slimmeMeter.enable(true);
-    SMserial.setTimeout(5000);  // 5 seconds must be enough ..
+    SM_SERIAL.setTimeout(5000);  // 5 seconds must be enough ..
     memset(tlgrm, 0, sizeof(tlgrm));
     int l = 0;
     // The terminator character is discarded from the serial buffer.
-    l = SMserial.readBytesUntil('/', tlgrm, sizeof(tlgrm));
+    l = SM_SERIAL.readBytesUntil('/', tlgrm, sizeof(tlgrm));
     // now read from '/' to '!'
     // The terminator character is discarded from the serial buffer.
-    l = SMserial.readBytesUntil('!', tlgrm, sizeof(tlgrm));
-    SMserial.setTimeout(1000);  // seems to be the default ..
+    l = SM_SERIAL.readBytesUntil('!', tlgrm, sizeof(tlgrm));
+    SM_SERIAL.setTimeout(1000);  // seems to be the default ..
     DebugTf("read [%d] bytes\r\n", l);
     if (l == 0) 
     {
@@ -295,7 +295,7 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
     // next 6 bytes are "<CRC>\r\n"
     for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
     {
-      tlgrm[l++] = (char)SMserial.read();
+      tlgrm[l++] = (char)SM_SERIAL.read();
     }
 #else
     tlgrm[l++]    = '\r';
