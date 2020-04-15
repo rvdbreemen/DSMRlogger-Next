@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : restAPI, part of DSMRloggerAPI
-**  Version  : v1.2.1
+**  Version  : v1.2.4
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -39,15 +39,11 @@ bool onlyIfPresent  = false;
 void processAPI() 
 {
   char fName[40] = "";
-  char URI[40] = "";
+  char URI[50] = "";
   String words[10];
 
-//  #if defined(ESP8266)
-//    char *URI = (char*)httpServer.uri().c_str(); 
-//  #elif defined(ESP32)
     strncpy ( URI, httpServer.uri().c_str(), sizeof(URI)); 
     DebugTf("URI [%s]\r\n", URI);
-//  #endif
   
   if (httpServer.method() == HTTP_GET)
         DebugTf("incoming URI from [%s] is [%s] method[GET] \r\n"
