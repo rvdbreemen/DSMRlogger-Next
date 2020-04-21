@@ -21,8 +21,8 @@
 #define DEBUG_ESP_PORT DEBUG_PORT
 
 #ifdef DEBUG_ESP_PORT
-  //#define DEBUG_MSG(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
-  #define DEBUG_MSG(...) Debugf( __VA_ARGS__ )
+  #define DEBUG_MSG(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+  //#define DEBUG_MSG(...) Debugf( __VA_ARGS__ )
   #else
   #define DEBUG_MSG(...)
 #endif

@@ -417,8 +417,15 @@ void setup()
       oled_Print_Msg(2, "Verder met normale", 0);
       oled_Print_Msg(3, "Verwerking ;-)", 2500);
     }
+
+      
+    DebugTln(F("Starting HTTP server now..."));
+    httpServer.begin();
+    DebugTln( "HTTP server gestart." );
+
     if (hasAlternativeIndex)
     {
+      DebugTln(F("has Alternative Index"));
       httpServer.serveStatic("/",                 SPIFFS, settingIndexPage);
       httpServer.serveStatic("/index",            SPIFFS, settingIndexPage);
       httpServer.serveStatic("/index.html",       SPIFFS, settingIndexPage);
@@ -426,13 +433,21 @@ void setup()
     }
     else
     {
+      DebugTln(F("has Alternative Index"));
       httpServer.serveStatic("/",                 SPIFFS, "/DSMRindex.html");
+      DebugTln(F("added serverStatic [/]"));
       httpServer.serveStatic("/DSMRindex.html",   SPIFFS, "/DSMRindex.html");
+      DebugTln(F("added serverStatic [/DSMRindex.html]"));
       httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html");
+      DebugTln(F("added serverStatic [/index]"));
       httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html");
+      DebugTln(F("added serverStatic [/index.html]"));
       httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css");
+      DebugTln(F("added serverStatic [/DSMRindex.css]"));
       httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js");
+      DebugTln(F("added serverStatic [/DSMRindex.js]"));
       httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js");
+      DebugTln(F("serverStatic [/DSMRgraphics.js]"));
     }
   } else {
     DebugTln(F("Oeps! not all files found on SPIFFS -> present FSexplorer!\r"));
@@ -445,15 +460,16 @@ void setup()
       oled_Print_Msg(3, "Start FSexplorer", 2000);
     }
   }
-
+  
+  DebugTln(F("setupFSexplorer"));
   setupFSexplorer();
   httpServer.serveStatic("/FSexplorer.png",   SPIFFS, "/FSexplorer.png");
 
+  DebugTln(F("setup RESTAPI interface"));
   httpServer.on("/api", HTTP_GET, processAPI);
   // all other api calls are catched in FSexplorer onNotFounD!
 
-  httpServer.begin();
-  DebugTln( "HTTP server gestart\r" );
+
   if (settingOledType > 0)                                  //HAS_OLED
   {                                                         //HAS_OLED
     oled_Clear();                                           //HAS_OLED
