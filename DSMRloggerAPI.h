@@ -9,6 +9,27 @@
 ***************************************************************************      
 */  
 
+#if defined(ESP8266)
+  #define ESP_RESET()             ESP.reset()
+  #define ESP_RESET_REASON()      ESP.getResetReason().c_str()
+  #define ESP_GET_FREE_BLOCK()    ESP.getMaxFreeBlockSize()
+  #define ESP_GET_CHIPID()        ESP.getChipId()
+  const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "Unknown" };
+//    #define LED_ON      LOW
+//    #define LED_OFF     HIGH
+  #define SM_SERIAL Serial
+#elif defined(ESP32)
+  #define ESP_RESET()             ESP.restart()
+  #define ESP_RESET_REASON()      ((String)esp_reset_reason()).c_str()
+  #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()
+  #define ESP_GET_CHIPID()        ((uint32_t)ESP.getEfuseMac()) //The chipID is essentially its MAC address (length: 6 bytes) 
+  const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
+//    #define LED_ON      HIGH
+//    #define LED_OFF     LOW
+  #define SM_SERIAL Serial2
+  #include "SPIFFS.h"
+#endif
+
 #include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "safeTimers.h"

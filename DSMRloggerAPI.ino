@@ -2,7 +2,7 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v2.0.1 (17-04-2020)"
+#define _FW_VERSION "v2.0.1 ESP (21-04-2020)"
 /*
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -36,7 +36,7 @@
 */
 /******************** compiler options  ********************************************/
 #define USE_REQUEST_PIN           // define if it's a esp8266 with GPIO 12 connected to SM DTR pin
-#define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
+//#define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
 //  #define USE_BELGIUM_PROTOCOL      // define if Slimme Meter is a Belgium Smart Meter
 //  #define USE_PRE40_PROTOCOL        // define if Slimme Meter is pre DSMR 4.0 (2.2 .. 3.0)
 //  #define USE_NTP_TIME              // define to generate Timestamp from NTP (Only Winter Time for now)
@@ -46,6 +46,10 @@
 //  #define USE_SYSLOGGER             // define if you want to use the sysLog library for debugging
 //  #define SHOW_PASSWRDS             // well .. show the PSK key and MQTT password, what else?
 /******************** don't change anything below this comment **********************/
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
 
 #include "DSMRloggerAPI.h"
 
@@ -138,25 +142,36 @@ void openSysLog(bool empty)
 //===========================================================================================
 void setup() 
 {
-#ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-//Serial.begin(115200);                                                           //DEBUG
-  Serial.begin(9600, SERIAL_7E1);                                                 //PRE40
-#else   // not use_dsmr_30                                                        //PRE40
-  Serial.begin(115200, SERIAL_8N1);
-#endif  // use_dsmr_30
+
+  //================ Serial Debug ================================
+
+  DEBUG_PORT.begin(115200, SERIAL_8N1);                   //DEBUG
+  Debugf("\n\nBooting [%s]", String(_FW_VERSION).c_str());
+  for(int i=10; i>0; i--)
+  {
+    delay(100);
+    Debugf(".");
+    DebugFlush();  //flush out all serial data
+  }
+  Debugf("\r\n");
+  DebugFlush();  //flush out all serial data
+
+  //setup hardware buildin led and flash_button
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(FLASH_BUTTON, INPUT);
-#ifdef DTR_ENABLE
-  pinMode(DTR_ENABLE, OUTPUT);
-#endif
   
   //--- setup randomseed the right way
-  //--- This is 8266 HWRNG used to seed the Random PRNG
-  //--- Read more: https://config9.com/arduino/getting-a-truly-random-number-in-arduino/
-  randomSeed(RANDOM_REG32); 
+  #if defined(ESP8266) 
+    //--- This is 8266 HWRNG used to seed the Random PRNG
+    //--- Read more: https://config9.com/arduino/getting-a-truly-random-number-in-arduino/
+    randomSeed(RANDOM_REG32); 
+  #elif defined(ESP32)
+    randomSeed(esp_random());
+  #endif
   snprintf(settingHostname, sizeof(settingHostname), "%s", _DEFAULT_HOSTNAME);
-  Serial.printf("\n\nBooting....[%s]\r\n\r\n", String(_FW_VERSION).c_str());
 
+
+//================ oLed =======================================
   if (settingOledType > 0)
   {
     oled_Init();
@@ -178,14 +193,8 @@ void setup()
     }
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
-  lastReset     = ESP.getResetReason();
-
-  startTelnet();
-  if (settingOledType > 0)
-  {
-    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
-    oled_Print_Msg(3, "telnet (poort 23)", 2500);
-  }
+  lastReset     = ESP_RESET_REASON();
+  Debugf("\n\nReset reason....[%s]\r\n", lastReset);  
   
 //================ SPIFFS ===========================================
   if (SPIFFS.begin()) 
@@ -231,6 +240,10 @@ void setup()
   }
   digitalWrite(LED_BUILTIN, LED_ON);
   startWiFi(settingHostname, 240);  // timeout 4 minuten
+  Debugln(F("Wifi started..."));
+  Debug (F("Connected to " )); Debugln (WiFi.SSID());
+  Debug (F("IP address: " ));  Debugln (WiFi.localIP());
+  Debug (F("IP gateway: " ));  Debugln (WiFi.gatewayIP());
 
   if (settingOledType > 0)
   {
@@ -239,17 +252,13 @@ void setup()
     snprintf(cMsg, sizeof(cMsg), "IP %s", WiFi.localIP().toString().c_str());
     oled_Print_Msg(2, cMsg, 1500);
   }
-  digitalWrite(LED_BUILTIN, LED_OFF);
-  
-  Debugln();
-  Debug (F("Connected to " )); Debugln (WiFi.SSID());
-  Debug (F("IP address: " ));  Debugln (WiFi.localIP());
-  Debug (F("IP gateway: " ));  Debugln (WiFi.gatewayIP());
-  Debugln();
-
-  for (int L=0; L < 10; L++) {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    delay(200);
+  else
+  {
+    digitalWrite(LED_BUILTIN, LED_OFF);
+    for (int L=0; L < 10; L++) {
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      delay(200);
+    }
   }
   digitalWrite(LED_BUILTIN, LED_OFF);
 
@@ -268,6 +277,15 @@ void setup()
   {
     oled_Print_Msg(3, "mDNS gestart", 1500);
   }
+
+  Debugf("Starting Telnet");    
+  startTelnet();
+  if (settingOledType > 0)
+  {
+    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
+    oled_Print_Msg(3, "telnet (poort 23)", 2500);
+  }
+  Debugln("Debug open for business on port 23");
   
 //=============end Networkstuff======================================
 
@@ -305,9 +323,7 @@ void setup()
   snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
   DebugTln(cMsg);
 
-  Serial.print("\nGebruik 'telnet ");
-  Serial.print (WiFi.localIP());
-  Serial.println("' voor verdere debugging\r\n");
+  Debugf("\nGebruik 'telnet %s ' voor verdere debugging\r\n",WiFi.localIP().toString().c_str());
 
 //=============now test if SPIFFS is correct populated!============
   if (DSMRfileExist(settingIndexPage, false) )
@@ -451,21 +467,23 @@ void setup()
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     delay(250);
   }
-//================ Start HTTP Server ================================
+//================ End HTTP Server ================================
 
   //test(); monthTabel
-  
+
+//================ Start Mindergas =================================
+
 #ifdef USE_MINDERGAS
     handleMindergas();
 #endif
 
-  DebugTf("Startup complete! actTimestamp[%s]\r\n", actTimestamp);  
-  writeToSysLog("Startup complete! actTimestamp[%s]", actTimestamp);  
-
-//================ End of Slimmer Meter ============================
+//================ End of Mindergas ================================
 
 
 //================ The final part of the Setup =====================
+
+  DebugTf("Startup complete! actTimestamp[%s]\r\n", actTimestamp);  
+  writeToSysLog("Startup complete! actTimestamp[%s]", actTimestamp);  
 
   snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
   DebugTln(cMsg);
@@ -479,17 +497,10 @@ void setup()
   }
 
 //================ Start Slimme Meter ===============================
-
-  DebugTln(F("Enable slimmeMeter..\r"));
-
-#if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
-    DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
-    DebugFlush();
-    Serial.swap();
-#endif // is_esp12
-
-  delay(100);
+  DebugTln(F("Start slimmeMeter...\r"));
+  initSlimmermeter();
   slimmeMeter.enable(true);
+
 
 } // setup()
 
