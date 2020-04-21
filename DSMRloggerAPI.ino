@@ -129,7 +129,7 @@ void openSysLog(bool empty)
   {
     sysLog.write("******************************************************************************************************");
   }
-  writeToSysLog("Last Reset Reason [%s]", ESP.getResetReason().c_str());
+  writeToSysLog("Last Reset Reason [%s]", ESP_RESET_REASON() .c_str());
   writeToSysLog("actTimestamp[%s], nrReboots[%u], Errors[%u]", actTimestamp
                                                              , nrReboots
                                                              , slotErrors);
@@ -551,7 +551,7 @@ void doSystemTasks()
   httpServer.handleClient();
 #if defined(ESP8266)
   MDNS.update();
-#elif
+#elif defined(ESP32)
 //Needs work for **TODO:ESP32**
 #endif
   handleKeyInput();

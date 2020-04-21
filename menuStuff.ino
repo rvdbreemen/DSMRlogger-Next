@@ -136,7 +136,7 @@ void displayBoardInfo()
 #endif
   Debug(F("]\r\n            IP Address ["));  Debug( WiFi.localIP().toString() );
   Debug(F("]\r\n              Hostname ["));  Debug( settingHostname );
-  Debug(F("]\r\n     Last reset reason ["));  Debug( ESP.getResetReason() );
+  Debug(F("]\r\n     Last reset reason ["));  Debug( ESP_RESET_REASON()  );
   Debug(F("]\r\n                upTime ["));  Debug( upTime() );
   Debugln(F("]\r"));
 
@@ -198,7 +198,7 @@ void handleKeyInput()
                     WiFi.disconnect(true);  // deletes credentials !
                     //setupWiFi(true);
                     delay(2000);
-                    ESP.reset();
+                    ESP_RESET();
                     delay(2000);
                     break;
       case 'i':
@@ -226,10 +226,10 @@ void handleKeyInput()
                     delay(3000);
                     DebugTln(F("now Rebooting. \r"));
                     DebugFlush();
-                    ESP.reset();
+                    ESP_RESET();
                     break;
       case 's':
-      case 'S':     listSPIFFS();
+      case 'S':     listFiles();
                     break;
       case 'v':
       case 'V':     if (Verbose2) 

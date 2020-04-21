@@ -135,7 +135,7 @@ void processSlimmemeter()
       if (telegramCount > (UINT32_MAX - 10)) 
       {
         delay(1000);
-        ESP.reset();
+        ESP_RESET();
         delay(1000);
       }
       digitalWrite(LED_BUILTIN, LED_OFF);

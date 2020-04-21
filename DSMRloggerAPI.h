@@ -176,6 +176,7 @@ const char *weekDayName[]  { "Unknown", "Zondag", "Maandag", "Dinsdag", "Woensda
                             , "Donderdag", "Vrijdag", "Zaterdag", "Unknown" };
 const char *monthName[]    { "00", "Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli"
                             , "Augustus", "September", "Oktober", "November", "December", "13" };
+//const char *flashMode[]    { "QIO", "QOUT", "DIO", "DOUT", "Unknown" };
 
 /**
 struct FSInfo {
