@@ -320,7 +320,7 @@ void setup()
 #endif  //USE_NTP_TIME                                      //USE_NTP
 //================ end NTP =========================================
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON());
   DebugTln(cMsg);
 
   Debugf("\nGebruik 'telnet %s ' voor verdere debugging\r\n",WiFi.localIP().toString().c_str());
@@ -485,7 +485,7 @@ void setup()
   DebugTf("Startup complete! actTimestamp[%s]\r\n", actTimestamp);  
   writeToSysLog("Startup complete! actTimestamp[%s]", actTimestamp);  
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON());
   DebugTln(cMsg);
 
   if (settingOledType > 0)
@@ -549,7 +549,11 @@ void doSystemTasks()
     MQTTclient.loop();
   #endif
   httpServer.handleClient();
+#if defined(ESP8266)
   MDNS.update();
+#elif
+//Needs work for **TODO:ESP32**
+#endif
   handleKeyInput();
   if (settingOledType > 0)
   {

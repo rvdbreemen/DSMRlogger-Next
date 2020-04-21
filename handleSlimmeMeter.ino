@@ -78,15 +78,15 @@ void processSlimmemeterRaw()
   }
 
   slimmeMeter.enable(true);
-  Serial.setTimeout(5000);  // 5 seconds must be enough ..
+  SM_SERIAL.setTimeout(5000);  // 5 seconds must be enough ..
   memset(tlgrm, 0, sizeof(tlgrm));
   int l = 0;
   // The terminator character is discarded from the serial buffer.
-  l = Serial.readBytesUntil('/', tlgrm, sizeof(tlgrm));
+  l = SM_SERIAL.readBytesUntil('/', tlgrm, sizeof(tlgrm));
   // now read from '/' to '!'
   // The terminator character is discarded from the serial buffer.
-  l = Serial.readBytesUntil('!', tlgrm, sizeof(tlgrm));
-  Serial.setTimeout(1000);  // seems to be the default ..
+  l = SM_SERIAL.readBytesUntil('!', tlgrm, sizeof(tlgrm));
+  SM_SERIAL.setTimeout(1000);  // seems to be the default ..
 //  DebugTf("read [%d] bytes\r\n", l);
   if (l == 0) 
   {
@@ -99,7 +99,7 @@ void processSlimmemeterRaw()
   // next 6 bytes are "<CRC>\r\n"
   for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
   {
-    tlgrm[l++] = (char)Serial.read();
+    tlgrm[l++] = (char)SM_SERIAL.read();
   }
 #else
   tlgrm[l++]    = '\r';

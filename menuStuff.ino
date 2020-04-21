@@ -76,25 +76,50 @@ void displayBoardInfo()
 
   Debug(F(" \r\n   Telegrams Processed ["));  Debug( telegramCount );
   Debug(F("]\r\n           With Errors ["));  Debug( telegramErrors );
-  Debug(F("]\r\n              FreeHeap ["));  Debug( ESP.getFreeHeap() );
-  Debug(F("]\r\n             max.Block ["));  Debug( ESP.getMaxFreeBlockSize() );
-  Debug(F("]\r\n               Chip ID ["));  Debug( ESP.getChipId(), HEX );
+   Debugln(F("==================================================================\r"));
+
+  Debug(F(" \r\n            Board type ["));
+#if defined(ARDUINO_ESP8266_NODEMCU)
+    Debug(F("ESP8266_NODEMCU"));
+#elif defined(ARDUINO_ESP8266_GENERIC)
+    Debug(F("ESP8266_GENERIC"));
+#elif defined(ESP8266_ESP01)
+    Debug(F("ESP8266_ESP01"));
+#elif defined(ESP8266_ESP12)
+    Debug(F("ESP8266_ESP12"));
+#elif defined(ESP32)
+    Debug(F("ESP32"));
+#endif
+
+#if defined(ESP8266) 
   Debug(F("]\r\n          Core Version ["));  Debug( ESP.getCoreVersion() );
+#elif defined(ESP32)
+  Debug(F("]\r\n         Chip Revision ["));  Debug( ESP.getChipRevision() );
+#endif
+  Debug(F("]\r\n               Chip ID ["));  Debug( ESP_GET_CHIPID(), HEX );
   Debug(F("]\r\n           SDK Version ["));  Debug( ESP.getSdkVersion() );
   Debug(F("]\r\n        CPU Freq (MHz) ["));  Debug( ESP.getCpuFreqMHz() );
   Debug(F("]\r\n      Sketch Size (kB) ["));  Debug( ESP.getSketchSize() / 1024.0 );
   Debug(F("]\r\nFree Sketch Space (kB) ["));  Debug( ESP.getFreeSketchSpace() / 1024.0 );
+  Debug(F("]\r\n              FreeHeap ["));  Debug( ESP.getFreeHeap() );
+  Debug(F("]\r\n             max.Block ["));  Debug( ESP_GET_FREE_BLOCK() );
 
+#if defined(ESP8266) 
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
-
-  SPIFFS.info(SPIFFSinfo);
-
   Debug(F("]\r\n         Flash Chip ID ["));  Debug( cMsg );
+  SPIFFS.info(SPIFFSinfo);
+#endif
+  
+
   Debug(F("]\r\n  Flash Chip Size (kB) ["));  Debug( ESP.getFlashChipSize() / 1024 );
+#if defined(ESP8266) 
   Debug(F("]\r\n   Chip Real Size (kB) ["));  Debug( ESP.getFlashChipRealSize() / 1024 );
   Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFSinfo.totalBytes / 1024 );
+#elif defined(ESP32)
+  Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFS.totalBytes() / 1024 );
+#endif
 
   Debug(F("]\r\n      Flash Chip Speed ["));  Debug( ESP.getFlashChipSpeed() / 1000 / 1000 );
   FlashMode_t ideMode = ESP.getFlashChipMode();
@@ -103,19 +128,6 @@ void displayBoardInfo()
   Debugln(F("]\r"));
 
   Debugln(F("==================================================================\r"));
-  Debug(F(" \r\n            Board type ["));
-#ifdef ARDUINO_ESP8266_NODEMCU
-    Debug(F("ESP8266_NODEMCU"));
-#endif
-#ifdef ARDUINO_ESP8266_GENERIC
-    Debug(F("ESP8266_GENERIC"));
-#endif
-#ifdef ESP8266_ESP01
-    Debug(F("ESP8266_ESP01"));
-#endif
-#ifdef ESP8266_ESP12
-    Debug(F("ESP8266_ESP12"));
-#endif
   Debug(F("]\r\n                  SSID ["));  Debug( WiFi.SSID() );
 #ifdef SHOW_PASSWRDS
   Debug(F("]\r\n               PSK key ["));  Debug( WiFi.psk() );

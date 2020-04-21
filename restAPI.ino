@@ -275,15 +275,15 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
   {
     showRaw = true;
     slimmeMeter.enable(true);
-    Serial.setTimeout(5000);  // 5 seconds must be enough ..
+    SM_SERIAL.setTimeout(5000);  // 5 seconds must be enough ..
     memset(tlgrm, 0, sizeof(tlgrm));
     int l = 0;
     // The terminator character is discarded from the serial buffer.
-    l = Serial.readBytesUntil('/', tlgrm, sizeof(tlgrm));
+    l = SM_SERIAL.readBytesUntil('/', tlgrm, sizeof(tlgrm));
     // now read from '/' to '!'
     // The terminator character is discarded from the serial buffer.
-    l = Serial.readBytesUntil('!', tlgrm, sizeof(tlgrm));
-    Serial.setTimeout(1000);  // seems to be the default ..
+    l = SM_SERIAL.readBytesUntil('!', tlgrm, sizeof(tlgrm));
+    SM_SERIAL.setTimeout(1000);  // seems to be the default ..
     DebugTf("read [%d] bytes\r\n", l);
     if (l == 0) 
     {
@@ -297,7 +297,7 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
     // next 6 bytes are "<CRC>\r\n"
     for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
     {
-      tlgrm[l++] = (char)Serial.read();
+      tlgrm[l++] = (char)SM_SERIAL.read();
     }
 #else
     tlgrm[l++]    = '\r';
@@ -360,40 +360,49 @@ void sendDeviceInfo()
   sendNestedJsonObj("macaddress", WiFi.macAddress().c_str());
   sendNestedJsonObj("indexfile", settingIndexPage);
   sendNestedJsonObj("freeheap", ESP.getFreeHeap(), "bytes");
-  sendNestedJsonObj("maxfreeblock", ESP.getMaxFreeBlockSize(), "bytes");
-  sendNestedJsonObj("chipid", String( ESP.getChipId(), HEX ).c_str());
+  sendNestedJsonObj("maxfreeblock", ESP_GET_FREE_BLOCK(), "bytes");
+  sendNestedJsonObj("chipid", String( ESP_GET_CHIPID(), HEX ).c_str());
+#if defined(ESP8266) 
   sendNestedJsonObj("coreversion", String( ESP.getCoreVersion() ).c_str() );
+#elif defined(ESP32)
+  sendNestedJsonObj("chiprevision", String( ESP.getChipRevision() ).c_str() );
+#endif
   sendNestedJsonObj("sdkversion", String( ESP.getSdkVersion() ).c_str());
   sendNestedJsonObj("cpufreq", ESP.getCpuFreqMHz(), "MHz");
   sendNestedJsonObj("sketchsize", formatFloat( (ESP.getSketchSize() / 1024.0), 3), "kB");
   sendNestedJsonObj("freesketchspace", formatFloat( (ESP.getFreeSketchSpace() / 1024.0), 3), "kB");
 
+#if defined(ESP8266) 
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
   sendNestedJsonObj("flashchipid", cMsg);  // flashChipId
+#endif
   sendNestedJsonObj("flashchipsize", formatFloat((ESP.getFlashChipSize() / 1024.0 / 1024.0), 3), "MB");
-  sendNestedJsonObj("flashchiprealsize", formatFloat((ESP.getFlashChipRealSize() / 1024.0 / 1024.0), 3), "MB");
 
+#if defined(ESP8266) 
+  sendNestedJsonObj("flashchiprealsize", formatFloat((ESP.getFlashChipRealSize() / 1024.0 / 1024.0), 3), "MB");
   SPIFFS.info(SPIFFSinfo);
   sendNestedJsonObj("spiffssize", formatFloat( (SPIFFSinfo.totalBytes / (1024.0 * 1024.0)), 0), "MB");
+#elif defined(ESP32)
+  sendNestedJsonObj("spiffssize", formatFloat( (SPIFFS.totalBytes() / (1024.0 * 1024.0)), 0), "MB");
+#endif
 
   sendNestedJsonObj("flashchipspeed", formatFloat((ESP.getFlashChipSpeed() / 1000.0 / 1000.0), 0), "MHz");
 
   FlashMode_t ideMode = ESP.getFlashChipMode();
   sendNestedJsonObj("flashchipmode", flashMode[ideMode]);
   sendNestedJsonObj("boardtype",
-#ifdef ARDUINO_ESP8266_NODEMCU
+#if defined(ARDUINO_ESP8266_NODEMCU)
      "ESP8266_NODEMCU"
-#endif
-#ifdef ARDUINO_ESP8266_GENERIC
+#elif defined(ARDUINO_ESP8266_GENERIC)
      "ESP8266_GENERIC"
-#endif
-#ifdef ESP8266_ESP01
+#elif defined(ESP8266_ESP01)
      "ESP8266_ESP01"
-#endif
-#ifdef ESP8266_ESP12
+#elif defined(ESP8266_ESP12)
      "ESP8266_ESP12"
+#elif defined(ESP32)
+     "ESP32"
 #endif
   );
   sendNestedJsonObj("compileoptions", compileOptions);
