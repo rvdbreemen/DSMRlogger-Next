@@ -2,7 +2,7 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v1.2.5 ESP32 (15-04-2020)"
+#define _FW_VERSION "v1.2.3 ESP32 (15-04-2020)"
 
 /*
 **  Copyright (c) 2020 Willem Aandewiel
@@ -453,7 +453,6 @@ void setup()
 
   if (!spiffsNotPopulated) {
     DebugTln(F("SPIFFS correct populated -> normal operation!\r"));
-   
     if (settingOledType > 0)
     {
       oled_Print_Msg(0, " <DSMRloggerAPI>", 0); 
@@ -462,9 +461,9 @@ void setup()
       oled_Print_Msg(3, "Verwerking ;-)", 2500);
     }
 
-    DebugTln(F("HTTP server starting now\r"));
+    DebugTln( "HTTP server starting now\r" );
     httpServer.begin();
-//    DebugTln(F("HTTP server is gestart\r"));
+    DebugTln( "HTTP server is gestart\r" );
 
     if (hasAlternativeIndex)
     {
@@ -476,21 +475,13 @@ void setup()
     }
     else
     {
-      DebugT(F("serveStatic /"));                 
-      httpServer.serveStatic("/",                 SPIFFS , "/DSMRindex.html");   
-      DebugT(F("serveStatic /DSMRindex.html"));   
-      httpServer.serveStatic("/DSMRindex.html",   SPIFFS , "/DSMRindex.html");
-      DebugT(F("serveStatic /index"));            
-      httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html");  
-      DebugT(F("serveStatic /index.html"));       
-      httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html");  
-      DebugT(F("serveStatic /DSMRindex.css"));    
-      httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css");    
-      DebugT(F("serveStatic /DSMRindex.js"));     
-      httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js");     
-      DebugT(F("serveStatic /DSMRgraphics.js"));  
-      httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js");  
-      Debugln("Done mounting serveStatic pages");
+      DebugT(F("serveStatic /"));                 httpServer.serveStatic("/",                 SPIFFS , "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /DSMRindex.html"));   httpServer.serveStatic("/DSMRindex.html",   SPIFFS , "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /index"));            httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /index.html"));       httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html");   Debugln(".");
+      DebugT(F("serveStatic /DSMRindex.css"));    httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css");    Debugln(".");
+      DebugT(F("serveStatic /DSMRindex.js"));     httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js");     Debugln(".");
+      DebugT(F("serveStatic /DSMRgraphics.js"));  httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js");  Debugln(".");
     }
   } 
   else 
