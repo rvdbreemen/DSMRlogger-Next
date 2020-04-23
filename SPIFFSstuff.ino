@@ -485,7 +485,7 @@ int32_t freeSpace()
   #if defined(ESP8266)
     FSInfo SPIFFSinfo;
     SPIFFS.info(SPIFFSinfo);  
-    Debugln((int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes)) + " bytes ruimte in SPIFFS");
+    Debugln((int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes) + " bytes ruimte in SPIFFS");
     return (int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes);
   #elif defined(ESP32)
     return (SPIFFS.totalBytes() - SPIFFS.usedBytes());

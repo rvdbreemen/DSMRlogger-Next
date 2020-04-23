@@ -13,14 +13,14 @@ void initSlimmermeter()
 {
 #if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
   #if defined(ESP8266) 
-      DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
-      DebugFlush();
-      SM_SERIAL.swap();      // swap to SmartMeter
     #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
       SM_SERIAL.begin(9600, SERIAL_7E1);                                                 //PRE40
     #else   // not use_dsmr_30                                                        //PRE40
       SM_SERIAL.begin(115200, SERIAL_8N1);
     #endif  // use_dsmr_30
+    DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
+    DebugFlush();
+    SM_SERIAL.swap();      // swap to SmartMeter
   #elif defined(ESP32)
     #define RXD2 13     // prototype ESP32 is SM aangesloten op RX op GPIO13
     #define TXD2 1
