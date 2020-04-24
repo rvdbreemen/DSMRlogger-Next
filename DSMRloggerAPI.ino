@@ -194,7 +194,7 @@ void setup()
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
   lastReset     = ESP_RESET_REASON();
-  Debugf("\n\nReset reason....[%s]\r\n", lastReset);  
+  Debugf("\n\nReset reason....[%s]\r\n", lastReset.c_str());  
   
 //================ SPIFFS ===========================================
   if (SPIFFS.begin()) 
