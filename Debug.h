@@ -30,28 +30,32 @@
 /*---- start macro's ------------------------------------------------------------------*/
 
 #define Debug(...)      ({ DEBUG_PORT.print(__VA_ARGS__);         \
-                           TelnetStream.print(__VA_ARGS__);   \
+                           if (TelnetStream.available())          \
+                              TelnetStream.print(__VA_ARGS__);    \
                         })
 #define Debugln(...)    ({ DEBUG_PORT.println(__VA_ARGS__);       \
-                           TelnetStream.println(__VA_ARGS__); \
+                           if (TelnetStream.available())          \
+                              TelnetStream.println(__VA_ARGS__);  \
                         })
 #define Debugf(...)     ({ DEBUG_PORT.printf(__VA_ARGS__);        \
-                           TelnetStream.printf(__VA_ARGS__);  \
+                           if (TelnetStream.available())          \
+                              TelnetStream.printf(__VA_ARGS__);   \
                         })
 
-#define DebugFlush()    ({ DEBUG_PORT.flush(); \
-                           TelnetStream.flush(); \
+#define DebugFlush()    ({ DEBUG_PORT.flush();                    \
+                           if (TelnetStream.available())          \
+                              TelnetStream.flush();               \
                         })
 
 
-#define DebugT(...)     ({ _debugBOL(__FUNCTION__, __LINE__);  \
-                           Debug(__VA_ARGS__);                 \
+#define DebugT(...)     ({ _debugBOL(__FUNCTION__, __LINE__);     \
+                           Debug(__VA_ARGS__);                    \
                         })
-#define DebugTln(...)   ({ _debugBOL(__FUNCTION__, __LINE__);  \
-                           Debugln(__VA_ARGS__);        \
+#define DebugTln(...)   ({ _debugBOL(__FUNCTION__, __LINE__);     \
+                           Debugln(__VA_ARGS__);                  \
                         })
-#define DebugTf(...)    ({ _debugBOL(__FUNCTION__, __LINE__);  \
-                           Debugf(__VA_ARGS__);                \
+#define DebugTf(...)    ({ _debugBOL(__FUNCTION__, __LINE__);     \
+                           Debugf(__VA_ARGS__);                   \
                         })
 
 /*---- einde macro's ------------------------------------------------------------------*/
@@ -68,7 +72,8 @@ void _debugBOL(const char *fn, int line)
                 fn, line);
                  
   DEBUG_PORT.print (_bol);
-  TelnetStream.print (_bol);
+  if (TelnetStream.available())  
+    TelnetStream.print(_bol);
 }
 
 #endif // DEBUG_H 

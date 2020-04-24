@@ -151,7 +151,6 @@ void setup()
   {
     delay(100);
     Debugf(".");
-    DebugFlush();  //flush out all serial data
   }
   Debugf("\r\n");
   DebugFlush();  //flush out all serial data
@@ -186,11 +185,13 @@ void setup()
   }
   else  // don't blink if oled-screen attatched
   {
-    for(int I=0; I<8; I++) 
+    for(int i=8; i>0; i--) 
     {
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      Debug(".");
       delay(500);
     }
+    Debugln();
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
   lastReset     = ESP_RESET_REASON();
