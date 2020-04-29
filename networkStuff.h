@@ -33,7 +33,7 @@
   #ifdef USE_UPDATE_SERVER
     ESP8266HTTPUpdateServer httpUpdater(true);
   #endif
-#elif defined(ESP32) || defined(ARDUINO_ARCH_ESP32)
+#elif defined(ESP32) 
   #include <WiFi.h>
   #include <WiFiClient.h>
   #include <WebServer.h>
@@ -44,16 +44,16 @@
   #include <SPIFFS.h>
 
   #ifdef USE_UPDATE_SERVER
+//    #include <WebOTA.h>
   //need work (21 april 2020) - not ported yet
-//      #include "ESP8266HTTPUpdateServer.h"
-    #include <ESP32httpUpdate.h>
-//      #include "ESP32ModUpdateServer.h"  // <<modified version of ESP32ModUpdateServer.h by Robert>>
+  //      #include "ESP8266HTTPUpdateServer.h"
+    #include "ESP32ModUpdateServer.h"  // <<modified version of ESP32ModUpdateServer.h by Robert>>
     #include "UpdateServerHtml.h"   
   #endif
 
   WebServer        httpServer(80);
   #ifdef USE_UPDATE_SERVER
-    ESP32HTTPUpdate httpUpdater();
+    ESP32HTTPUpdateServer httpUpdater(true);
   #endif
 #else
   #error unexpected / unsupported architecture, make sure to compile for ESP32 or ESP8266
