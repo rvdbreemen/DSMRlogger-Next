@@ -19,14 +19,14 @@
   #include <WiFiManager.h>        // version 0.14.0 - https://github.com/tzapu/WiFiManager
 
   #ifdef USE_UPDATE_SERVER
-    //#include "ESP8266HTTPUpdateServer.h"
-    #include "ModUpdateServer.h"  // https://github.com/mrWheel/ModUpdateServer
+    //#include "ESP8266HTTPUpdateServer.h"  //Original version of ESP8266HTTPUpdateServer.h from ESP8266 Core
+    #include "ModUpdateServer.h"            // https://github.com/mrWheel/ModUpdateServer
     #include "UpdateServerHtml.h"
   #endif
 
   //  included in main program: #include <TelnetStream.h>       // Version 0.0.1 - https://github.com/jandrassy/TelnetStream
   //  #include <Hash.h>
-  #include <FS.h>                 // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <FS.h>                                               // part of ESP8266 Core https://github.com/esp8266/Arduino
 
 
   ESP8266WebServer        httpServer (80);
@@ -44,9 +44,6 @@
   #include <SPIFFS.h>
 
   #ifdef USE_UPDATE_SERVER
-//    #include <WebOTA.h>
-  //need work (21 april 2020) - not ported yet
-  //      #include "ESP8266HTTPUpdateServer.h"
     #include "ESP32ModUpdateServer.h"  // <<modified version of ESP32ModUpdateServer.h by Robert>>
     #include "UpdateServerHtml.h"   
   #endif
