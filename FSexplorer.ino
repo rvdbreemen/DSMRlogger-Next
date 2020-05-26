@@ -2,6 +2,7 @@
 ***************************************************************************  
 **  Program  : FSexplorer, part of DSMRloggerAPI
 **  Version  : v2.0.1
+**  Ported to ESP32 by Robert van den Breemen
 **
 **  Mostly stolen from https://www.arduinoforum.de/User-Fips
 **  For more information visit: https://fipsok.de

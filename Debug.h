@@ -5,6 +5,7 @@
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **  Met dank aan Erik
+**  Improvements by Robert van den Breemen (c) 2020
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
