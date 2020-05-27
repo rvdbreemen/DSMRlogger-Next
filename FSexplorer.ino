@@ -46,8 +46,8 @@ void setupFSexplorer()    // Funktionsaufruf "spiffs();" muss im Setup eingebund
   
   if (SPIFFS.exists("/FSexplorer.html")) 
   {
-    httpServer.serveStatic("/FSexplorer.html", SPIFFS, "/FSexplorer.html","max-age=0");
-    httpServer.serveStatic("/FSexplorer",      SPIFFS, "/FSexplorer.html","max-age=0");
+    httpServer.serveStatic("/FSexplorer.html", SPIFFS, "/FSexplorer.html");
+    httpServer.serveStatic("/FSexplorer",      SPIFFS, "/FSexplorer.html");
   }
   else 
   {
