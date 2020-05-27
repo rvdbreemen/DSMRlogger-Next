@@ -421,27 +421,27 @@ void setup()
     if (hasAlternativeIndex)
     {
       DebugTln(F("has Alternative Index"));
-      httpServer.serveStatic("/",                 SPIFFS, settingIndexPage);
-      httpServer.serveStatic("/index",            SPIFFS, settingIndexPage);
-      httpServer.serveStatic("/index.html",       SPIFFS, settingIndexPage);
-      httpServer.serveStatic("/DSMRindex.html",   SPIFFS, settingIndexPage);
+      httpServer.serveStatic("/",                 SPIFFS, settingIndexPage,"max-age=0");
+      httpServer.serveStatic("/index",            SPIFFS, settingIndexPage,"max-age=0");
+      httpServer.serveStatic("/index.html",       SPIFFS, settingIndexPage,"max-age=0");
+      httpServer.serveStatic("/DSMRindex.html",   SPIFFS, settingIndexPage,"max-age=0");
     }
     else
     {
       DebugTln(F("has Alternative Index"));
-      httpServer.serveStatic("/",                 SPIFFS, "/DSMRindex.html");
+      httpServer.serveStatic("/",                 SPIFFS, "/DSMRindex.html","max-age=0");
       DebugTln(F("added serverStatic [/]"));
-      httpServer.serveStatic("/DSMRindex.html",   SPIFFS, "/DSMRindex.html");
+      httpServer.serveStatic("/DSMRindex.html",   SPIFFS, "/DSMRindex.html","max-age=0");
       DebugTln(F("added serverStatic [/DSMRindex.html]"));
-      httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html");
+      httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html","max-age=0");
       DebugTln(F("added serverStatic [/index]"));
-      httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html");
+      httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html","max-age=0");
       DebugTln(F("added serverStatic [/index.html]"));
-      httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css");
+      httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css","max-age=0");
       DebugTln(F("added serverStatic [/DSMRindex.css]"));
-      httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js");
+      httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js","max-age=0");
       DebugTln(F("added serverStatic [/DSMRindex.js]"));
-      httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js");
+      httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js","max-age=0");
       DebugTln(F("serverStatic [/DSMRgraphics.js]"));
     }
   } else {
@@ -457,8 +457,8 @@ void setup()
   }
   
   DebugTln(F("setupFSexplorer"));
-  setupFSexplorer();
-  httpServer.serveStatic("/FSexplorer.png",   SPIFFS, "/FSexplorer.png");
+//  setupFSexplorer();
+  httpServer.serveStatic("/FSexplorer.png",   SPIFFS, "/FSexplorer.png","max-age=0");
 
   DebugTln(F("setup RESTAPI interface"));
   httpServer.on("/api", HTTP_GET, processAPI);
