@@ -2,7 +2,7 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v2.0.1 (23-04-2020)"
+#define _FW_VERSION "v2.0.2 (27-05-2020)"
 /*
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -296,21 +296,15 @@ void setup()
   {                                                         //USE_NTP
     oled_Print_Msg(3, "setup NTP server", 100);             //USE_NTP
   }                                                         //USE_NTP
-                                                            //USE_NTP
-  if (!startNTP())                                          //USE_NTP
-  {                                                         //USE_NTP
-    DebugTln(F("ERROR!!! No NTP server reached!\r\n\r"));   //USE_NTP
-    if (settingOledType > 0)                                //USE_NTP
-    {                                                       //USE_NTP
-      oled_Print_Msg(0, " <DSMRloggerAPI>", 0);              //USE_NTP
-      oled_Print_Msg(2, "geen reactie van", 100);           //USE_NTP
-      oled_Print_Msg(2, "NTP server's", 100);               //USE_NTP 
-      oled_Print_Msg(3, "Reboot DSMR-logger", 2000);        //USE_NTP
-    }                                                       //USE_NTP
-    delay(2000);                                            //USE_NTP
-    ESP.restart();                                          //USE_NTP
-    delay(3000);                                            //USE_NTP
-  }                                                         //USE_NTP
+  //--- ezTime initialisation
+  setDebug(INFO);  
+  waitForSync(); 
+  CET.setLocation(F("Europe/Amsterdam"));
+  CET.setDefault(); 
+  
+  Debugln("UTC time: "+ UTC.dateTime());
+  Debugln("CET time: "+ CET.dateTime());
+
   if (settingOledType > 0)                                  //USE_NTP
   {                                                         //USE_NTP
     oled_Print_Msg(0, " <DSMRloggerAPI>", 0);                //USE_NTP
@@ -633,19 +627,6 @@ void loop ()
     }
   }
 
-//--- if NTP set, see if it needs synchronizing
-#if defined(USE_NTP_TIME)                                           //USE_NTP
-  if DUE(synchrNTP)                                                 //USE_NTP
-  {
-  //if (timeStatus() == timeNeedsSync || prevNtpHour != hour())     //USE_NTP
-  //{
-      //prevNtpHour = hour();                                         //USE_NTP
-      setSyncProvider(getNtpTime);                                  //USE_NTP
-      setSyncInterval(600);                                         //USE_NTP
-  //}
-  }
-#endif                                                              //USE_NTP
-  
   yield();
   
 } // loop()

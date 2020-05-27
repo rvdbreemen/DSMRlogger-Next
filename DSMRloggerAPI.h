@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : DSMRloggerAPI.h - definitions for DSMRloggerAPI
-**  Version  : v2.0.1
+**  Version  : v2.0.2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -30,7 +30,8 @@
   #include "SPIFFS.h"
 #endif
 
-#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
+
+#include <ezTime.h>  
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "safeTimers.h"
 
@@ -246,12 +247,13 @@ char      settingMQTTbroker[101], settingMQTTuser[40], settingMQTTpasswd[30], se
 int32_t   settingMQTTinterval, settingMQTTbrokerPort;
 String    pTimestamp;
 
+Timezone  CET;
+
 //===========================================================================================
 // setup timers 
 DECLARE_TIMER_SEC(updateSeconds,       1, CATCH_UP_MISSED_TICKS);
 DECLARE_TIMER_SEC(updateDisplay,       5);
 DECLARE_TIMER_MIN(reconnectWiFi,      30);
-DECLARE_TIMER_MIN(synchrNTP,          10, SKIP_MISSED_TICKS);
 DECLARE_TIMER_SEC(nextTelegram,       10);
 DECLARE_TIMER_MIN(reconnectMQTTtimer,  2); // try reconnecting cyclus timer
 DECLARE_TIMER_SEC(publishMQTTtimer,   60, SKIP_MISSED_TICKS); // interval time between MQTT messages  
