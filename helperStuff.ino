@@ -11,17 +11,18 @@
 
 
 //===========================================================================================
-bool compare(String x, String y) 
-{ 
-    for (int i = 0; i < min(x.length(), y.length()); i++) { 
-      if (x[i] != y[i]) 
-      {
-        return (bool)(x[i] < y[i]); 
-      }
-    } 
-    return x.length() < y.length(); 
+// bool compare(String x, String y) 
+// { 
+//  replace this with: strcmp() for char buffers, and, str1.compare(str2) for strings
+//     for (int i = 0; i < min(x.length(), y.length()); i++) { 
+//       if (x[i] != y[i]) 
+//       {
+//         return (bool)(x[i] < y[i]); 
+//       }
+//     } 
+//     return x.length() < y.length(); 
     
-} // compare()
+// } // compare()
 
 
 //===========================================================================================
@@ -252,15 +253,16 @@ void strCopy(char *dest, int maxLen, const char *src)
 
 
 //===========================================================================================
-int stricmp(const char *a, const char *b)
-{
-    for (;; a++, b++) {
-        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
-        if (d != 0 || !*a)
-            return d;
-    }
+// int stricmp(const char *a, const char *b)
+// Same as standard string.h function: strcasecmp(str1, str2) 
+// {
+//     for (;; a++, b++) {
+//         int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
+//         if (d != 0 || !*a)
+//             return d;
+//     }
     
-} // stricmp()
+// } // stricmp()
 
 //===========================================================================================
 char *intToStr(int32_t v)
