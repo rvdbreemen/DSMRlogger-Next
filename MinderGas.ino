@@ -51,7 +51,7 @@ void forceMindergasUpdate()
   {
     writeToSysLog("found [%s] at day#[%d]", MG_FILENAME, day());
     MG_Day = day();   // make it thisDay...
-    strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "force Mindergas countdown");
+    strlcpy(txtResponseMindergas, "force Mindergas countdown", sizeof(txtResponseMindergas));
     DebugTln(F("Force send data to mindergas.nl in ~1 minute"));
     MGminuten=1;
     CHANGE_INTERVAL_MIN(minderGasTimer, 1);
@@ -60,7 +60,7 @@ void forceMindergasUpdate()
   }
   else
   {
-    strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "Force Write Mindergas.post");
+    strlcpy(txtResponseMindergas,  "Force Write Mindergas.post", sizeof(txtResponseMindergas));
     DebugTln(F("Force Write data to post file now!"));
     writeToSysLog("Force Write Data to [%s]", MG_FILENAME);
     CHANGE_INTERVAL_MIN(minderGasTimer, 1);
@@ -94,11 +94,11 @@ void processMindergas_FSM()
           snprintf(timeLastResponse, sizeof(timeLastResponse), "@%02d|%02d:%02d -> ", day() , hour(), minute());
           if (intStatuscodeMindergas == 0)
           {
-            strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "INITIAL STATE");
+            strlcpy(txtResponseMindergas,  "INITIAL STATE",sizeof(txtResponseMindergas));
           }
           if (SPIFFS.exists(MG_FILENAME))
           {
-            strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "found Mindergas.post");
+            strlcpy(txtResponseMindergas, "found Mindergas.post", sizeof(txtResponseMindergas));
             writeToSysLog(txtResponseMindergas);
             validToken     = true;
             stateMindergas = MG_SEND_MINDERGAS;
@@ -119,7 +119,7 @@ void processMindergas_FSM()
             //--- No AuthToken
             DebugTln(F("MinderGas Authtoken is not set, no update can be done."));
             writeToSysLog("MinderGas Authtoken is not set, no update can be done.");
-            strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "NO_AUTHTOKEN");
+            strlcpy(txtResponseMindergas,  "NO_AUTHTOKEN",sizeof(txtResponseMindergas));
             stateMindergas = MG_NO_AUTHTOKEN; // no token, no mindergas
           } // end-if 
           break; 
@@ -142,7 +142,7 @@ void processMindergas_FSM()
           if (intStatuscodeMindergas == 0)
           {
             snprintf(timeLastResponse, sizeof(timeLastResponse), "@%02d|%02d:%02d -> ", day(), hour(), minute());
-            strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "WAIT_FOR_NEXT_DAY");
+            strlcpy(txtResponseMindergas,  "WAIT_FOR_NEXT_DAY", sizeof(txtResponseMindergas));
           }
           CHANGE_INTERVAL_MIN(minderGasTimer, 30);
           //--- Detect day change at midnight, then...
@@ -151,7 +151,7 @@ void processMindergas_FSM()
             MG_Day = day();                     // make it thisDay...
             writeToSysLog("a new day has become .. next: Write to file");
             snprintf(timeLastResponse, sizeof(timeLastResponse), "@%02d|%02d:%02d -> ", day(), hour(), minute());
-            strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "WRITE_TO_FILE");
+            strlcpy(txtResponseMindergas,  "WRITE_TO_FILE", sizeof(txtResponseMindergas));
             CHANGE_INTERVAL_MIN(minderGasTimer, 1);
             stateMindergas = MG_WRITE_TO_FILE;  // write file is next state
           }
@@ -186,7 +186,7 @@ void processMindergas_FSM()
           writeToSysLog("Mindergas State: MG_SEND_MINDERGAS");
         
           snprintf(timeLastResponse, sizeof(timeLastResponse), "@%02d|%02d:%02d -> ", day(), hour(), minute());
-          strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "SEND_MINDERGAS");
+          strlcpy(txtResponseMindergas, "SEND_MINDERGAS", sizeof(txtResponseMindergas));
 
           //--- if POST response for Mindergas exists, then send it... btw it should exist by now :)
           if ((validToken) && SPIFFS.exists(MG_FILENAME)) 
@@ -202,7 +202,7 @@ void processMindergas_FSM()
                 DebugTf("Try[%d] MinderGas update in [%d] minute(s)\r\n", retryCounter, MGminuten);
                 writeToSysLog("Try[%d] MinderGas update in [%d] minute(s)", retryCounter, MGminuten);
                 //--- Lets'do the countdown
-                strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "DO_COUNTDOWN");
+                strlcpy(txtResponseMindergas,  "DO_COUNTDOWN", sizeof(txtResponseMindergas));
                 stateMindergas = MG_DO_COUNTDOWN;
                 break;
               }
@@ -313,7 +313,7 @@ boolean sendMindergasPostFile()
                 validToken = true;
                 bMgClientReply = true;
                 //--- report error back to see in settings page
-                strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "Created entry");
+                strlcpy(txtResponseMindergas, "Created entry", sizeof(txtResponseMindergas));
                 Debugln(F("Succes, the gas delivered has been added to your mindergas.nl account"));
                 writeToSysLog("Succes, the gas delivered has been added to your mindergas.nl account");
                 DebugTln(F("Next State: MG_WAIT_FOR_NEXT_DAY"));
@@ -323,8 +323,8 @@ boolean sendMindergasPostFile()
             case 401:
                 validToken = false;
                 bMgClientReply = true;
-                strCopy(settingMindergasToken, sizeof(settingMindergasToken), "Invalid token"); 
-                strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "Unauthorized, token invalid!"); // report error back to see in settings page
+                strlcpy(settingMindergasToken, "Invalid token", sizeof(settingMindergasToken) ); 
+                strlcpy(txtResponseMindergas, "Unauthorized, token invalid!", sizeof(txtResponseMindergas) ); // report error back to see in settings page
                 Debugln(F("Invalid Mindergas Authenication Token"));
                 writeToSysLog("Invalid Mindergas Authenication Token");
                 stateMindergas = MG_NO_AUTHTOKEN;
@@ -334,7 +334,7 @@ boolean sendMindergasPostFile()
                 validToken = true;
                 bMgClientReply = true;
                 //--- report error back to see in settings page
-                strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "Unprocessed entity");
+                strlcpy(txtResponseMindergas,  "Unprocessed entity",sizeof(txtResponseMindergas));
                 Debugln(F("Unprocessed entity, goto website mindergas for more information")); 
                 writeToSysLog("Unprocessed entity, goto website mindergas for more information");
                 stateMindergas = MG_WAIT_FOR_NEXT_DAY; 
@@ -344,7 +344,7 @@ boolean sendMindergasPostFile()
                 validToken = true;
                 bMgClientReply = true;
                 //--- report error back to see in settings page
-                strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "Unknown response code");
+                strlcpy(txtResponseMindergas,  "Unknown response code", sizeof(txtResponseMindergas) );
                 Debugln(F("Unknown responsecode, goto mindergas for information"));
                 stateMindergas = MG_WAIT_FOR_NEXT_DAY;           
                 break;
@@ -390,7 +390,7 @@ void writePostToFile()
     DebugTf("open(%s, 'w') FAILED!!! --> Bailout\r\n", MG_FILENAME);
     //--- now in failure mode
     //DebugTln(F("Next State: MG_ERROR"));
-    strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "ERROR CREATE FILE");
+    strlcpy(txtResponseMindergas, "ERROR CREATE FILE",sizeof(txtResponseMindergas));
     writeToSysLog(txtResponseMindergas);
     stateMindergas = MG_ERROR;
     return;
@@ -419,7 +419,7 @@ void writePostToFile()
 
   minderGasFile.close();
   snprintf(timeLastResponse, sizeof(timeLastResponse), "@%02d|%02d:%02d -> ", day(), hour(), minute());
-  strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "Mindergas.post aangemaakt");
+  strlcpy(txtResponseMindergas, "Mindergas.post aangemaakt", sizeof(txtResponseMindergas));
   writeToSysLog(txtResponseMindergas);
 
   //--- start countdown
@@ -427,7 +427,7 @@ void writePostToFile()
   DebugTf("MinderGas update in [%d] minute(s)\r\n", MGminuten);
   writeToSysLog("MinderGas update in [%d] minute(s)", MGminuten);
   //--- Lets'do the countdown
-  strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "DO_COUNTDOWN");
+  strlcpy(txtResponseMindergas,  "DO_COUNTDOWN", sizeof(txtResponseMindergas));
   stateMindergas = MG_DO_COUNTDOWN;
   
 } // writePostToFile()

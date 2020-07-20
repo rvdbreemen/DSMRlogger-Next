@@ -44,13 +44,13 @@ void convertPRDfile(int8_t fileType)
   
   switch(fileType)
   {
-    case HOURS:   strCopy(PRDfileName, sizeof(PRDfileName), "/PRDhours.csv");
+    case HOURS:   strlcpy(PRDfileName, "/PRDhours.csv", sizeof(PRDfileName));
                   maxRecs = 49;
                   break;
-    case DAYS:    strCopy(PRDfileName, sizeof(PRDfileName), "/PRDdays.csv");
+    case DAYS:    strlcpy(PRDfileName, "/PRDdays.csv", sizeof(PRDfileName));
                   maxRecs = 15;
                   break;
-    case MONTHS:  strCopy(PRDfileName, sizeof(PRDfileName), "/PRDmonths.csv");
+    case MONTHS:  strlcpy(PRDfileName, "/PRDmonths.csv", sizeof(PRDfileName));
                   maxRecs = 25;
                   break;
                   
@@ -105,7 +105,7 @@ void writeToRINGfile(int8_t fileType, const char *key, float EDT1, float EDT2
   //   hours:  YYMMDDHH concat mmssX
   //    days:  YYMMDD   concat HHmmssX
   //  months:  YYMM     concat DDHHmmssX
-  strCopy(newKey, 14, key);
+  strlcpy(newKey, key, 14);
   
   switch(fileType)
   {

@@ -48,8 +48,12 @@ int8_t SecondFromTimestamp(const char *timeStamp)
   char aSS[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss SS = 4-5
-  strCopy(aSS, 4, timeStamp, 10, 11);
-  return String(aSS).toInt();
+  strncpy(aSS, timeStamp+10,  2);
+  if (Verbose1) DebugTf("Timestamp(SS): [%s] number: [%d]\r\n", aSS, (int8_t)atoi(aSS));
+
+  //strmid(timeStamp, 10, 2, aSS, sizeof(aSS))
+  //trCopy(aSS, 4, timeStamp, 10, 11);
+  return (int8_t)atoi(aSS);
     
 } // SecondFromTimestamp()
 
@@ -59,8 +63,11 @@ int8_t MinuteFromTimestamp(const char *timeStamp)
   char aMM[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss MM = 8-9
-  strCopy(aMM, 4, timeStamp, 8, 9);
-  return String(aMM).toInt();
+  //
+  // trCopy(aMM, 4, timeStamp, 8, 9);
+  strncpy(aMM, timeStamp+8, 2);
+  if (Verbose1) DebugTf("Timestamp(MM): [%s] number: [%d]\r\n", aMM, (int8_t)atoi(aMM));  
+  return (int8_t)atoi(aMM);
     
 } // MinuteFromTimestamp()
 
@@ -69,9 +76,11 @@ int8_t HourFromTimestamp(const char *timeStamp)
 {
   char aHH[4] = "";
   //DebugTf("timeStamp[%s] => \r\n", timeStamp); // YYMMDDHHmmss HH = 5-6
-  strCopy(aHH, 4, timeStamp, 6, 7);
+  // strCopy(aHH, 4, timeStamp, 6, 7);
+  strncpy(aHH, timeStamp+6,2);
   //Debugf("aHH[%s], nHH[%02d]\r\n", aHH, String(aHH).toInt()); 
-  return String(aHH).toInt();
+  if (Verbose1) DebugTf("Timestamp(MM): [%s] number: [%d]\r\n", aHH, (int8_t)atoi(aHH));
+  return (int8_t)atoi(aHH);
     
 } // HourFromTimestamp()
 
@@ -81,8 +90,10 @@ int8_t DayFromTimestamp(const char *timeStamp)
   char aDD[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss DD = 4-5
-  strCopy(aDD, 4, timeStamp, 4, 5);
-  return String(aDD).toInt();
+  strncpy(aDD, timeStamp+4, 2);
+  if (Verbose1) DebugTf("Timestamp(DD): [%s] number: [%d]\r\n", aDD, (int8_t)atoi(aDD));
+  // strCopy(aDD, 4, timeStamp, 4, 5);
+  return (int8_t)atoi(aDD);
     
 } // DayFromTimestamp()
 
@@ -92,8 +103,11 @@ int8_t MonthFromTimestamp(const char *timeStamp)
   char aMM[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss MM = 2-3
-  strCopy(aMM, 4, timeStamp, 2, 3);
-  return String(aMM).toInt();
+  
+  strncpy(aMM, timeStamp+2, 2);
+  if (Verbose1) DebugTf("Timestamp(MM): [%s] number: [%d]\r\n", aMM, (int8_t)atoi(aMM));
+  // strCopy(aMM, 4, timeStamp, 2, 3);
+  return (int8_t)atoi(aMM);
     
 } // MonthFromTimestamp()
 
@@ -103,8 +117,10 @@ int8_t YearFromTimestamp(const char *timeStamp)
   char aYY[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss YY = 0-1
-  strCopy(aYY, 4, timeStamp, 0, 1);
-  return String(aYY).toInt();
+  strncpy(aYY, timeStamp+2, 2);
+  if (Verbose1) DebugTf("Timestamp(YY): [%s] number: [%d]\r\n", aYY, (int8_t)atoi(aYY));
+  // strCopy(aYY, 4, timeStamp, 0, 1);
+  return (int8_t)atoi(aYY);
     
 } // YearFromTimestamp()
 
@@ -114,9 +130,12 @@ int32_t HoursKeyTimestamp(const char *timeStamp)
   char aHK[10] = "";
   // 0123456789ab
   // YYMMDDHHmmss YY = 0-1
-  strCopy(aHK, 4, timeStamp, 0, 7);
+  strncpy(aHK, timeStamp+0, 8);
+  if (Verbose1) DebugTf("Timestamp(All): [%s] number: [%d]\r\n", aHK, (int32_t)atoi(aHK));
+  
+  // strCopy(aHK, 4, timeStamp, 0, 7);
   //return timeStamp.substring(0, 8).toInt();
-  return String(aHK).toInt();
+  return (int32_t)atoi(aHK);
     
 } // HourFromTimestamp()
 
@@ -128,7 +147,7 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
   char fullTimeStamp[16] = "";
 
   strConcat(fullTimeStamp, 15, timeStamp);
-  if (Verbose2) DebugTf("epoch(%s) strlen([%d])\r\n", fullTimeStamp, strlen(fullTimeStamp));  
+  if (Verbose1) DebugTf("epoch(%s) strlen([%d])\r\n", fullTimeStamp, strlen(fullTimeStamp));  
   switch(strlen(fullTimeStamp)) {
     case  4:  //--- timeStamp is YYMM
               strConcat(fullTimeStamp, 15, "01010101X");
@@ -148,7 +167,7 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
     //default:  return now();
   }
   
-  if (strlen(fullTimeStamp) < 13) return now();
+  if (strlen(fullTimeStamp) < 13) return localTZ.now();
   
   if (Verbose2) DebugTf("DateTime: [%02d]-[%02d]-[%02d] [%02d]:[%02d]:[%02d]\r\n"
                                                                  ,DayFromTimestamp(timeStamp)
@@ -161,7 +180,7 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
    
  
   time_t nT;
-  time_t savEpoch = now();
+  time_t savEpoch = localTZ.now();
   
   localTZ.setTime(HourFromTimestamp(fullTimeStamp)
          ,MinuteFromTimestamp(fullTimeStamp)

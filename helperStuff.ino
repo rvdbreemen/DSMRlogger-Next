@@ -222,34 +222,43 @@ void strToLower(char *src)
   }
 } // strToLower()
 
+// Eigen midstr(bron, start, len, doel, len(doel))
+// void strmid(const char *src, size_t start, size_t length, char *dst, size_t dstlen)
+// {       size_t len = min(dstlen - 1, length);
+ 
+//         strncpy(dst, src + start, len);
+//         // zero terminate because strncpy() didn't ? 
+//         if(len < length)
+//                 dst[dstlen-1] = 0;
+// }
 //===========================================================================================
 // a 'save' string copy
-void strCopy(char *dest, int maxLen, const char *src, uint8_t frm, uint8_t to)
-{
-  int d=0;
-//DebugTf("dest[%s], src[%s] max[%d], frm[%d], to[%d] =>\r\n", dest, src, maxLen, frm, to);
-  dest[0] = '\0';
-  for (int i=0; i<=frm; i++)
-  {
-    if (src[i] == 0) return;
-  }
-  for (int i=frm; (src[i] != 0  && i<=to && d<maxLen); i++)
-  {
-    dest[d++] = src[i];
-  }
-  dest[d] = '\0';
+// void strCopy(char *dest, int maxLen, const char *src, uint8_t frm, uint8_t to)
+// {
+//   int d=0;
+// //DebugTf("dest[%s], src[%s] max[%d], frm[%d], to[%d] =>\r\n", dest, src, maxLen, frm, to);
+//   dest[0] = '\0';
+//   for (int i=0; i<=frm; i++)
+//   {
+//     if (src[i] == 0) return;
+//   }
+//   for (int i=frm; (src[i] != 0  && i<=to && d<maxLen); i++)
+//   {
+//     dest[d++] = src[i];
+//   }
+//   dest[d] = '\0';
     
-} // strCopy()
+// } // strCopy()
 
-//===========================================================================================
-// a 'save' version of strncpy() that does not put a '\0' at
-// the end of dest if src >= maxLen!
-void strCopy(char *dest, int maxLen, const char *src)
-{
-  dest[0] = '\0';
-  strcat(dest, src);
+// //===========================================================================================
+// // a 'save' version of strncpy() that does not put a '\0' at
+// // the end of dest if src >= maxLen!
+// void strCopy(char *dest, int maxLen, const char *src)
+// {
+//   dest[0] = '\0';
+//   strcat(dest, src);
     
-} // strCopy()
+// } // strCopy()
 
 
 //===========================================================================================

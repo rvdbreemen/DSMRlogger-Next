@@ -81,7 +81,9 @@ bool buildDataRecordFromSM(char *recIn)
   char key[10] = "";
  
   uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
-  strCopy(key, 10, actTimestamp, 0, 8);
+  //strmid(actTimestamp,0, 8, key, sizeof(key));
+  strncpy(key, actTimestamp+0,8);
+  if (Verbose1) DebugTf("Epoc from record: [%s]\r\n", key);
 
   snprintf(record, sizeof(record), (char*)DATA_FORMAT, key , (float)DSMRdata.energy_delivered_tariff1
                                           , (float)DSMRdata.energy_delivered_tariff2
@@ -124,7 +126,7 @@ uint16_t buildDataRecordFromJson(char *recIn, String jsonIn)
   {
     splitString(wOut[f].c_str(), ':', wPair, 4);
     if (Verbose2) DebugTf("[%d] -> [%s]\r\n", f, wOut[f].c_str());
-    if (wPair[0].indexOf("recid") == 0)  strCopy(uKey, 10, wPair[1].c_str());
+    if (wPair[0].indexOf("recid") == 0)  strlcpy(uKey,  wPair[1].c_str(), 10);
     if (wPair[0].indexOf("edt1")  == 0)  uEDT1 = wPair[1].toFloat();
     if (wPair[0].indexOf("edt2")  == 0)  uEDT2 = wPair[1].toFloat();
     if (wPair[0].indexOf("ert1")  == 0)  uERT1 = wPair[1].toFloat();
@@ -424,7 +426,7 @@ uint16_t timestampToHourSlot(const char * TS, int8_t len)
   //uint8_t   uSlot  = String(aSlot).toInt();
   uint8_t   recSlot = (nrHours % _NO_HOUR_SLOTS_);
   
-  if (Verbose1) DebugTf("===>>>>>  HOUR[%02d] => recSlot[%02d]\r\n", hour(t1), recSlot);
+  if (Verbose1) DebugTf("===>>>>>  HOUR[%02d] => recSlot[%02d]\r\n", localTZ.hour(t1), recSlot);
 
   if (recSlot < 0 || recSlot >= _NO_HOUR_SLOTS_)
   {

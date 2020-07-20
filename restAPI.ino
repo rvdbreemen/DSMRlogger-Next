@@ -153,8 +153,8 @@ void handleDevApi(const char *URI, const char *word4, const char *word5, const c
         //DebugTf("[%d] -> pair[%s]\r\n", i, wPair[i].c_str());
         int8_t wc = splitString(wPair[i].c_str(), ':',  wOut, 5) ;
         //DebugTf("==> [%s] -> field[%s]->val[%s]\r\n", wPair[i].c_str(), wOut[0].c_str(), wOut[1].c_str());
-        if (wOut[0].equalsIgnoreCase("name"))  strCopy(field, sizeof(field), wOut[1].c_str());
-        if (wOut[0].equalsIgnoreCase("value")) strCopy(newValue, sizeof(newValue), wOut[1].c_str());
+        if (wOut[0].equalsIgnoreCase("name"))  strlcpy(field, wOut[1].c_str(), sizeof(field));
+        if (wOut[0].equalsIgnoreCase("value")) strlcpy(newValue, wOut[1].c_str(), sizeof(newValue));
       }
       //DebugTf("--> field[%s] => newValue[%s]\r\n", field, newValue);
       updateSetting(field, newValue);
@@ -185,12 +185,12 @@ void handleHistApi(const char *URI, const char *word4, const char *word5, const 
   if (   strcmp(word4, "hours") == 0 )
   {
     fileType = HOURS;
-    strCopy(fileName, sizeof(fileName), HOURS_FILE);
+    strlcpy(fileName, HOURS_FILE, sizeof(fileName));
   }
   else if (strcmp(word4, "days") == 0 )
   {
     fileType = DAYS;
-    strCopy(fileName, sizeof(fileName), DAYS_FILE);
+    strlcpy(fileName, DAYS_FILE, sizeof(fileName));
   }
   else if (strcmp(word4, "months") == 0)
   {
@@ -220,7 +220,7 @@ void handleHistApi(const char *URI, const char *word4, const char *word5, const 
     }
     else 
     {
-      strCopy(fileName, sizeof(fileName), MONTHS_FILE);
+      strlcpy(fileName, MONTHS_FILE, sizeof(fileName));
     }
   }
   else 
@@ -265,8 +265,8 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
     if (strlen(word5) > 0)
     {
        memset(fieldsArray,0,sizeof(fieldsArray));
-       strCopy(fieldsArray[0], 34,"timestamp");
-       strCopy(fieldsArray[1], 34, word5);
+       strlcpy(fieldsArray[0],"timestamp", 34);
+       strlcpy(fieldsArray[1], word5, 34);
        fieldsElements = 2;
     }
     sendJsonFields(word4);
@@ -636,15 +636,15 @@ void sendJsonHist(int8_t fileType, const char *fileName, const char *timeStamp, 
   switch(fileType) {
     case HOURS:   startSlot       = timestampToHourSlot(timeStamp, strlen(timeStamp));
                   nrSlots         = _NO_HOUR_SLOTS_;
-                  strCopy(typeApi, 9, "hours");
+                  strlcpy(typeApi, "hours", 9);
                   break;
     case DAYS:    startSlot       = timestampToDaySlot(timeStamp, strlen(timeStamp));
                   nrSlots         = _NO_DAY_SLOTS_;
-                  strCopy(typeApi, 9, "days");
+                  strlcpy(typeApi, "days", 9);
                   break;
     case MONTHS:  startSlot       = timestampToMonthSlot(timeStamp, strlen(timeStamp));
                   nrSlots         = _NO_MONTH_SLOTS_;
-                  strCopy(typeApi, 9, "months");
+                  strlcpy(typeApi, "months", 9);
                   break;
   }
 
@@ -717,24 +717,24 @@ void sendApiNotFound(const char *URI)
   httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
   httpServer.send ( 404, "text/html", "<!DOCTYPE HTML><html><head>");
 
-  strCopy(cMsg,   sizeof(cMsg), "<style>body { background-color: lightgray; font-size: 15pt;}");
+  strlcpy(cMsg, "<style>body { background-color: lightgray; font-size: 15pt;}", sizeof(cMsg));
   strConcat(cMsg, sizeof(cMsg), "</style></head><body>");
   httpServer.sendContent(cMsg);
 
-  strCopy(cMsg,   sizeof(cMsg), "<h1>DSMR-logger</h1><b1>");
+  strlcpy(cMsg, "<h1>DSMR-logger</h1><b1>", sizeof(cMsg));
   httpServer.sendContent(cMsg);
 
-  strCopy(cMsg,   sizeof(cMsg), "<br>[<b>");
+  strlcpy(cMsg, "<br>[<b>", sizeof(cMsg));
   strConcat(cMsg, sizeof(cMsg), URI);
   strConcat(cMsg, sizeof(cMsg), "</b>] is not a valid ");
   httpServer.sendContent(cMsg);
   
-  strCopy(cMsg,   sizeof(cMsg), "<a href=");
+  strlcpy(cMsg, "<a href=",   sizeof(cMsg));
   strConcat(cMsg, sizeof(cMsg), "\"https://mrwheel-docs.gitbook.io/dsmrloggerapi/beschrijving-restapis\">");
   strConcat(cMsg, sizeof(cMsg), "restAPI</a> call.");
   httpServer.sendContent(cMsg);
   
-  strCopy(cMsg, sizeof(cMsg), "</body></html>\r\n");
+  strlcpy(cMsg, "</body></html>\r\n", sizeof(cMsg));
   httpServer.sendContent(cMsg);
 
   writeToSysLog("[%s] is not a valid restAPI call!!", URI);
