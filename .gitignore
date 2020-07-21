@@ -1,4 +1,4 @@
 
 *.bin
-*.csv
 data/DSMRsettings.ini
+*.csv

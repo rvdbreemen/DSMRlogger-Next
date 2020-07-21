@@ -78,18 +78,22 @@ void processTelegram()
     }
   }
 
-  strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
+  strCopy(actTimestamp, sizeof(actTimestamp), newTimestamp);
   actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
 
-#ifdef USE_INFLUXDB
-  handleInfluxDB();
-#endif
+// If the MQTT timer is DUE, also send MQTT message
 #ifdef USE_MQTT
   if ( DUE(publishMQTTtimer) )
   {
     sendMQTTData();      
-  }    
-#endif //USE_MQTT
+  }  
+#endif
+// And send it using InfluxDB
+#ifdef USE_INFLUXDB
+    handleInfluxDB();
+#endif
+
+
 
 } // processTelegram()
 

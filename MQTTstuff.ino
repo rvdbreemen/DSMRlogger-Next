@@ -236,6 +236,13 @@ void sendMQTTData()
     return;
   }
 
+  //Only send data when there is a new telegram
+  static uint32_t lastTelegram = 0;
+  if ((telegramCount - lastTelegram)> 0)
+  {
+      //New telegram received, let's forward that to influxDB
+      lastTelegram = telegramCount;
+  } else return;
 
   if (!MQTTclient.connected() || ! mqttIsConnected)
   {
