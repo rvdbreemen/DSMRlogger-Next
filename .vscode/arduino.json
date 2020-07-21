@@ -3,5 +3,6 @@
     "output": "D://Users//Robert//Documents//GitHub//build",
     "configuration": "xtal=160,vt=flash,exception=legacy,ssl=all,ResetMethod=nodtr_nosync,CrystalFreq=26,FlashFreq=40,FlashMode=dout,eesz=4M2M,led=2,sdk=nonosdk_190703,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200",
     "sketch": "DSMRlogger-Next.ino",
-    "prebuild": "D://Users//Robert//Documents//GitHub//Rvdb//autoinc-semver//semver-incr-build.bat ./version.h"
+    "prebuild": "D://Users//Robert//Documents//GitHub//Rvdb//autoinc-semver//semver-incr-build.bat ./version.h",
+    "port": "COM4"
 }
