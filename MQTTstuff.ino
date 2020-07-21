@@ -221,21 +221,6 @@ void sendMQTTData()
 
   if (settingMQTTinterval == 0) return;
 
-  //check to see if this is a new telegram before sending data
-  static uint32_t lastTelegram = 0;
-  if ((telegramCount - lastTelegram)>0) 
-    {
-    //New telegram received, let's forward that to influxDB
-    lastTelegram = telegramCount;
-  } else return;
-
-  if (ESP.getFreeHeap() < 7000) // to prevent firmware from crashing!
-  {
-    DebugTf("==> Bailout due to low heap (%d bytes)\r\n",   ESP.getFreeHeap() );
-    writeToSysLog("==> Bailout low heap (%d bytes)", ESP.getFreeHeap() );
-    return;
-  }
-
   //Only send data when there is a new telegram
   static uint32_t lastTelegram = 0;
   if ((telegramCount - lastTelegram)> 0)
