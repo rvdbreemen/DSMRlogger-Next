@@ -190,7 +190,7 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
          ,YearFromTimestamp(fullTimeStamp));
 
   
-  nT = now();
+  nT = localTZ.now();
   if (!syncTime)
   {
     localTZ.setTime(savEpoch);

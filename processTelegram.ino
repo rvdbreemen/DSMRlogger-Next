@@ -41,7 +41,7 @@ void processTelegram()
     return;
   }
   
-  DebugTf("actHour[%02d] -- newHour[%02d]\r\n", hour(actT), hour(newT));
+  DebugTf("actHour[%02d] -- newHour[%02d]\r\n", localTZ.hour(actT), localTZ.hour(newT));
   //--- if we have a new hour() update the previous hour
   if (hour(actT) != hour(newT)) {
     writeToSysLog("actHour[%02d] -- newHour[%02d]", hour(actT), hour(newT));
@@ -78,13 +78,18 @@ void processTelegram()
     }
   }
 
+  strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
+  actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
+
+#ifdef USE_INFLUXDB
+  handleInfluxDB();
+#endif
+#ifdef USE_MQTT
   if ( DUE(publishMQTTtimer) )
   {
     sendMQTTData();      
   }    
-
-  strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
-  actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
+#endif //USE_MQTT
 
 } // processTelegram()
 

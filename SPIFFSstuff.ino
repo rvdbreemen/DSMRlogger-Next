@@ -426,7 +426,7 @@ uint16_t timestampToHourSlot(const char * TS, int8_t len)
   //uint8_t   uSlot  = String(aSlot).toInt();
   uint8_t   recSlot = (nrHours % _NO_HOUR_SLOTS_);
   
-  if (Verbose1) DebugTf("===>>>>>  HOUR[%02d] => recSlot[%02d]\r\n", localTZ.hour(t1), recSlot);
+  if (Verbose1) DebugTf("===>>>>>  HOUR[%02d] => recSlot[%02d]\r\n", hour(t1), recSlot);
 
   if (recSlot < 0 || recSlot >= _NO_HOUR_SLOTS_)
   {
