@@ -1,28 +1,13 @@
 /* 
 ***************************************************************************  
-**  Program  : helperStuff, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : helperStuff, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
 */
-
-
-//===========================================================================================
-bool compare(String x, String y) 
-{ 
-    for (int i = 0; i < min(x.length(), y.length()); i++) { 
-      if (x[i] != y[i]) 
-      {
-        return (bool)(x[i] < y[i]); 
-      }
-    } 
-    return x.length() < y.length(); 
-    
-} // compare()
-
 
 //===========================================================================================
 boolean isValidIP(IPAddress ip)
@@ -107,6 +92,7 @@ bool isNumericp(const char *timeStamp, int8_t len)
 
 
 //===========================================================================================
+
 int8_t splitString(String inStrng, char delimiter, String wOut[], uint8_t maxWords) 
 {
   int16_t inxS = 0, inxE = 0, wordCount = 0;
@@ -154,178 +140,54 @@ String upTime()
 
 
 //===========================================================================================
-void strConcat(char *dest, int maxLen, const char *src)
-{
-  if (strlen(dest) + strlen(src) < maxLen) 
-  {
-    strcat(dest, src);
-  } 
-  else
-  {
-    DebugTf("Combined string > %d chars\r\n", maxLen);
-  }
-  
-} // strConcat()
 
-
-//===========================================================================================
-void strConcat(char *dest, int maxLen, float v, int dec)
-{
-  static char buff[25];
-  if (dec == 0)       sprintf(buff,"%.0f", v);
-  else if (dec == 1)  sprintf(buff,"%.1f", v);
-  else if (dec == 2)  sprintf(buff,"%.2f", v);
-  else if (dec == 3)  sprintf(buff,"%.3f", v);
-  else if (dec == 4)  sprintf(buff,"%.4f", v);
-  else if (dec == 5)  sprintf(buff,"%.5f", v);
-  else                sprintf(buff,"%f",   v);
-
-  if (strlen(dest) + strlen(buff) < maxLen) 
-  {
-    strcat(dest, buff);
-  } 
-  else
-  {
-    DebugTf("Combined string > %d chars\r\n", maxLen);
-  }
-  
-} // strConcat()
-
-
-//===========================================================================================
-void strConcat(char *dest, int maxLen, int32_t v)
-{
-  static char buff[25];
-  sprintf(buff,"%d", v);
-
-  if (strlen(dest) + strlen(buff) < maxLen) 
-  {
-    strcat(dest, buff);
-  } 
-  else
-  {
-    DebugTf("Combined string > %d chars\r\n", maxLen);
-  }
-  
-} // strConcat()
-
-
-//===========================================================================================
-void strToLower(char *src)
-{
-  for (int i = 0; i < strlen(src); i++)
-  {
-    if (src[i] == '\0') return;
-    if (src[i] >= 'A' && src[i] <= 'Z')
-        src[i] += 32;
-  }
-} // strToLower()
-
-//===========================================================================================
-// a 'save' string copy
-void strCopy(char *dest, int maxLen, const char *src, uint8_t frm, uint8_t to)
-{
-  int d=0;
-//DebugTf("dest[%s], src[%s] max[%d], frm[%d], to[%d] =>\r\n", dest, src, maxLen, frm, to);
-  dest[0] = '\0';
-  for (int i=0; i<=frm; i++)
-  {
-    if (src[i] == 0) return;
-  }
-  for (int i=frm; (src[i] != 0  && i<=to && d<maxLen); i++)
-  {
-    dest[d++] = src[i];
-  }
-  dest[d] = '\0';
-    
-} // strCopy()
-
-//===========================================================================================
-// a 'save' version of strncpy() that does not put a '\0' at
-// the end of dest if src >= maxLen!
-void strCopy(char *dest, int maxLen, const char *src)
-{
-  dest[0] = '\0';
-  strcat(dest, src);
-    
-} // strCopy()
-
-
-//===========================================================================================
-int stricmp(const char *a, const char *b)
-{
-    for (;; a++, b++) {
-        int d = tolower((unsigned char)*a) - tolower((unsigned char)*b);
-        if (d != 0 || !*a)
-            return d;
+//taken from influxdbclient.cpp == escapeJSONString
+static String escapeJSONString(String &value) {
+    String ret;
+    int d = 0;
+    int i,from = 0;
+    while((i = value.indexOf('"',from)) > -1) {
+        d++;
+        if(i == value.length()-1) {
+            break;
+        }
+        from = i+1;
     }
-    
-} // stricmp()
-
-//===========================================================================================
-char *intToStr(int32_t v)
-{
-  static char buff[25];
-  sprintf(buff,"%d", v);
-  return buff;
-  
-} // intToStr()
-
-//===========================================================================================
-char *floatToStr(float v, int dec)
-{
-  static char buff[25];
-  if (dec == 0)       sprintf(buff,"%.0f", v);
-  else if (dec == 1)  sprintf(buff,"%.1f", v);
-  else if (dec == 2)  sprintf(buff,"%.2f", v);
-  else if (dec == 3)  sprintf(buff,"%.3f", v);
-  else if (dec == 4)  sprintf(buff,"%.4f", v);
-  else if (dec == 5)  sprintf(buff,"%.5f", v);
-  else                sprintf(buff,"%f",   v);
-  return buff;
-  
-} // floattToStr()
-
-//===========================================================================================
-float formatFloat(float v, int dec)
-{
-  return (String(v, dec).toFloat());
-
-} //  formatFloat()
-
-//===========================================================================================
-float strToFloat(const char *s, int dec)
-{
-  float r =  0.0;
-  int   p =  0;
-  int   d = -1;
-  
-  r = strtof(s, NULL);
-  p = (int)(r*pow(10, dec));
-  r = p / pow(10, dec);
-  //DebugTf("[%s][%d] => p[%d] -> r[%f]\r\n", s, dec, p, r);
-  return r; 
-
-} //  strToFloat()
-
-
-//=======================================================================        
-template<typename Item>
-Item& typecastValue(Item& i) 
-{
-  return i;
+    ret.reserve(value.length()+d); //most probably we will escape just double quotes
+    for (char c: value)
+    {
+        switch (c)
+        {
+            case '"': ret += "\\\""; break;
+            case '\\': ret += "\\\\"; break;
+            case '\b': ret += "\\b"; break;
+            case '\f': ret += "\\f"; break;
+            case '\n': ret += "\\n"; break;
+            case '\r': ret += "\\r"; break;
+            case '\t': ret += "\\t"; break;
+            default:
+                if ('\x00' <= c && c <= '\x1f') {
+                    ret += "\\u";
+                    char buf[3 + 8 * sizeof(unsigned int)];
+                    sprintf(buf,  "\\u%04u", c);
+                    ret += buf;
+                } else {
+                    ret += c;
+                }
+        }
+    }
+    return ret;
 }
-
 //=======================================================================        
-float typecastValue(TimestampedFixedValue i) 
-{
-  return strToFloat(String(i).c_str(), 3);
-}
 
-//=======================================================================        
-float typecastValue(FixedValue i) 
-{
-  return i;
+void ESPreboot()
+{ 
+  //wait 3 seconds, and then reboot.
+  WiFi.forceSleepBegin(); //stop wifi 
+  delay(3000);
+  //wdt_reset(); ESP.restart(); while(1)wdt_reset();
+  ESP.restart(); //soft reset
+  //ESP.reset(); //hard reset
 }
 
 /***************************************************************************

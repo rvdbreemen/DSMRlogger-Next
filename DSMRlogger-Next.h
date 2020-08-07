@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
-**  Program  : DSMRloggerAPI.h - definitions for DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : DSMRlogger-Next.h - definitions for DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -30,7 +30,8 @@
   #include "SPIFFS.h"
 #endif
 
-#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
+//#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
+#include <ezTime.h>             // https://github.com/ropg/ezTime
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "safeTimers.h"
 
@@ -211,7 +212,7 @@ void delayms(unsigned long);
   uint32_t    telegramCount = 0, telegramErrors = 0;
   bool        showRaw = false;
   int8_t      showRawCount = 0;
-
+  char      cMsg[150], fChar[10];
 
 #ifdef USE_MQTT
   #include <PubSubClient.h>           // MQTT client publish and subscribe functionality
@@ -226,7 +227,13 @@ void delayms(unsigned long);
   static char      timeLastResponse[16]      = "";  
 #endif
 
-char      cMsg[150], fChar[10];
+#ifdef USE_INFLUXDB
+  char      settingInfluxDBhostname[101] = "";
+  uint16_t  settingInfluxDBport = 8086;
+  char      settingInfluxDBdatabasename[30] = "";
+#endif
+
+
 String    lastReset           = "";
 bool      spiffsNotPopulated  = false;
 bool      hasAlternativeIndex = false;
@@ -245,6 +252,7 @@ char      settingIndexPage[50];
 char      settingMQTTbroker[101], settingMQTTuser[40], settingMQTTpasswd[30], settingMQTTtopTopic[21];
 int32_t   settingMQTTinterval, settingMQTTbrokerPort;
 String    pTimestamp;
+Timezone  localTZ;
 
 //===========================================================================================
 // setup timers 
@@ -252,10 +260,10 @@ DECLARE_TIMER_SEC(updateSeconds,       1, CATCH_UP_MISSED_TICKS);
 DECLARE_TIMER_SEC(updateDisplay,       5);
 DECLARE_TIMER_MIN(reconnectWiFi,      30);
 DECLARE_TIMER_MIN(synchrNTP,          10, SKIP_MISSED_TICKS);
-DECLARE_TIMER_SEC(nextTelegram,       10);
+DECLARE_TIMER_SEC(nextTelegram,       10, CATCH_UP_MISSED_TICKS);
 DECLARE_TIMER_MIN(reconnectMQTTtimer,  2); // try reconnecting cyclus timer
-DECLARE_TIMER_SEC(publishMQTTtimer,   60, SKIP_MISSED_TICKS); // interval time between MQTT messages  
-DECLARE_TIMER_MIN(minderGasTimer,     10, CATCH_UP_MISSED_TICKS); 
+DECLARE_TIMER_SEC(publishMQTTtimer,   60, CATCH_UP_MISSED_TICKS); // interval time between MQTT messages  
+DECLARE_TIMER_MIN(minderGasTimer,     1, CATCH_UP_MISSED_TICKS);  // once minute
 DECLARE_TIMER_SEC(antiWearTimer,      61);
 
 /***************************************************************************

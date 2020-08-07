@@ -1,13 +1,14 @@
 /*
 ***************************************************************************  
-**  Program  : settingsStuff, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : settingsStuff, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
 * 1.0.11 added Mindergas Authtoken setting
+* 2.0.3 added influxdb settings
 */
 
 //=======================================================================
@@ -23,7 +24,7 @@ void writeSettings()
   }
   yield();
 
-  if (strlen(settingIndexPage) < 7) strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), "DSMRindex.html");
+  if (strlen(settingIndexPage) < 7) strlcpy(settingIndexPage, "DSMRindex.html", (sizeof(settingIndexPage) -1));
   if (settingTelegramInterval < 2)  settingTelegramInterval = 10;
   if (settingMQTTbrokerPort < 1)    settingMQTTbrokerPort = 1883;
     
@@ -57,6 +58,12 @@ void writeSettings()
   
 #ifdef USE_MINDERGAS
   file.print("MindergasAuthtoken = ");file.println(settingMindergasToken);  Debug(F("."));
+#endif
+
+#ifdef USE_INFLUXDB
+  file.print("InfluxDBhostname = ");file.println(settingInfluxDBhostname);  Debug(F("."));
+  file.print("InfluxDBport = ");file.println(settingInfluxDBport);  Debug(F("."));
+  file.print("InfluxDBdatabasename = ");file.println(settingInfluxDBdatabasename);  Debug(F("."));
 #endif
 
 file.close();  
@@ -107,6 +114,12 @@ file.close();
     DebugTln(F("MindergasAuthtoken = ********")); 
   #endif
 #endif
+
+#ifdef USE_INFLUXDB
+    DebugT(F("InfluxDBhostname = "));  Debugln(settingInfluxDBhostname);
+    DebugT(F("InfluxDBport = "));  Debugln(settingInfluxDBport);
+    DebugT(F("InfluxDBdatabasename = "));  Debugln(settingInfluxDBdatabasename);
+#endif
   } // Verbose1
   
 } // writeSettings()
@@ -135,13 +148,19 @@ void readSettings(bool show)
   settingOledType           =  1; // 0=None, 1=SDD1306, 2=SH1106
   settingOledSleep          =  0; // infinite
   settingOledFlip           =  0; // Don't flip
-  strCopy(settingIndexPage, sizeof(settingIndexPage), "DSMRindex.html");
+  strlcpy(settingIndexPage, "DSMRindex.html", sizeof(settingIndexPage));
   settingMQTTbroker[0]     = '\0';
   settingMQTTbrokerPort    = 1883;
   settingMQTTuser[0]       = '\0';
   settingMQTTpasswd[0]     = '\0';
   settingMQTTinterval      =  0;
   snprintf(settingMQTTtopTopic, sizeof(settingMQTTtopTopic), "%s", settingHostname);
+
+#ifdef USE_INFLUXDB
+  settingInfluxDBhostname[0]  = '\0';
+  settingInfluxDBport         = 8086;
+  snprintf(settingInfluxDBdatabasename, sizeof(settingInfluxDBdatabasename), "%s", settingHostname);
+#endif
 
 #ifdef USE_MINDERGAS
   settingMindergasToken[0] = '\0';
@@ -174,14 +193,14 @@ void readSettings(bool show)
     words[0].toLowerCase();
     nColor    = words[1].substring(0,15);
 
-    if (words[0].equalsIgnoreCase("Hostname"))            strCopy(settingHostname, 29, words[1].c_str());
-    if (words[0].equalsIgnoreCase("EnergyDeliveredT1"))   settingEDT1         = strToFloat(words[1].c_str(), 5);  
-    if (words[0].equalsIgnoreCase("EnergyDeliveredT2"))   settingEDT2         = strToFloat(words[1].c_str(), 5);
-    if (words[0].equalsIgnoreCase("EnergyReturnedT1"))    settingERT1         = strToFloat(words[1].c_str(), 5);
-    if (words[0].equalsIgnoreCase("EnergyReturnedT2"))    settingERT2         = strToFloat(words[1].c_str(), 5);
-    if (words[0].equalsIgnoreCase("GasDeliveredT"))       settingGDT          = strToFloat(words[1].c_str(), 5); 
-    if (words[0].equalsIgnoreCase("EnergyVasteKosten"))   settingENBK         = strToFloat(words[1].c_str(), 2);
-    if (words[0].equalsIgnoreCase("GasVasteKosten"))      settingGNBK         = strToFloat(words[1].c_str(), 2);
+    if (words[0].equalsIgnoreCase("Hostname"))            strlcpy(settingHostname, words[1].c_str(), 29);
+    if (words[0].equalsIgnoreCase("EnergyDeliveredT1"))   settingEDT1         = words[1].toFloat();  
+    if (words[0].equalsIgnoreCase("EnergyDeliveredT2"))   settingEDT2         = words[1].toFloat();
+    if (words[0].equalsIgnoreCase("EnergyReturnedT1"))    settingERT1         = words[1].toFloat();
+    if (words[0].equalsIgnoreCase("EnergyReturnedT2"))    settingERT2         = words[1].toFloat();
+    if (words[0].equalsIgnoreCase("GasDeliveredT"))       settingGDT          = words[1].toFloat(); 
+    if (words[0].equalsIgnoreCase("EnergyVasteKosten"))   settingENBK         = words[1].toFloat();
+    if (words[0].equalsIgnoreCase("GasVasteKosten"))      settingGNBK         = words[1].toFloat();
     if (words[0].equalsIgnoreCase("SmHasFaseInfo")) 
     {
       settingSmHasFaseInfo = words[1].toInt();
@@ -209,26 +228,29 @@ void readSettings(bool show)
       CHANGE_INTERVAL_SEC(nextTelegram, settingTelegramInterval); 
     }
 
-    if (words[0].equalsIgnoreCase("IndexPage"))           strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), words[1].c_str());  
+    if (words[0].equalsIgnoreCase("IndexPage"))           strlcpy(settingIndexPage, words[1].c_str(), sizeof(settingIndexPage));  
 
 #ifdef USE_MINDERGAS
-    if (words[0].equalsIgnoreCase("MindergasAuthtoken"))  strCopy(settingMindergasToken, 20, words[1].c_str());  
+    if (words[0].equalsIgnoreCase("MindergasAuthtoken"))  strlcpy(settingMindergasToken, words[1].c_str(), sizeof(settingMindergasToken));  
 #endif
 
 #ifdef USE_MQTT
-    if (words[0].equalsIgnoreCase("MQTTbroker"))  
-    {
-      memset(settingMQTTbroker, '\0', sizeof(settingMQTTbroker));
-      strCopy(settingMQTTbroker, 100, words[1].c_str());
-    }
-    if (words[0].equalsIgnoreCase("MQTTbrokerPort"))      settingMQTTbrokerPort    = words[1].toInt();  
-    if (words[0].equalsIgnoreCase("MQTTuser"))            strCopy(settingMQTTuser    ,35 ,words[1].c_str());  
-    if (words[0].equalsIgnoreCase("MQTTpasswd"))          strCopy(settingMQTTpasswd  ,25, words[1].c_str());  
+    if (words[0].equalsIgnoreCase("MQTTbroker"))          strlcpy(settingMQTTbroker  , words[1].c_str(), sizeof(settingMQTTbroker));
+    if (words[0].equalsIgnoreCase("MQTTbrokerPort"))      settingMQTTbrokerPort      = words[1].toInt();  
+    if (words[0].equalsIgnoreCase("MQTTuser"))            strlcpy(settingMQTTuser    , words[1].c_str(), sizeof(settingMQTTuser) );  
+    if (words[0].equalsIgnoreCase("MQTTpasswd"))          strlcpy(settingMQTTpasswd  , words[1].c_str(), sizeof(settingMQTTpasswd) );  
     if (words[0].equalsIgnoreCase("MQTTinterval"))        settingMQTTinterval        = words[1].toInt(); 
-    if (words[0].equalsIgnoreCase("MQTTtopTopic"))        strCopy(settingMQTTtopTopic, 20, words[1].c_str());  
+    if (words[0].equalsIgnoreCase("MQTTtopTopic"))        strlcpy(settingMQTTtopTopic, words[1].c_str(), sizeof(settingMQTTtopTopic));  
     
     CHANGE_INTERVAL_SEC(publishMQTTtimer, settingMQTTinterval);
     CHANGE_INTERVAL_MIN(reconnectMQTTtimer, 1);
+#endif
+
+#ifdef USE_INFLUXDB
+  if (words[0].equalsIgnoreCase("InfluxDBhostname"))    	strlcpy(settingInfluxDBhostname,     words[1].c_str(), sizeof(settingInfluxDBhostname));
+  if (words[0].equalsIgnoreCase("InfluxDBport"))          settingInfluxDBport                = words[1].toInt();  
+  if (words[0].equalsIgnoreCase("InfluxDBdatabasename"))  strlcpy(settingInfluxDBdatabasename, words[1].c_str(), sizeof(settingInfluxDBdatabasename));
+  initInfluxDB();
 #endif
     
   } // while available()
@@ -246,7 +268,7 @@ void readSettings(bool show)
   DebugTln(F(" .. done\r"));
 
 
-  if (strlen(settingIndexPage) < 7) strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), "DSMRindex.html");
+  if (strlen(settingIndexPage) < 7) strlcpy(settingIndexPage, "DSMRindex.html", sizeof(settingIndexPage));
   if (settingTelegramInterval  < 2) settingTelegramInterval = 10;
   if (settingMQTTbrokerPort    < 1) settingMQTTbrokerPort   = 1883;
 
@@ -286,6 +308,11 @@ void readSettings(bool show)
   Debugln(F("\r\n==== Mindergas settings ==============================================\r"));
   Debugf("         Mindergas Authtoken : %s\r\n", settingMindergasToken);
 #endif  
+#ifdef USE_INFLUXDB
+  Debugln(F("\r\n==== InfluxDB settings ===============================================\r"));
+  Debugf("             InfluxDB URL:IP : %s:%d\r\n", settingInfluxDBhostname, settingInfluxDBport);
+  Debugf("       InfluxDB Databasename : %s\r\n", settingInfluxDBdatabasename);
+#endif
   
   Debugln(F("-\r"));
 
@@ -297,9 +324,9 @@ void updateSetting(const char *field, const char *newValue)
 {
   DebugTf("-> field[%s], newValue[%s]\r\n", field, newValue);
 
-  if (!stricmp(field, "Hostname")) {
-    strCopy(settingHostname, 29, newValue); 
-    if (strlen(settingHostname) < 1) strCopy(settingHostname, 29, _DEFAULT_HOSTNAME); 
+  if (!strcasecmp(field, "Hostname")) {
+    strlcpy(settingHostname, newValue, sizeof(settingHostname)-1);
+    if (strlen(settingHostname) < 1) strlcpy(settingHostname, _DEFAULT_HOSTNAME, sizeof(settingHostname)-1);
     char *dotPntr = strchr(settingHostname, '.') ;
     if (dotPntr != NULL)
     {
@@ -309,82 +336,100 @@ void updateSetting(const char *field, const char *newValue)
     Debugln();
     DebugTf("Need reboot before new %s.local will be available!\r\n\n", settingHostname);
   }
-  if (!stricmp(field, "ed_tariff1"))        settingEDT1         = String(newValue).toFloat();  
-  if (!stricmp(field, "ed_tariff2"))        settingEDT2         = String(newValue).toFloat();  
-  if (!stricmp(field, "er_tariff1"))        settingERT1         = String(newValue).toFloat();  
-  if (!stricmp(field, "er_tariff2"))        settingERT2         = String(newValue).toFloat();  
-  if (!stricmp(field, "electr_netw_costs")) settingENBK         = String(newValue).toFloat();
+  if (!strcasecmp(field, "ed_tariff1"))        settingEDT1         = atof(newValue);  
+  if (!strcasecmp(field, "ed_tariff2"))        settingEDT2         = atof(newValue);  
+  if (!strcasecmp(field, "er_tariff1"))        settingERT1         = atof(newValue);
+;  
+  if (!strcasecmp(field, "er_tariff2"))        settingERT2         = atof(newValue);
+;  
+  if (!strcasecmp(field, "electr_netw_costs")) settingENBK         = atof(newValue);
+;
 
-  if (!stricmp(field, "gd_tariff"))         settingGDT          = String(newValue).toFloat();  
-  if (!stricmp(field, "gas_netw_costs"))    settingGNBK         = String(newValue).toFloat();
+  if (!strcasecmp(field, "gd_tariff"))         settingGDT          = atof(newValue);
+;  
+  if (!strcasecmp(field, "gas_netw_costs"))    settingGNBK         = atof(newValue);
+;
 
-  if (!stricmp(field, "sm_has_fase_info")) 
+  if (!strcasecmp(field, "sm_has_fase_info")) 
   {
-    settingSmHasFaseInfo = String(newValue).toInt(); 
+    settingSmHasFaseInfo = atoi(newValue); 
     if (settingSmHasFaseInfo != 0)  settingSmHasFaseInfo = 1;
     else                            settingSmHasFaseInfo = 0;  
   }
 
-  if (!stricmp(field, "oled_type"))
+  if (!strcasecmp(field, "oled_type"))
   {
-    settingOledType     = String(newValue).toInt();  
+    settingOledType     = atoi(newValue);  
     if (settingOledType > 2)  settingOledType = 1;
     oled_Init();
   }
-  if (!stricmp(field, "oled_screen_time")) 
+  if (!strcasecmp(field, "oled_screen_time")) 
   {
-    settingOledSleep    = String(newValue).toInt();  
+    settingOledSleep    = atoi(newValue);  
     CHANGE_INTERVAL_MIN(oledSleepTimer, settingOledSleep)
   }
-  if (!stricmp(field, "oled_flip_screen"))
+  if (!strcasecmp(field, "oled_flip_screen"))
   {
-    settingOledFlip     = String(newValue).toInt();  
+    settingOledFlip     = atoi(newValue);  
     if (settingOledFlip != 0) settingOledFlip = 1;
     else                      settingOledFlip = 0;
     oled_Init();
   }
   
-  if (!stricmp(field, "tlgrm_interval"))    
+  if (!strcasecmp(field, "tlgrm_interval"))    
   {
-    settingTelegramInterval     = String(newValue).toInt();  
+    settingTelegramInterval     = atoi(newValue);  
     CHANGE_INTERVAL_SEC(nextTelegram, settingTelegramInterval)
   }
 
-  if (!stricmp(field, "index_page"))        strCopy(settingIndexPage, (sizeof(settingIndexPage) -1), newValue);  
+  if (!strcasecmp(field, "index_page"))        strlcpy(settingIndexPage, newValue, sizeof(settingIndexPage));  
 
 #ifdef USE_MINDERGAS
-  if (!stricmp(field, "MindergasToken"))    strCopy(settingMindergasToken, 20, newValue);  
+  if (!strcasecmp(field, "MindergasToken"))    strlcpy(settingMindergasToken, newValue, sizeof(settingMindergasToken));  
 #endif //USE_MINDERGAS
 
 #ifdef USE_MQTT
-  if (!stricmp(field, "mqtt_broker"))  {
-    DebugT("settingMQTTbroker! to : ");
-    memset(settingMQTTbroker, '\0', sizeof(settingMQTTbroker));
-    strCopy(settingMQTTbroker, 100, newValue);
-    Debugf("[%s]\r\n", settingMQTTbroker);
+  if (!strcasecmp(field, "mqtt_broker"))        
+   {
+    strlcpy(settingMQTTbroker, newValue, sizeof(settingMQTTbroker));   
+    DebugTf("settingMQTTbroker to : [%s]\r\n", settingMQTTbroker);
+    mqttIsConnected = false;
+  }
+  if (!strcasecmp(field, "mqtt_broker_port")) {
+    settingMQTTbrokerPort = atoi(newValue);  
     mqttIsConnected = false;
     CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
   }
-  if (!stricmp(field, "mqtt_broker_port")) {
-    settingMQTTbrokerPort = String(newValue).toInt();  
+  if (!strcasecmp(field, "mqtt_user")) {
+    strlcpy(settingMQTTuser, newValue, sizeof(settingMQTTuser));   
     mqttIsConnected = false;
     CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
   }
-  if (!stricmp(field, "mqtt_user")) {
-    strCopy(settingMQTTuser    ,35, newValue);  
+  if (!strcasecmp(field, "mqtt_passwd")) {
+    strlcpy(settingMQTTpasswd, newValue, sizeof(settingMQTTpasswd)); 
     mqttIsConnected = false;
     CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
   }
-  if (!stricmp(field, "mqtt_passwd")) {
-    strCopy(settingMQTTpasswd  ,25, newValue);  
-    mqttIsConnected = false;
-    CHANGE_INTERVAL_MS(reconnectMQTTtimer, 100); // try reconnecting cyclus timer
-  }
-  if (!stricmp(field, "mqtt_interval")) {
-    settingMQTTinterval   = String(newValue).toInt();  
+  if (!strcasecmp(field, "mqtt_interval")) {
+    settingMQTTinterval   = atoi(newValue);  
     CHANGE_INTERVAL_SEC(publishMQTTtimer, settingMQTTinterval);
   }
-  if (!stricmp(field, "mqtt_toptopic"))     strCopy(settingMQTTtopTopic, 20, newValue);  
+  if (!strcasecmp(field, "mqtt_toptopic"))  strlcpy(settingMQTTtopTopic, newValue, sizeof(settingMQTTtopTopic));
+#endif
+
+#ifdef USE_INFLUXDB
+  if (!strcasecmp(field, "influxdb_hostname")) {
+    strlcpy(settingInfluxDBhostname, newValue, sizeof(settingInfluxDBhostname));
+    initInfluxDB();
+  }
+  if (!strcasecmp(field, "influxdb_port")) {
+    settingInfluxDBport = atoi(newValue);
+    initInfluxDB();
+  }
+  if (!strcasecmp(field, "influxdb_databasename")) {
+    strlcpy(settingInfluxDBdatabasename, newValue, sizeof(settingInfluxDBdatabasename));
+    initInfluxDB();
+  }
 #endif
 
   writeSettings();

@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
-**  Program  : timeStuff, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : timeStuff, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -9,7 +9,6 @@
 ***************************************************************************      
 */
 
-//static time_t ntpTimeSav;
 
 //===========================================================================================
 String buildDateTimeString(const char* timeStamp, int len) 
@@ -31,14 +30,14 @@ String buildDateTimeString(const char* timeStamp, int len)
 void epochToTimestamp(time_t t, char *ts, int8_t len) 
 {
   if (len < 12) {
-    strcpy(ts, "Error");
+    strncpy(ts, "Error", sizeof(ts));
     return;
   }
   //------------yy  mm  dd  hh  mm  ss
   sprintf(ts, "%02d%02d%02d%02d%02d%02d", year(t)-2000, month(t), day(t)
                                         , hour(t), minute(t), second(t));
                                                
-  //DebugTf("epochToTimestamp() => [%s]\r\n", ts);
+  if (Verbose2) DebugTf("epochToTimestamp() => [%s]\r\n", ts);
   
 } // epochToTimestamp()
 
@@ -48,7 +47,11 @@ int8_t SecondFromTimestamp(const char *timeStamp)
   char aSS[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss SS = 4-5
-  strCopy(aSS, 4, timeStamp, 10, 11);
+  
+  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  strncpy(aSS, timeStamp+10,  2);
+  //strCopy(aSS, 4, timeStamp, 10, 11);
+  if (Verbose2) Debugf("aSe[%s], aSe[%02d]\r\n", aSS, String(aSS).toInt()); 
   return String(aSS).toInt();
     
 } // SecondFromTimestamp()
@@ -59,7 +62,10 @@ int8_t MinuteFromTimestamp(const char *timeStamp)
   char aMM[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss MM = 8-9
-  strCopy(aMM, 4, timeStamp, 8, 9);
+  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  strncpy(aMM, timeStamp+8,  2);
+  //strCopy(aMM, 4, timeStamp, 8, 9);
+  if (Verbose2) Debugf("aMi[%s], nMi[%02d]\r\n", aMM, String(aMM).toInt()); 
   return String(aMM).toInt();
     
 } // MinuteFromTimestamp()
@@ -68,9 +74,10 @@ int8_t MinuteFromTimestamp(const char *timeStamp)
 int8_t HourFromTimestamp(const char *timeStamp) 
 {
   char aHH[4] = "";
-  //DebugTf("timeStamp[%s] => \r\n", timeStamp); // YYMMDDHHmmss HH = 5-6
-  strCopy(aHH, 4, timeStamp, 6, 7);
-  //Debugf("aHH[%s], nHH[%02d]\r\n", aHH, String(aHH).toInt()); 
+  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp); // YYMMDDHHmmss HH = 5-6
+  strncpy(aHH, timeStamp+6,  2);
+  //strCopy(aHH, 4, timeStamp, 6, 7);
+  if (Verbose2) Debugf("aHo[%s], nHo[%02d]\r\n", aHH, String(aHH).toInt()); 
   return String(aHH).toInt();
     
 } // HourFromTimestamp()
@@ -81,7 +88,10 @@ int8_t DayFromTimestamp(const char *timeStamp)
   char aDD[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss DD = 4-5
-  strCopy(aDD, 4, timeStamp, 4, 5);
+  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  strncpy(aDD, timeStamp+4,  2);
+  //strCopy(aDD, 4, timeStamp, 4, 5);
+  if (Verbose2) Debugf("aDD[%s], nDD[%02d]\r\n", aDD, String(aDD).toInt()); 
   return String(aDD).toInt();
     
 } // DayFromTimestamp()
@@ -92,7 +102,10 @@ int8_t MonthFromTimestamp(const char *timeStamp)
   char aMM[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss MM = 2-3
-  strCopy(aMM, 4, timeStamp, 2, 3);
+  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  strncpy(aMM, timeStamp+2,  2);
+  //strCopy(aMM, 4, timeStamp, 2, 3);
+  if (Verbose2) Debugf("aMM[%s], nMM[%02d]\r\n", aMM, String(aMM).toInt()); 
   return String(aMM).toInt();
     
 } // MonthFromTimestamp()
@@ -103,7 +116,11 @@ int8_t YearFromTimestamp(const char *timeStamp)
   char aYY[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss YY = 0-1
-  strCopy(aYY, 4, timeStamp, 0, 1);
+  
+  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  strncpy(aYY, timeStamp+0,  2);
+  //strCopy(aYY, 4, timeStamp, 0, 1);
+  if (Verbose2) Debugf("aYY[%s], nYY[%02d]\r\n", aYY, String(aYY).toInt()); 
   return String(aYY).toInt();
     
 } // YearFromTimestamp()
@@ -114,7 +131,11 @@ int32_t HoursKeyTimestamp(const char *timeStamp)
   char aHK[10] = "";
   // 0123456789ab
   // YYMMDDHHmmss YY = 0-1
-  strCopy(aHK, 4, timeStamp, 0, 7);
+  
+  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  strncpy(aHK, timeStamp+0,  8);
+  //strCopy(aHK, 4, timeStamp, 0, 7);
+  if (Verbose2) Debugf("aHK[%s], nHK[%02d]\r\n", aHK, String(aHK).toInt()); 
   //return timeStamp.substring(0, 8).toInt();
   return String(aHK).toInt();
     
@@ -127,23 +148,23 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
 {
   char fullTimeStamp[16] = "";
 
-  strConcat(fullTimeStamp, 15, timeStamp);
+  strlcat(fullTimeStamp, timeStamp, sizeof(fullTimeStamp));
   if (Verbose2) DebugTf("epoch(%s) strlen([%d])\r\n", fullTimeStamp, strlen(fullTimeStamp));  
   switch(strlen(fullTimeStamp)) {
     case  4:  //--- timeStamp is YYMM
-              strConcat(fullTimeStamp, 15, "01010101X");
+              strlcat(fullTimeStamp, "01010101X", sizeof(fullTimeStamp));
               break;
     case  6:  //--- timeStamp is YYMMDD
-              strConcat(fullTimeStamp, 15, "010101X");
+              strlcat(fullTimeStamp, "010101X", sizeof(fullTimeStamp));
               break;
     case  8:  //--- timeStamp is YYMMDDHH
-              strConcat(fullTimeStamp, 15, "0101X");
+              strlcat(fullTimeStamp, "0101X", sizeof(fullTimeStamp));
               break;
     case  10:  //--- timeStamp is YYMMDDHHMM
-              strConcat(fullTimeStamp, 15, "01X");
+              strlcat(fullTimeStamp, "01X", sizeof(fullTimeStamp));
               break;
     case  12:  //--- timeStamp is YYMMDDHHMMSS
-              strConcat(fullTimeStamp, 15, "X");
+              strlcat(fullTimeStamp,  "X", sizeof(fullTimeStamp));
               break;
     //default:  return now();
   }
@@ -170,11 +191,15 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
          ,MonthFromTimestamp(fullTimeStamp)
          ,YearFromTimestamp(fullTimeStamp));
 
+  
   nT = now();
+
+  syncTime=false;  //do never sync time
   if (!syncTime)
   {
     setTime(savEpoch);
   }
+
   return nT;
 
 } // epoch()

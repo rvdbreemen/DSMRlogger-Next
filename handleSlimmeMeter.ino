@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
-**  Program  : handleSlimmeMeter - part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : handleSlimmeMeter - part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -43,7 +43,7 @@ void handleSlimmemeter()
 {
   //DebugTf("showRaw (%s)\r\n", showRaw ?"true":"false");
   if (showRaw) {
-    //-- process telegrams in raw mode
+    //-- process telegrams in raw in mode
     processSlimmemeterRaw();
   } 
   else
@@ -53,6 +53,13 @@ void handleSlimmemeter()
 
 } // handleSlimmemeter()
 
+//==================================================================================
+
+void tiggerNextTelegram()
+{
+      // //-- enable DTR to read a telegram from the Slimme Meter
+    slimmeMeter.enable(true); 
+} // tiggerNextTelegram()
 
 //==================================================================================
 void processSlimmemeterRaw()
@@ -70,7 +77,7 @@ void processSlimmemeterRaw()
   
   if (settingOledType > 0)
   {
-    oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
+    oled_Print_Msg(0, "<DSMRlogger-Next>", 0);
     oled_Print_Msg(1, "-------------------------",0);
     oled_Print_Msg(2, "Raw Format",0);
     snprintf(cMsg, sizeof(cMsg), "Raw Count %4d", showRawCount);
@@ -123,8 +130,8 @@ void processSlimmemeter()
   if (slimmeMeter.available()) 
   {
     DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
-    Debugln(F("\r\n[Time----][FreeHeap/mBlck][Function----(line):\r"));
-    // Voorbeeld: [21:00:11][   9880/  8960] loop        ( 997): read telegram [28] => [140307210001S]
+    Debugln(F("\r\n[Time----][FreeHea| Frags| mBlck] Function----(line):\r"));
+    //  Voorbeeld: [21:00:11][   9880|     9|  8960] loop        ( 997): read telegram [28] => [140307210001S]
     telegramCount++;
         
     DSMRdata = {};
@@ -205,7 +212,7 @@ void processSlimmemeter()
         
   } // if (slimmeMeter.available()) 
   
-} // handleSlimmeMeter()
+} // processSlimmeMeter()
 
 #endif
 

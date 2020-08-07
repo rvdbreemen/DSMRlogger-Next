@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
-**  Program  : convertPRD2RING, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : convertPRD2RING, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -44,13 +44,13 @@ void convertPRDfile(int8_t fileType)
   
   switch(fileType)
   {
-    case HOURS:   strCopy(PRDfileName, sizeof(PRDfileName), "/PRDhours.csv");
+    case HOURS:   strlcpy(PRDfileName, "/PRDhours.csv", sizeof(PRDfileName));
                   maxRecs = 49;
                   break;
-    case DAYS:    strCopy(PRDfileName, sizeof(PRDfileName), "/PRDdays.csv");
+    case DAYS:    strlcpy(PRDfileName, "/PRDdays.csv", sizeof(PRDfileName));
                   maxRecs = 15;
                   break;
-    case MONTHS:  strCopy(PRDfileName, sizeof(PRDfileName), "/PRDmonths.csv");
+    case MONTHS:  strlcpy(PRDfileName, "/PRDmonths.csv", sizeof(PRDfileName));
                   maxRecs = 25;
                   break;
                   
@@ -105,17 +105,17 @@ void writeToRINGfile(int8_t fileType, const char *key, float EDT1, float EDT2
   //   hours:  YYMMDDHH concat mmssX
   //    days:  YYMMDD   concat HHmmssX
   //  months:  YYMM     concat DDHHmmssX
-  strCopy(newKey, 14, key);
+  strlcpy(newKey, key, 14);
   
   switch(fileType)
   {
-    case HOURS:   strConcat(newKey, 14, "0101X");
+    case HOURS:   strlcat(newKey, "0101X", 14);
                   recSlot = timestampToHourSlot(newKey,  strlen(newKey));
                   break;
-    case DAYS:    strConcat(newKey, 14, "230101X");
+    case DAYS:    strlcat(newKey, "230101X", 14);
                   recSlot = timestampToDaySlot(newKey,   strlen(newKey));
                   break;
-    case MONTHS:  strConcat(newKey, 14, "01230101X");
+    case MONTHS:  strlcat(newKey, "01230101X", 14);
                   recSlot = timestampToMonthSlot(newKey, strlen(newKey));
                   break;
                   

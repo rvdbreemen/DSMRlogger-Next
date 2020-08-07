@@ -1,12 +1,14 @@
 /* 
 ***************************************************************************  
 **  Filename  : safeTimers.h
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
 */
+
 
 
 /*

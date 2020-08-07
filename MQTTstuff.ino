@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
-**  Program  : MQTTstuff, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : MQTTstuff, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -14,7 +14,7 @@
 // Declare some variables within global scope
 
   static IPAddress  MQTTbrokerIP;
-  static char       MQTTbrokerIPchar[20];
+  static char       MQTTbrokerIPchar[20] {0};
 
 #ifdef USE_MQTT
 //  #include <PubSubClient.h>           // MQTT client publish and subscribe functionality
@@ -22,13 +22,13 @@
 //  static PubSubClient MQTTclient(wifiClient);
   int8_t              reconnectAttempts = 0;
   char                lastMQTTtimestamp[15] = "-";
-  char                mqttBuff[100];
+  char                mqttBuff[100] {0};
 
 
   enum states_of_MQTT { MQTT_STATE_INIT, MQTT_STATE_TRY_TO_CONNECT, MQTT_STATE_IS_CONNECTED, MQTT_STATE_ERROR };
   enum states_of_MQTT stateMQTT = MQTT_STATE_INIT;
 
-  String            MQTTclientId;
+  char                MQTTclientId[80] {0}; //hostname + mac 
 
 #endif
 
@@ -92,7 +92,10 @@ bool connectMQTT_FSM()
           DebugTf("[%s] => setServer(%s, %d) \r\n", settingMQTTbroker, MQTTbrokerIPchar, settingMQTTbrokerPort);
           MQTTclient.setServer(MQTTbrokerIPchar, settingMQTTbrokerPort);
           DebugTf("setServer  -> MQTT status, rc=%d \r\n", MQTTclient.state());
-          MQTTclientId  = String(settingHostname) + "-" + WiFi.macAddress();
+          strlcpy(MQTTclientId, settingHostname, sizeof(MQTTclientId));
+          strlcat(MQTTclientId, "-", sizeof(MQTTclientId));
+          strlcat(MQTTclientId, WiFi.macAddress().c_str(), sizeof(MQTTclientId));
+          //MQTTclientId  = String(settingHostname) + "-" + WiFi.macAddress();
           stateMQTT = MQTT_STATE_TRY_TO_CONNECT;
           DebugTln(F("Next State: MQTT_STATE_TRY_TO_CONNECT"));
           reconnectAttempts = 0;
@@ -101,19 +104,19 @@ bool connectMQTT_FSM()
           DebugTln(F("MQTT State: MQTT try to connect"));
           DebugTf("MQTT server is [%s], IP[%s]\r\n", settingMQTTbroker, MQTTbrokerIPchar);
       
-          DebugTf("Attempting MQTT connection as [%s] .. \r\n", MQTTclientId.c_str());
+          DebugTf("Attempting MQTT connection as [%s] .. \r\n", MQTTclientId);
           reconnectAttempts++;
 
           //--- If no username, then anonymous connection to broker, otherwise assume username/password.
-          if (String(settingMQTTuser).length() == 0) 
+          if (strlen(settingMQTTuser) == 0) 
           {
             DebugT(F("without a Username/Password "));
-            MQTTclient.connect(MQTTclientId.c_str());
+            MQTTclient.connect(MQTTclientId);
           } 
           else 
           {
             DebugTf("with Username [%s] and password ", settingMQTTuser);
-            MQTTclient.connect(MQTTclientId.c_str(), settingMQTTuser, settingMQTTpasswd);
+            MQTTclient.connect(MQTTclientId, settingMQTTuser, settingMQTTpasswd);
           }
           //--- If connection was made succesful, move on to next state...
           if (MQTTclient.connected())
@@ -159,14 +162,6 @@ bool connectMQTT_FSM()
 
 } // connectMQTT_FSM()
 
-//===========================================================================================
-String trimVal(char *in) 
-{
-  String Out = in;
-  Out.trim();
-  return Out;
-} // trimVal()
-
 
 //=======================================================================
 struct buildJsonMQTT {
@@ -188,16 +183,16 @@ struct buildJsonMQTT {
         if (settingMQTTtopTopic[strlen(settingMQTTtopTopic)-1] == '/')
               snprintf(topicId, sizeof(topicId), "%s",  settingMQTTtopTopic);
         else  snprintf(topicId, sizeof(topicId), "%s/", settingMQTTtopTopic);
-        strConcat(topicId, sizeof(topicId), Name.c_str());
+        strlcat(topicId, Name.c_str(), sizeof(topicId));
         if (Verbose2) DebugTf("topicId[%s]\r\n", topicId);
         
         if (Unit.length() > 0)
         {
-          createMQTTjsonMessage(mqttBuff, Name.c_str(), typecastValue(i.val()), Unit.c_str());
+          createMQTTjsonMessage(mqttBuff, Name.c_str(), i.val(), Unit.c_str());
         }
         else
         {
-          createMQTTjsonMessage(mqttBuff, Name.c_str(), typecastValue(i.val()));
+          createMQTTjsonMessage(mqttBuff, Name.c_str(), i.val());
         }
         
         //snprintf(cMsg, sizeof(cMsg), "%s", jsonString.c_str());
@@ -221,13 +216,20 @@ void sendMQTTData()
 
   if (settingMQTTinterval == 0) return;
 
-  if (ESP.getFreeHeap() < 9000) // to prevent firmware from crashing!
+  if (ESP.getFreeHeap() < 7000) // to prevent firmware from crashing!
   {
     DebugTf("==> Bailout due to low heap (%d bytes)\r\n",   ESP.getFreeHeap() );
     writeToSysLog("==> Bailout low heap (%d bytes)", ESP.getFreeHeap() );
     return;
   }
 
+  //Only send data when there is a new telegram
+  static uint32_t lastTelegram = 0;
+  if ((telegramCount - lastTelegram)> 0)
+  {
+      //New telegram received, let's forward that to influxDB
+      lastTelegram = telegramCount;
+  } else return;
 
   if (!MQTTclient.connected() || ! mqttIsConnected)
   {

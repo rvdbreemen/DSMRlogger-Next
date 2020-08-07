@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
-**  Program  : processTelegram, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : processTelegram, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -27,7 +27,7 @@ void processTelegram()
     oled_Print_Msg(2, cMsg, 0);
   }
                                                     
-  strcpy(newTimestamp, DSMRdata.timestamp.c_str()); 
+  strlcpy(newTimestamp, DSMRdata.timestamp.c_str(), sizeof(newTimestamp)); 
   //--- newTimestamp is the timestamp from the last telegram
   newT = epoch(newTimestamp, strlen(newTimestamp), true); // update system time
   //--- actTimestamp is the timestamp from the previous telegram
@@ -36,13 +36,14 @@ void processTelegram()
   //--- Skip first 3 telegrams .. just to settle down a bit ;-)
   if ((int32_t)(telegramCount - telegramErrors) < 3) 
   {
-    strCopy(actTimestamp, sizeof(actTimestamp), newTimestamp);
+    strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
     actT = epoch(actTimestamp, strlen(actTimestamp), false);   // update system time
     return;
   }
   
-  DebugTf("actHour[%02d] -- newHour[%02d]\r\n", hour(actT), hour(newT));
-  //--- if we have a new hour() update the previous hour
+  DebugTf("epoch actHour[%d] -- newHour[%d]\r\n", actT, newT);
+  DebugTf("Hour(local TZ)  actHour[%02d] -- newHour[%02d]\r\n", hour(actT), hour(newT));
+   //--- if we have a new hour() update the previous hour
   if (hour(actT) != hour(newT)) {
     writeToSysLog("actHour[%02d] -- newHour[%02d]", hour(actT), hour(newT));
   }
@@ -62,14 +63,14 @@ void processTelegram()
     {
       //--- YES! actTimestamp := newTimestamp
       //--- and update the files with the actTimestamp
-      strCopy(actTimestamp, sizeof(actTimestamp), newTimestamp);
+      strlcpy(actTimestamp,  newTimestamp, sizeof(actTimestamp));
       writeDataToFiles();
     }
     else  //--- NO, only the hour has changed
     {
       char      record[DATA_RECLEN + 1] = "";
       //--- actTimestamp := newTimestamp
-      strCopy(actTimestamp, sizeof(actTimestamp), newTimestamp);
+      strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
       buildDataRecordFromSM(record);
       uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
       //--- and update the files with the actTimestamp
@@ -78,13 +79,23 @@ void processTelegram()
     }
   }
 
+  strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
+  actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
+
+
+// If the MQTT timer is DUE, also send MQTT message
+#ifdef USE_MQTT
   if ( DUE(publishMQTTtimer) )
   {
     sendMQTTData();      
-  }    
+  }  
+#endif
+// And send it using InfluxDB
+#ifdef USE_INFLUXDB
+    handleInfluxDB();
+#endif
 
-  strCopy(actTimestamp, sizeof(actTimestamp), newTimestamp);
-  actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
+
 
 } // processTelegram()
 

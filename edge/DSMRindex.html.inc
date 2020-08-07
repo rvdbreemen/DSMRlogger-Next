@@ -1,7 +1,7 @@
 <!--
 ***************************************************************************  
-**  Program  : DSMRindex.html.inc, part of DSMRloggerAPI
-**  Version  : v1.2.2
+**  Program  : DSMRindex.html.inc, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -12,7 +12,7 @@
     <!-- <div class="dev-header"> -->
     <div class="header">
       <h1>
-        <span id="sysName">DSMR-logger(API)</span> &nbsp; &nbsp; &nbsp;
+        <span id="sysName">DSMR-logger(Next)</span> &nbsp; &nbsp; &nbsp;
         <span id="devName"    style='font-size: small;'>-</span> &nbsp;
         <span id="devVersion" style='font-size: small;'>[version]</span>
         <span id="source"     style='font-size: small;'> &nbsp; &nbsp; [-]</span>
@@ -346,8 +346,8 @@
   </span> <!-- end Settings Page -->
   
   <!--
-  <script src="https://cdn.jsdelivr.net/gh/mrWheel/DSMRloggerAPI@master/edge/DSMRedge.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/mrWheel/DSMRloggerAPI@master/edge/DSMRgraphics.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/rvdbreemen/DSMRlogger-Next@master/edge/DSMRindex.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/rvdbreemen/DSMRlogger-Next@master/edge/DSMRgraphics.min.js"></script>
   -->
 
 <!--

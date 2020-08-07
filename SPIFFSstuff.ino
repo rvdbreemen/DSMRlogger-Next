@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
-**  Program  : SPIFFSstuff, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : SPIFFSstuff, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -39,7 +39,7 @@ void readLastStatus()
   }
   _file.close();
   if (strlen(spiffsTimestamp) != 13) {
-    strcpy(spiffsTimestamp, "010101010101X");
+    strncpy(spiffsTimestamp, "010101010101X", sizeof(spiffsTimestamp));
   }
   snprintf(actTimestamp, sizeof(actTimestamp), "%s", spiffsTimestamp);
   
@@ -49,7 +49,7 @@ void readLastStatus()
 //====================================================================
 void writeLastStatus()
 {
-  if (ESP.getFreeHeap() < 8500) // to prevent firmware from crashing!
+  if (ESP.getFreeHeap() < 7000) // to prevent firmware from crashing!
   {
     DebugTf("Bailout due to low heap (%d bytes)\r\n", ESP.getFreeHeap());
     writeToSysLog("Bailout low heap (%d bytes)", ESP.getFreeHeap());
@@ -81,8 +81,8 @@ bool buildDataRecordFromSM(char *recIn)
   char key[10] = "";
  
   uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
-  strCopy(key, 10, actTimestamp, 0, 8);
-
+  strlcpy(key, actTimestamp+0,  9);
+ 
   snprintf(record, sizeof(record), (char*)DATA_FORMAT, key , (float)DSMRdata.energy_delivered_tariff1
                                           , (float)DSMRdata.energy_delivered_tariff2
                                           , (float)DSMRdata.energy_returned_tariff1
@@ -95,7 +95,7 @@ bool buildDataRecordFromSM(char *recIn)
   // DATA + \n + \0                                        
   fillRecord(record, DATA_RECLEN);
 
-  strcpy(recIn, record);
+  strncpy(recIn, record, sizeof(recIn));
 
 } // buildDataRecordFromSM()
 
@@ -124,14 +124,14 @@ uint16_t buildDataRecordFromJson(char *recIn, String jsonIn)
   {
     splitString(wOut[f].c_str(), ':', wPair, 4);
     if (Verbose2) DebugTf("[%d] -> [%s]\r\n", f, wOut[f].c_str());
-    if (wPair[0].indexOf("recid") == 0)  strCopy(uKey, 10, wPair[1].c_str());
+    if (wPair[0].indexOf("recid") == 0)  strlcpy(uKey, wPair[1].c_str(), 10);
     if (wPair[0].indexOf("edt1")  == 0)  uEDT1 = wPair[1].toFloat();
     if (wPair[0].indexOf("edt2")  == 0)  uEDT2 = wPair[1].toFloat();
     if (wPair[0].indexOf("ert1")  == 0)  uERT1 = wPair[1].toFloat();
     if (wPair[0].indexOf("ert2")  == 0)  uERT2 = wPair[1].toFloat();
     if (wPair[0].indexOf("gdt")   == 0)  uGDT  = wPair[1].toFloat();
   }
-  strConcat(uKey, 15, "0101X");
+  strlcat(uKey, "0101X", 15);
   recSlot = timestampToMonthSlot(uKey, strlen(uKey));
  
   DebugTf("MONTHS: Write [%s] to slot[%02d] in %s\r\n", uKey, recSlot, MONTHS_FILE);
@@ -144,7 +144,7 @@ uint16_t buildDataRecordFromJson(char *recIn, String jsonIn)
   // DATA + \n + \0                                        
   fillRecord(record, DATA_RECLEN);
 
-  strcpy(recIn, record);
+  strncpy(recIn, record, sizeof(recIn));
 
   return recSlot;
 
@@ -520,7 +520,7 @@ void ESP8266_listFiles()
     yield();
     for (int8_t x = y + 1; x < fileNr; x++)  {
       //DebugTf("y[%d], x[%d] => seq[x][%s] ", y, x, dirMap[x].Name);
-      if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
+      if (strcasecmp(dirMap[x].Name, dirMap[y].Name) <= 0) 
       {
         fileMeta temp = dirMap[y];
         dirMap[y]     = dirMap[x];
@@ -686,9 +686,9 @@ bool DSMRfileExist(const char* fileName, bool doDisplay)
   char fName[30] = "";
   if (fileName[0] != '/')
   {
-    strConcat(fName, 5, "/");
+    strlcat(fName, "/", 5);
   }
-  strConcat(fName, 29, fileName);
+  strlcat(fName, fileName, 29);
   
   DebugTf("check if [%s] exists .. ", fName);
   if (settingOledType > 0)

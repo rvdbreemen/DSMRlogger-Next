@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
-**  Program  : FSexplorer, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : FSexplorer, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Mostly stolen from https://www.arduinoforum.de/User-Fips
 **  For more information visit: https://fipsok.de
@@ -59,16 +59,15 @@ void setupFSexplorer()    // Funktionsaufruf "spiffs();" muss im Setup eingebund
   httpServer.on("/update", updateFirmware);
   httpServer.onNotFound([]() 
   {
-    if (Verbose2) DebugTf("in 'onNotFound()'!! [%s] => \r\n", String(httpServer.uri()).c_str());
+    if (Verbose2) DebugTf("in 'onNotFound()'!! [%s] => \r\n", httpServer.uri().c_str());
     if (httpServer.uri().indexOf("/api/") == 0) 
     {
-      if (Verbose1) DebugTf("next: processAPI(%s)\r\n", String(httpServer.uri()).c_str());
+      if (Verbose1) DebugTf("next: processAPI(%s)\r\n", httpServer.uri().c_str());
       processAPI();
     }
     else
     {
-      DebugTf("next: handleFile(%s)\r\n"
-                      , String(httpServer.urlDecode(httpServer.uri())).c_str());
+      DebugTf("next: handleFile(%s)\r\n", httpServer.urlDecode(httpServer.uri()).c_str());
       if (!handleFile(httpServer.urlDecode(httpServer.uri())))
       {
         httpServer.send(404, "text/plain", "FileNotFound\r\n");
@@ -108,7 +107,7 @@ void ESP8266_APIlistFiles()
     yield();
     for (int8_t x = y + 1; x < fileNr; x++)  {
       //DebugTf("y[%d], x[%d] => seq[y][%s] / seq[x][%s] ", y, x, dirMap[y].Name, dirMap[x].Name);
-      if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
+      if (strcasecmp(dirMap[x].Name, dirMap[y].Name) <= 0)
       {
         //Debug(" !switch!");
         fileMeta temp = dirMap[y];
@@ -391,7 +390,9 @@ void doRedirect(String msg, int wait, const char* URL, bool reboot)
   if (reboot) 
   {
     delay(5000);
-    ESP.restart();
+    //WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); while(1)wdt_reset();
+    //ESP.restart();
+    ESP.reset();
     delay(5000);
   }
   

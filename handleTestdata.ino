@@ -1,4 +1,13 @@
-
+/* 
+***************************************************************************  
+**  Program  : handleTestdata.ino, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
+**
+**  Copyright (c) 2020 Willem Aandewiel
+**
+**  TERMS OF USE: MIT License. See bottom of file.                                                            
+***************************************************************************      
+*/
 
 #if defined(HAS_NO_SLIMMEMETER)
 
@@ -108,7 +117,7 @@ void handleTestdata()
 //    calcCRC = decodeTelegram(len);  // why??
     }
     if (Verbose2) Debugf("!\r\n");
-    strConcat(telegram, sizeof(telegram), "!\r\n");
+    strlcat(telegram,  "!\r\n", sizeof(telegram);
 
 #else
     for (int16_t line = 0; line < 38; line++) {
@@ -118,7 +127,7 @@ void handleTestdata()
     } 
     snprintf(cMsg, sizeof(cMsg), "!%04X\r\n\r\n", (calcCRC & 0xFFFF));
     if (Verbose2) Debug(cMsg);
-    strConcat(telegram, sizeof(telegram), cMsg);
+    strlcat(telegram, cMsg, sizeof(telegram));
     
 #endif
 
@@ -267,7 +276,7 @@ int16_t buildTelegram40(int16_t line, char telegramLine[])
 
   if (line < 37) {
     if (Verbose2) Debug(telegramLine); 
-    strConcat(telegram, sizeof(telegram), telegramLine);
+    strlcat(telegram, telegramLine, sizeof(telegram));
   }
 
   for(len = 0; len < MAXLINELENGTH, telegramLine[len] != '\0'; len++) {}    
@@ -369,7 +378,7 @@ int16_t buildTelegram30(int16_t line, char telegramLine[])
 
   if (line < 19) {
     if (Verbose2) Debug(telegramLine); 
-    strConcat(telegram, sizeof(telegram), telegramLine);
+    strlcat(telegram, telegramLine, sizeof(telegram));
   }
 
   for(len = 0; len < MAXLINELENGTH, telegramLine[len] != '\0'; len++) {}    
@@ -384,7 +393,6 @@ int16_t buildTelegram30(int16_t line, char telegramLine[])
 void updateMeterValues(uint8_t period) 
 {
   float  Factor = 1.098;
-  String wsString = "";
   /*
   switch(period) {
     case SMonth:  Factor = 30.0 * 24.0; break;
@@ -512,3 +520,27 @@ unsigned int CRC16(unsigned int crc, unsigned char *buf, int len)
 }
 
 #endif
+
+
+/***************************************************************************
+*
+* Permission is hereby granted, free of charge, to any person obtaining a
+* copy of this software and associated documentation files (the
+* "Software"), to deal in the Software without restriction, including
+* without limitation the rights to use, copy, modify, merge, publish,
+* distribute, sublicense, and/or sell copies of the Software, and to permit
+* persons to whom the Software is furnished to do so, subject to the
+* following conditions:
+*
+* The above copyright notice and this permission notice shall be included
+* in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
+* OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+* 
+***************************************************************************/

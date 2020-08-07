@@ -1,5 +1,8 @@
 {
     "board": "esp32:esp32:esp32",
+    "output": "D://Users//Robert//Documents//GitHub//build",
     "configuration": "PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=dio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none",
-    "sketch": "DSMRloggerAPI.ino"
+    "sketch": "DSMRloggerAPI.ino",
+    "prebuild": "D://Users//Robert//Documents//GitHub//Rvdb//autoinc-semver//semver-incr-build.bat ./version.h",
+    "port": "COM4"
 }

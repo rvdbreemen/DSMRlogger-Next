@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "string": "cpp",
+        "xlocale": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp",
+        "*.tcc": "cpp",
+        "locale": "cpp",
+        "random": "cpp",
+        "algorithm": "cpp",
+        "sstream": "cpp",
+        "memory": "cpp"
+    }
+}

@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
-**  Program  : oledStuff.h, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Program  : oledStuff.h, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -20,7 +20,7 @@
 
 SSD1306AsciiWire oled;
 
-void oled_Print_Msg(uint8_t, String, uint16_t);
+void oled_Print_Msg(uint8_t, const char* , uint16_t);
 
 static bool     buttonState = LOW;
 static uint8_t  msgMode = 0;
@@ -64,7 +64,7 @@ void checkFlashButton()
       DebugTln(F("Switching display off.."));
     }
     oled.clear();
-    oled_Print_Msg(0, "<DSMRloggerAPI>", 0);
+    oled_Print_Msg(0, "<DSMRlogger-Next>", 0);
     oled_Print_Msg(2, "Wacht ...", 5);
     msgMode = 0; //reset the display loop
     RESTART_TIMER(oledSleepTimer);
@@ -84,6 +84,7 @@ void oled_Init()
     oled.setFont(X11fixed7x14B);  // this gives us 4 rows by 18 chars
     charHeight  = oled.fontHeight();
     lineHeight  = oled.displayHeight() / 4;
+    
     DebugTf("OLED is [%3dx%3d], charHeight[%d], lineHeight[%d], nrLines[%d]\r\n", oled.displayWidth()
                                                         , oled.displayHeight()
                                                         , charHeight, lineHeight, 4);
@@ -103,13 +104,15 @@ void oled_Clear()
 
 //===========================================================================================
 DECLARE_TIMER_MS(timer, 0);
-void oled_Print_Msg(uint8_t line, String message, uint16_t wait) 
+void oled_Print_Msg(uint8_t line, const char* message, uint16_t wait) 
 {
   if (!boolDisplay) return;  
   
-  message += "                    ";  
+  char lineMsg[20] {0}; 
+  strlcpy(lineMsg, message, sizeof(lineMsg)); 
+  strlcat(lineMsg, "                    ", sizeof(lineMsg)); 
   oled.setCursor(0, ((line * lineHeight)/8));
-  oled.print(message.c_str()); 
+  oled.print(lineMsg); 
 
   if (wait>0)
   {

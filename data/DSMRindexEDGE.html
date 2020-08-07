@@ -1,7 +1,7 @@
 <!--
 ***************************************************************************  
-**  Program  : DSMRindexEDGE.html, part of DSMRloggerAPI
-**  Version  : v1.2.1
+**  Program  : DSMRindexEDGE.html, part of DSMRlogger-Next
+**  Version  : v2.1.1-rc1
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -13,7 +13,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">  
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/mrWheel/DSMRloggerAPI@master/edge/DSMRindex.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/rvdbreemen/DSMRlogger-Next@master/edge/DSMRindex.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
     <title>ESP-DSMR Slimme Meter Logger</title>
   </head>
@@ -28,8 +28,8 @@
     <!-- Pin to bottom left corner -->
     <div id="message" class="bottom left-0">-</div>
   
-    <script src="https://cdn.jsdelivr.net/gh/mrWheel/DSMRloggerAPI@master/edge/DSMRindex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/mrWheel/DSMRloggerAPI@master/edge/DSMRgraphics.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/rvdbreemen/DSMRlogger-Next@master/edge/DSMRindex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/rvdbreemen/DSMRlogger-Next@master/edge/DSMRgraphics.min.js"></script>
 
   <script>
   //============================================================================  
@@ -44,7 +44,7 @@
   function readPageBody()
   {
     console.log("readPageBody() ..");
-    fetch("https://cdn.jsdelivr.net/gh/mrWheel/DSMRloggerAPI@master/edge/DSMRindex.html.inc")
+    fetch("https://cdn.jsdelivr.net/gh/rvdbreemen/DSMRlogger-Next@master/edge/DSMRindex.html.inc")
       .then(response => {
         if (response.ok) {
           return response.text();
