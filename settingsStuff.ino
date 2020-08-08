@@ -247,10 +247,18 @@ void readSettings(bool show)
 #endif
 
 #ifdef USE_INFLUXDB
-  if (words[0].equalsIgnoreCase("InfluxDBhostname"))    	strlcpy(settingInfluxDBhostname,     words[1].c_str(), sizeof(settingInfluxDBhostname));
-  if (words[0].equalsIgnoreCase("InfluxDBport"))          settingInfluxDBport                = words[1].toInt();  
-  if (words[0].equalsIgnoreCase("InfluxDBdatabasename"))  strlcpy(settingInfluxDBdatabasename, words[1].c_str(), sizeof(settingInfluxDBdatabasename));
-  initInfluxDB();
+  if (words[0].equalsIgnoreCase("InfluxDBhostname"))    	{ 
+    strlcpy(settingInfluxDBhostname,     words[1].c_str(), sizeof(settingInfluxDBhostname));
+    initInfluxDB();
+  }
+  if (words[0].equalsIgnoreCase("InfluxDBport"))          {
+    settingInfluxDBport                = words[1].toInt();  
+    initInfluxDB();
+  }
+  if (words[0].equalsIgnoreCase("InfluxDBdatabasename"))  {
+    strlcpy(settingInfluxDBdatabasename, words[1].c_str(), sizeof(settingInfluxDBdatabasename));
+    initInfluxDB();
+  }
 #endif
     
   } // while available()
@@ -265,7 +273,7 @@ void readSettings(bool show)
 // TODO:**ESP32**
 #endif
  
-  DebugTln(F(" .. done\r"));
+  DebugTln(F(" ... done\r"));
 
 
   if (strlen(settingIndexPage) < 7) strlcpy(settingIndexPage, "DSMRindex.html", sizeof(settingIndexPage));

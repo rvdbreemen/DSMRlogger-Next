@@ -137,7 +137,7 @@ void openSysLog(bool empty)
   {
     sysLog.write("******************************************************************************************************");
   }
-  writeToSysLog("Last Reset Reason [%s]", ESP_RESET_REASON() .c_str());
+  writeToSysLog("Last Reset Reason [%s]", getResetReason().c_str());
   writeToSysLog("actTimestamp[%s], nrReboots[%u], Errors[%u]", actTimestamp
                                                              , nrReboots
                                                              , slotErrors);
@@ -200,7 +200,7 @@ void setup()
     Debugln();
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
-  lastReset = ESP_RESET_REASON();
+  lastReset = getResetReason();
   Debugf("\n\nReset reason....[%s]\r\n", lastReset.c_str());  
   
 //================ SPIFFS ===========================================
@@ -339,7 +339,7 @@ void setup()
 #endif  //USE_NTP_TIME                                      //USE_NTP
 //================ end NTP =========================================
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", getResetReason().c_str());
   DebugTln(cMsg);
 
   Debugf("\nGebruik 'telnet %s ' voor verdere debugging\r\n",WiFi.localIP().toString().c_str());
@@ -523,14 +523,7 @@ void setup()
 
 //================ End of InfluxDB ================================
 
-
-//================ The final part of the Setup =====================
-
-  DebugTf("Startup complete! actTimestamp[%s]\r\n", actTimestamp);  
-  writeToSysLog("Startup complete! actTimestamp[%s]", actTimestamp);  
-
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP_RESET_REASON());
-  DebugTln(cMsg);
+//================ Start Slimme Meter ===============================
 
   if (settingOledType > 0)
   {
@@ -540,10 +533,11 @@ void setup()
     oled_Print_Msg(3, "telegram .....", 500);
   }
 
-//================ Start Slimme Meter ===============================
   DebugTln(F("Start slimmeMeter...\r"));
   initSlimmermeter();
   slimmeMeter.enable(true);
+
+//================ The final part of the Setup =====================
 
   DebugTf("Startup complete! actTimestamp[%s]\r\n", actTimestamp);  
   writeToSysLog("Startup complete! actTimestamp[%s]", actTimestamp);  
@@ -662,7 +656,17 @@ void loop ()
 
   //--- update upTime counter
   if DUE(updateSeconds)
+  {
     upTimeSeconds++;
+    //The next few lines are just to "show alive messages" 
+    if (Verbose1 || Verbose2) {
+      if ((upTimeSeconds % 2) == 0 ){
+        Debugf("Blink OFF [%d]\r\n", upTimeSeconds);           
+      } else {
+        Debugf("Blink ON [%d]\r\n", upTimeSeconds);           
+      }
+    }
+  }
     
   //--- verwerk volgend telegram
   if DUE(nextTelegram)

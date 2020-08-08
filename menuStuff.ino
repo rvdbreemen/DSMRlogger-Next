@@ -139,16 +139,16 @@ void displayBoardInfo()
 #endif
   Debug(F("]\r\n            IP Address ["));  Debug( WiFi.localIP().toString() );
   Debug(F("]\r\n              Hostname ["));  Debug( settingHostname );
-  Debug(F("]\r\n     Last reset reason ["));  Debug( ESP_RESET_REASON()  );
+  Debug(F("]\r\n     Last reset reason ["));  Debug( getResetReason().c_str() );
   Debug(F("]\r\n                upTime ["));  Debug( upTime() );
   Debugln(F("]\r"));
 
 #ifdef USE_MQTT
   Debugln(F("==================================================================\r"));
-  Debug(F("\r\n           MQTT broker ["));  Debug( settingMQTTbroker );
+  Debug(F("\r\n           MQTT broker ["));   Debug( settingMQTTbroker );
   Debug(F("]\r\n             MQTT User ["));  Debug( settingMQTTuser );
   #ifdef SHOW_PASSWRDS
-    Debug(F("]\r\n         MQTT PassWord ["));  Debug( settingMQTTpasswd );
+    Debug(F("]\r\n         MQTT PassWord ["));Debug( settingMQTTpasswd );
   #else
     Debug(F("]\r\n         MQTT PassWord [**********"));
   #endif
@@ -159,7 +159,7 @@ void displayBoardInfo()
 #endif
 #ifdef USE_INFLUXDB
   Debugln(F("==================================================================\r"));\
-  Debug(F("\r\n     InfluxDB hostname ["));  Debug( settingInfluxDBhostname );
+  Debug(F("\r\n     InfluxDB hostname ["));   Debug( settingInfluxDBhostname );
   Debug(F("]\r\n        InfluxDB port  ["));  Debug( settingInfluxDBport );
   Debug(F("]\r\n     InfluxDB database ["));  Debug( settingInfluxDBdatabasename );
   Debugln(F("]\r"));

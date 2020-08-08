@@ -13,8 +13,6 @@
 *                 my influxdb implementation (30 juli 2020)
 */  
 
-#include <ESP8266HTTPClient.h>
-
 #define LINE_BUFFER 250
 char buffer[LINE_BUFFER] {0};
 char sAPIwrite[100];

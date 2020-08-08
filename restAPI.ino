@@ -355,7 +355,6 @@ void sendDeviceInfo()
 #endif
 
   sendStartJsonObj("devinfo");
-
   sendNestedJsonObj("author", "Willem Aandewiel (www.aandewiel.nl)");
   sendNestedJsonObj("fwversion", _FW_VERSION);
 
@@ -384,15 +383,24 @@ void sendDeviceInfo()
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
   sendNestedJsonObj("flashchipid", cMsg);  // flashChipId
 #endif
+
+    // Serial.print("ESP32 SDK: "); Serial.println(ESP.getSdkVersion());
+    // Serial.print("ESP32 CPU FREQ: "); Serial.print(getCpuFrequencyMhz()); Serial.println("MHz");
+    // Serial.print("ESP32 APB FREQ: "); Serial.print(getApbFrequency() / 1000000.0, 1); Serial.println("MHz");
+    // Serial.print("ESP32 FLASH SIZE: "); Serial.print(ESP.getFlashChipSize() / (1024.0 * 1024), 2); Serial.println("MB");
+    // Serial.print("ESP32 RAM SIZE: "); Serial.print(ESP.getHeapSize() / 1024.0, 2); Serial.println("KB");
+    // Serial.print("ESP32 FREE RAM: "); Serial.print(ESP.getFreeHeap() / 1024.0, 2); Serial.println("KB");
+    // Serial.print("ESP32 MAX RAM ALLOC: "); Serial.print(ESP.getMaxAllocHeap() / 1024.0, 2); Serial.println("KB");
+    // Serial.print("ESP32 FREE PSRAM: "); Serial.print(ESP.getFreePsram() / 1024.0, 2); Serial.println("KB");
+
   sendNestedJsonObj("flashchipsize", (float)(ESP.getFlashChipSize() / 1024.0 / 1024.0), "MB");
-  sendNestedJsonObj("flashchiprealsize", (float)(ESP.getFlashChipRealSize() / 1024.0 / 1024.0), "MB");
 
 #if defined(ESP8266) 
-  sendNestedJsonObj("flashchiprealsize", formatFloat((ESP.getFlashChipRealSize() / 1024.0 / 1024.0), 3), "MB");
+  sendNestedJsonObj("flashchiprealsize", (float)(ESP.getFlashChipRealSize() / 1024.0 / 1024.0), "MB");
   SPIFFS.info(SPIFFSinfo);
-  sendNestedJsonObj("spiffssize", formatFloat( (SPIFFSinfo.totalBytes / (1024.0 * 1024.0)), 0), "MB");
+  sendNestedJsonObj("spiffssize", (float)(SPIFFSinfo.totalBytes / (1024.0 * 1024.0)), "MB");
 #elif defined(ESP32)
-  sendNestedJsonObj("spiffssize", formatFloat( (SPIFFS.totalBytes() / (1024.0 * 1024.0)), 0), "MB");
+  sendNestedJsonObj("spiffssize", (float)(SPIFFS.totalBytes() / (1024.0 * 1024.0)), "MB");
 #endif
 
   sendNestedJsonObj("flashchipspeed", (float)(ESP.getFlashChipSpeed() / 1000.0 / 1000.0), "MHz");

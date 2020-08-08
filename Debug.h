@@ -29,22 +29,17 @@
 
 /*---- start macro's ------------------------------------------------------------------*/
 
-#define Debug(...)      ({ DEBUG_PORT.print(__VA_ARGS__);         \
-                           if (TelnetStream.available())          \
-                              TelnetStream.print(__VA_ARGS__);    \
+#define Debug(...)      ({ Serial.print(__VA_ARGS__);         \
+                           TelnetStream.print(__VA_ARGS__);   \
+                        })                       
+#define Debugln(...)    ({ Serial.println(__VA_ARGS__);       \
+                           TelnetStream.println(__VA_ARGS__); \
+                        })                        
+#define Debugf(...)     ({ Serial.printf(__VA_ARGS__);        \
+                           TelnetStream.printf(__VA_ARGS__);  \
                         })
-#define Debugln(...)    ({ DEBUG_PORT.println(__VA_ARGS__);       \
-                           if (TelnetStream.available())          \
-                              TelnetStream.println(__VA_ARGS__);  \
-                        })
-#define Debugf(...)     ({ DEBUG_PORT.printf(__VA_ARGS__);        \
-                           if (TelnetStream.available())          \
-                              TelnetStream.printf(__VA_ARGS__);   \
-                        })
-
-#define DebugFlush()    ({ DEBUG_PORT.flush();                    \
-                           if (TelnetStream.available())          \
-                              TelnetStream.flush();               \
+#define DebugFlush()    ({ Serial.flush(); \
+                           TelnetStream.flush(); \
                         })
 
 
@@ -72,8 +67,7 @@ void _debugBOL(const char *fn, int line)
                 fn, line);
                  
   DEBUG_PORT.print (_bol);
-  if (TelnetStream.available())  
-    TelnetStream.print(_bol);
+  TelnetStream.print(_bol);
 }
 
 #endif // DEBUG_H 

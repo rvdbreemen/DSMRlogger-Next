@@ -22,12 +22,15 @@ void initSlimmermeter()
     DebugFlush();
     SM_SERIAL.swap();      // swap to SmartMeter
   #elif defined(ESP32)
-    #define RXD2 13     // prototype ESP32 is SM aangesloten op RX op GPIO13
-    #define TXD2 1
+    //#define RXD2 13   //GPIO13 for prototype (rev 1)
+    //#define TXD2 1    //GPIO1 for prototype
+    #define RXD2 16     //GPIO16 for rev 2   
+    #define TXD2 17     //GPIO17 for rev 2   
+    DebugTf("Serialport set to (RX,TX) (%d/%d)\r\n", RXD2, TXD2 );
     #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-      SM_SERIAL.begin(9600, SERIAL_7E1, RXD2, TXD2););                                //PRE40
-    #else   // not use_dsmr_30                                                        //PRE40
-      SM_SERIAL.begin(115200, SERIAL_8N1, RXD2, TXD2);
+      SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, -1, true );                            //PRE40
+    #else   // DSMR 4.x & 5.x
+      SM_SERIAL.begin( 115200, SERIAL_8N1, RXD2, -1, true );
     #endif  // use_dsmr_30
   #endif
 
@@ -57,7 +60,8 @@ void handleSlimmemeter()
 
 void tiggerNextTelegram()
 {
-      // //-- enable DTR to read a telegram from the Slimme Meter
+    if (Verbose1|| Verbose2) Debugln("Enable DTR, get that telegram");
+    // //-- enable DTR to read a telegram from the Slimme Meter
     slimmeMeter.enable(true); 
 } // tiggerNextTelegram()
 

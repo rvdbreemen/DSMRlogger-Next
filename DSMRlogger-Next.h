@@ -11,7 +11,6 @@
 
 #if defined(ESP8266)
   #define ESP_RESET()             ESP.reset()
-  #define ESP_RESET_REASON()      ESP.getResetReason().c_str()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxFreeBlockSize()
   #define ESP_GET_CHIPID()        ESP.getChipId()
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "Unknown" };
@@ -20,14 +19,15 @@
   #define SM_SERIAL Serial
 #elif defined(ESP32)
   #define ESP_RESET()             ESP.restart()
-  #define ESP_RESET_REASON()      ((String)esp_reset_reason()).c_str()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()
   #define ESP_GET_CHIPID()        ((uint32_t)ESP.getEfuseMac()) //The chipID is essentially its MAC address (length: 6 bytes) 
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
 //    #define LED_ON      HIGH
 //    #define LED_OFF     LOW
   #define SM_SERIAL Serial
+  
   #include "SPIFFS.h"
+  #include <rom/rtc.h>          // SDK ESP32 for reset reason function (see helper function)
 #endif
 
 //#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
@@ -238,7 +238,7 @@ String    lastReset           = "";
 bool      spiffsNotPopulated  = false;
 bool      hasAlternativeIndex = false;
 bool      mqttIsConnected     = false;
-bool      doLog = false, Verbose1 = false, Verbose2 = false;
+bool      Verbose1 = false, Verbose2 = false;
 int8_t    thisHour = -1, prevNtpHour = 0, thisDay = -1, thisMonth = -1, lastMonth, thisYear = 15;
 uint32_t  unixTimestamp;
 uint64_t  upTimeSeconds;
