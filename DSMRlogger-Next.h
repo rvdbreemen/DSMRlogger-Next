@@ -17,6 +17,9 @@
 //    #define LED_ON      LOW
 //    #define LED_OFF     HIGH
   #define SM_SERIAL Serial
+  #ifdef USE_REQUEST_PIN
+    #define DTR_ENABLE  12
+  #endif  // is_esp12
 #elif defined(ESP32)
   #define ESP_RESET()             ESP.restart()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()
@@ -28,6 +31,21 @@
   
   #include "SPIFFS.h"
   #include <rom/rtc.h>          // SDK ESP32 for reset reason function (see helper function)
+
+  #ifdef USE_REQUEST_PIN
+    #define DTR_ENABLE  27
+  #endif
+  // ESP32 JDJ REV2 
+  // LED PIN  24              //GPIO  --  data pin for WS2812B pixel
+  // TX  PIN  17              //GPIO  -- UART2 TX -- n.c.
+  // RX  PIN  16              //GPIO  -- UART2 RX -- connected to DSMR
+    //#define RXD2 13         //GPIO13 for prototype (rev 1)
+    //#define TXD2 1          //GPIO1 for prototype
+    #define RXD2 16           //GPIO16 for rev 2   
+    #define TXD2 17           //GPIO17 for rev 2   
+  // Extra pins for IO - uses - eg. S0 pulse counter or whatever you like
+  // PINS     26, 25, 32, 33  //GPIO
+  // JTAG HEADER available for debug
 #endif
 
 //#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
@@ -59,9 +77,6 @@
 #endif
 
 #define _DEFAULT_HOSTNAME  "DSMR-API"  
-#ifdef USE_REQUEST_PIN
-    #define DTR_ENABLE  12
-#endif  // is_esp12
 
 #define SETTINGS_FILE      "/DSMRsettings.ini"
 

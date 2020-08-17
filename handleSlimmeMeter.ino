@@ -22,10 +22,6 @@ void initSlimmermeter()
     DebugFlush();
     SM_SERIAL.swap();      // swap to SmartMeter
   #elif defined(ESP32)
-    //#define RXD2 13   //GPIO13 for prototype (rev 1)
-    //#define TXD2 1    //GPIO1 for prototype
-    #define RXD2 16     //GPIO16 for rev 2   
-    #define TXD2 17     //GPIO17 for rev 2   
     DebugTf("Serialport set to (RX,TX) (%d/%d)\r\n", RXD2, TXD2 );
     #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
       SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, -1, true );                            //PRE40
