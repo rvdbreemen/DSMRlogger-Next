@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : helperStuff, part of DSMRlogger-Next
-**  Version  : v2.1.1-rc1
+**  Version  : v2.1.2-rc2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -233,6 +233,23 @@ String getResetReason()
 #endif
 
   return _reason;
+//=======================================================================        
+
+void esp_reboot()
+{ 
+  //wait 3 seconds, and then reboot.
+  DebugT("Reboot in 3 seconds");
+  delay(1000);Debug(".");
+  delay(1000);Debug(".");
+  delay(1000);Debugln(".");
+  WiFi.forceSleepBegin(); //stop wifi 
+  ESP.restart();          //soft reset
+  //wdt_reset(); ESP.restart(); while(1)wdt_reset();
+  //ESP.reset(); //hard reset
+  //restart() doesn't always end execution
+  while (1) {
+    yield();
+  }
 }
  
 

@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : FSexplorer, part of DSMRlogger-Next
-**  Version  : v2.1.1-rc1
+**  Version  : v2.1.2-rc2
 **
 **  Mostly stolen from https://www.arduinoforum.de/User-Fips
 **  For more information visit: https://fipsok.de
@@ -390,10 +390,7 @@ void doRedirect(String msg, int wait, const char* URL, bool reboot)
   if (reboot) 
   {
     delay(5000);
-    //WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); while(1)wdt_reset();
-    ESP.restart();
-    //ESP_RESET();
-    delay(5000);
+    esp_reboot();
   }
   
 } // doRedirect()

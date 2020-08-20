@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : handleSlimmeMeter - part of DSMRlogger-Next
-**  Version  : v2.1.1-rc1
+**  Version  : v2.1.2-rc2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -132,6 +132,8 @@ void processSlimmemeter()
     DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
     Debugln(F("\r\n[Time----][FreeHea| Frags| mBlck] Function----(line):\r"));
     //  Voorbeeld: [21:00:11][   9880|     9|  8960] loop        ( 997): read telegram [28] => [140307210001S]
+    // Debugln(F("\r\n[Time----][FreeHea| mBlck] Function----(line):\r"));
+    //     Voorbeeld: [21:00:11][   9880|  8960] loop        ( 997): read telegram [28] => [140307210001S]
     telegramCount++;
         
     DSMRdata = {};

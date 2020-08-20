@@ -28,6 +28,21 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
 <table>
 <tr><th>Versie</th><th>Opmerking</th></tr>
 <tr>
+   <td valign="top">2.1.2-rc2</td>
+   <td>Release Candidate (rc2) of DSMRlogger-Next
+   <br>Back to InfluxDB client library
+   <br>ezTime implementation done right
+   <br>No more bailout with low heap, this broke MQTT and Mindergas
+   </td>
+</tr>
+<tr>
+   <td valign="top">2.1.1-rc1</td>
+   <td>Release Candidate (rc1) of DSMRlogger-Next
+   <br>Implementing my own InfluxDB writer logic 
+   <br>Lots of String processing changed in to Cstyle char processing
+   </td>
+</tr>
+<tr>
    <td valign="top">2.1.0-rc0</td>
    <td>Release Candidate (rc0) of DSMRlogger-Next
    <br>Implementing direct InfluxDB support 
@@ -35,6 +50,7 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
    <br>Improvement: Send MQTT once per telegram (no repeats)
    </td>
 </tr>
+<tr>
    <td valign="top">2.0.1</td>
    <td>First Final Release
    <br>Implementing DSMRloggerWS actual api (for backwards compatibility)
@@ -45,6 +61,7 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
    <br>Bugfix mindergas processing
    </td>
 </tr>
+<tr>
    <td valign="top">1.2.1</td>
    <td>Third Official Release
       <br>Instelling SM_HAS_NO_FASE_INFO nu via settings

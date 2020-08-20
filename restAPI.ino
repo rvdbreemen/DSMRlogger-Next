@@ -2,7 +2,7 @@
 /* 
 ***************************************************************************  
 **  Program  : restAPI, part of DSMRlogger-Next
-**  Version  : v2.1.1-rc1
+**  Version  : v2.1.2-rc2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -66,6 +66,7 @@ void processAPI()
                                   , URI
                                   , ESP.getFreeHeap() );
     httpServer.send(500, "text/plain", "500: internal server error (low heap)\r\n");
+    esp_reboot(); //due to low memory, let's restart.
     return;
   }
 

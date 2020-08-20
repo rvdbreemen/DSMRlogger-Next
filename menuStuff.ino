@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : menuStuff, part of DSMRlogger-Next
-**  Version  : v2.1.1-rc1
+**  Version  : v2.1.2-rc2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -209,8 +209,7 @@ void handleKeyInput()
                     WiFi.disconnect(true);  // deletes credentials !
                     //setupWiFi(true);
                     delay(2000);
-                    ESP_RESET();
-                    delay(2000);
+                    esp_reboot();
                     break;
       case 'i':
       case 'I':     for(int I=0; I<10; I++) 
@@ -237,7 +236,7 @@ void handleKeyInput()
                     delay(3000);
                     DebugTln(F("now Rebooting. \r"));
                     DebugFlush();
-                    ESP_RESET();
+                    esp_reboot();
                     break;
       case 's':
       case 'S':     listFiles();

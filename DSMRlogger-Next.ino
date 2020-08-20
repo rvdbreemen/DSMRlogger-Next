@@ -5,17 +5,22 @@
 #include "version.h"
 #define _FW_VERSION _VERSION
 /*
-**  Based on the original:
-**          DSMRLoggerAPI - Copyright (c) 2020 Willem Aandewiel
-**
 **  The Next development:  
 **          DSMRlogger-Next - Copyright (c) 2020 Robert van den Breemen
 **
 **  To go beyond the original with new features and fixing some issues.  
 **
+**  Based on the original:
+**          DSMRLoggerAPI - Copyright (c) 2020 Willem Aandewiel
+**
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
-*      
+*
+* DSMRlogger-Next instructions:
+* -   Install InfluxDBclient library    (https://github.com/tobiasschuerg/InfluxDB-Client-for-Arduino)
+* -   Install ezTime library            (https://github.com/ropg/ezTime)
+*
+***************************************************************************      
   Arduino-IDE settings for DSMR-logger Version 4 (ESP-12):
 
     - Board: "Generic ESP8266 Module"
@@ -298,7 +303,9 @@ void setup()
 
 //================ Start ezTime ===================================
   DebugTln("before UTC TZ     : " + UTC.dateTime());
-  DebugT("Wait for timesync");
+  DebugTln("Wait for timesync");
+  updateNTP();
+  setInterval(600);  //every 10 minutes
   waitForSync();
   localTZ.setLocation("Europe/Amsterdam");
   localTZ.setDefault();
@@ -326,7 +333,7 @@ void setup()
       oled_Print_Msg(3, "Reboot DSMR-logger", 2000);        //USE_NTP
     }                                                       //USE_NTP
     delay(2000);                                            //USE_NTP
-    ESP.restart();                                          //USE_NTP
+    esp_reboot();                                          //USE_NTP
     delay(3000);                                            //USE_NTP
   }                                                         //USE_NTP
   if (settingOledType > 0)                                  //USE_NTP

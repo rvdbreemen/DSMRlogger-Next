@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : handleInfluxDB - part of DSMRlogger-Next
-**  Version  : v2.1.1-rc1
+**  Version  : v2.1.2-rc2
 **
 **  Copyright (c) 2020 Robert van den Breemen
 **
@@ -10,138 +10,115 @@
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
 *      Created by Robert van den Breemen (26 june 2020)
-*                 my influxdb implementation (30 juli 2020)
 */  
 
-#define LINE_BUFFER 250
-char buffer[LINE_BUFFER] {0};
-char sAPIwrite[100];
-char sTmp[20];
+// InfluxDB  server url. Don't use localhost, always server name or ip address.
+// For InfluxDB 2 e.g. http://192.168.1.48:9999 (Use: InfluxDB UI -> Load Data -> Client Libraries), 
+// For InfluxDB 1 e.g. http://192.168.1.48:8086
+#define INFLUXDB_URL "http://192.168.88.254:8086"
+//#define INFLUXDB_URL "http://127.0.0.1:8086"
+// InfluxDB 2 server or cloud API authentication token (Use: InfluxDB UI -> Load Data -> Tokens -> <select token>)
+//#define INFLUXDB_TOKEN "toked-id"
+// InfluxDB 2 organization id (Use: InfluxDB UI -> Settings -> Profile -> <name under tile> )
+//#define INFLUXDB_ORG "org"
+// InfluxDB 2 bucket name (Use: InfluxDB UI -> Load Data -> Buckets)
+//#define INFLUXDB_BUCKET "bucket"
+// InfluxDB v1 database name 
+#define INFLUXDB_DB_NAME "dsmr-api"
+#include <InfluxDbClient.h>
 
+// InfluxDB client instance
+//InfluxDBClient client(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN);
+// InfluxDB client instance for InfluxDB 1
+InfluxDBClient client(INFLUXDB_URL, INFLUXDB_DB_NAME);
+
+// Set timezone string according to https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
+// Examples:
+//  Pacific Time:   "PST8PDT"
+//  Eastern:        "EST5EDT"
+//  Japanesse:      "JST-9"
+//  Central Europe: "CET-1CEST,M3.5.0,M10.5.0/3"
+#define TZ_INFO "CET-1CEST,M3.5.0,M10.5.0/3"
+#define WRITE_PRECISION WritePrecision::S
+#define MAX_BATCH_SIZE 16
+#define WRITE_BUFFER_SIZE 32
 
 time_t thisEpoch;
-WiFiClient  influxdbClient;   
-HTTPClient  http;
 
 void initInfluxDB()
 {
   if ( sizeof(settingInfluxDBhostname) < 8 )  return; 
- 
-  snprintf(sAPIwrite, sizeof(sAPIwrite),"http://%s:%d/write?db=%s&precision=s", settingInfluxDBhostname , settingInfluxDBport, settingInfluxDBdatabasename);
-  DebugTf("API influxdb: %s\r\n",sAPIwrite);
+
+ // Set InfluxDB 1 authentication params
+  // Only needed when query's are done?
+  //client.setConnectionParamsV1(INFLUXDB_URL, INFLUXDB_DB_NAME, INFLUXDB_USER, INFLUXDB_PASSWORD);   
+  snprintf(cMsg, sizeof(cMsg), "http://%s:%d", settingInfluxDBhostname , settingInfluxDBport);
+  DebugTf("InfluxDB Connection Setup: [%s] - database: [%s]\r\n", cMsg , settingInfluxDBdatabasename);
+  client.setConnectionParamsV1(cMsg, settingInfluxDBdatabasename);
+  // Connect to influxdb server connection
+
+  if (client.validateConnection()) {
+    DebugT("Connected to InfluxDB: ");
+    Debugln(client.getServerUrl());
+  } else {
+    DebugT("InfluxDB connection failed: ");
+    Debugln(client.getLastErrorMessage());
+  }
+    
+  //Enable messages batching and retry buffer
+  client.setWriteOptions(WRITE_PRECISION, MAX_BATCH_SIZE, WRITE_BUFFER_SIZE);
+//  client.setWriteOptions(WRITE_PRECISION);
 }
-
-//=========================================================================
-// function to add a value to the lineprotocol buffer for influxdb
-//=========================================================================
-void addvalueInfluxdb(char *buff, const char *cValue)
-{
-  strlcat(buff, cValue, LINE_BUFFER);
-} // addvalueInfluxdb(*char, *char)
-//---------------------------------------------------------------
-void addvalueInfluxdb(char *buff, String sValue)
-{
-  strlcat(buff, sValue.c_str(), LINE_BUFFER);
-} // addvalueInfluxdb(*char, String)
-//---------------------------------------------------------------
-void addvalueInfluxdb(char *buff, int32_t iValue)
-{
-  snprintf(sTmp, 10, "%d", iValue);
-  strlcat(buff, sTmp, LINE_BUFFER);
-  strlcat(buff, "i", LINE_BUFFER);  
-} // addvalueInfluxdb(*char,  int)
-//---------------------------------------------------------------
-void addvalueInfluxdb(char *buff, uint32_t uValue)
-{
-  snprintf(sTmp, 10, "%u", uValue);
-  strlcat(buff, sTmp, LINE_BUFFER);
-  strlcat(buff, "i", LINE_BUFFER);  
-} // addvalueInfluxdb(char *buff, *char, uint)
-//---------------------------------------------------------------
-void addvalueInfluxdb(char *buff, float fValue)
-{
-  snprintf(sTmp, 10, "%.3f", fValue);
-  strlcat(buff, sTmp, LINE_BUFFER);
-} // addvalueInfluxdb(*char, float)
-
-//=========[ writeInfluxDataPoints ]==========================================================
-
 struct writeInfluxDataPoints {
-
-    template<typename Item>
-    void apply(Item &i) {
-      if (i.present()) 
+  template<typename Item>
+  void apply(Item &i) {
+    
+    if (i.present()) 
+    {
+      if (strlen(Item::unit()) != 0) 
       {
-        if (strlen(Item::unit()) != 0) 
-        {
-          strlcpy(buffer, Item::unit(), sizeof(buffer));                    //measurement name
-          strlcat(buffer, ",instance=", sizeof(buffer));                    //addtag "instance"
-          strncat_P(buffer, (PGM_P)Item::name, sizeof(buffer));             //DSMR items name = tag value
-          strlcat(buffer, " value=", sizeof(buffer));                       //adddatapoint use "value" as name
-          addvalueInfluxdb(buffer, i.val());                                //add actual value (polymorphism addvalue)
-          strlcat(buffer, " ", sizeof(buffer));                             //whitespace delimiter for epoch timestamp
-          strlcat(buffer, itoa(thisEpoch, sTmp, 10), sizeof(buffer));       //add epoch timestamp
-          
-          if (Verbose1) DebugTf("Influxdb lineprotocol buffer: [%s]\r\n",buffer);
-          //Now sent the data
-          if(WiFi.status()== WL_CONNECTED){
-            // HTTPClient http;
-            // Your Domain name with URL path or IP address with path
-            http.begin(influxdbClient, sAPIwrite);
-            http.setReuse(true); //try server keep-alive to prevent rebuilding http connection
-            http.setUserAgent(F("DSMRlogger/" _SEMVER_FULL));
-            const char * headerKeys[] = {"Transfer-Encoding"} ;
-            http.collectHeaders(headerKeys, 1);
-            // Specify content-type header
-            http.addHeader(F("Content-Type"), F("text/plain)"));
-            //Now sent the data
-            int httpResponseCode = http.POST((uint8_t*)buffer, strlen(buffer));
-            yield();
-            if (httpResponseCode==204)
-            {
-              if (Verbose1) DebugTf("HTTP Response code: (%d) %s\r\n", httpResponseCode, http.getString().c_str());
-            }
-            else
-            {
-              if (Verbose1) DebugTf("HTTP Error code: (%d) %s\r\n", httpResponseCode, http.errorToString(httpResponseCode).c_str());
-            }
-            yield();
-            http.end();
-          } //wifi.status==wl_connected
-
-
-        } // if data has a unit
-      } // if data is present
-  } //apply
-};  // struct writeInfluxDataPoints
-
-//=========[ handleInfluxDB ]=================================================================
+        //when there is a unit, then it is a measurement
+        Point pointItem(Item::unit());
+        pointItem.setTime(thisEpoch);
+        pointItem.addTag("instance",Item::name);     
+        pointItem.addField("value", i.val());
+//        pointItem.addField((String)(Item::name), i.val());
+        if (Verbose1) {
+          DebugT("Writing to influxdb:");
+          Debugln(pointItem.toLineProtocol());          
+        }
+        if (!client.writePoint(pointItem)) {
+          DebugT("InfluxDB write failed: ");
+          Debugln(client.getLastErrorMessage());
+        }
+      }//writing to influxdb      
+    }
+  }
+};
 
 void handleInfluxDB()
 {
   static uint32_t lastTelegram = 0;
-  // if (!client.validateConnection()) return; // only write if there is a valid connection to InfluxDB
+  if (!client.validateConnection()) return; // only write if there is a valid connection to InfluxDB
   if ((telegramCount - lastTelegram)> 0)
   {
     //New telegram received, let's forward that to influxDB
     lastTelegram = telegramCount;
-
     //Setup the timestamp for this telegram, so all points for this batch are the same.
-    thisEpoch = UTC.now(); 
-    //DebugTf("UTC epoch     : %d\r\n", (int)UTC.now());
-    //DebugTf("local epoch   : %d\r\n", (int)localTZ.now());
-    //DebugTf("default epoch : %d\r\n", (int)now());
-
-    DebugTf("Writing telegram to influxdb - Epoc UTC = %d (now) \r\n", (int)thisEpoch);
-
+    thisEpoch = UTC.now();  
+    DebugTf("Writing telegram to influxdb - Epoc = %d (this) %d (NL) %d (UTC) \r\n", (int)thisEpoch, (int)localTZ.now(), (int)UTC.now());
     uint32_t timeThis = millis();
-
     DSMRdata.applyEach(writeInfluxDataPoints());
- 
+    // Check whether buffer in not empty
+    if (!client.isBufferEmpty()) {
+      // Write all remaining points to db
+      client.flushBuffer();
+    }
     DebugTf("Influxdb write took [%d] ms\r\n", (int)(millis()-timeThis));
   }
   
 }
+
 
 /***************************************************************************
 *

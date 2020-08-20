@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **  Program  : networkStuff.h, part of DSMRlogger-Next
-**  Version  : v2.1.1-rc1
+**  Version  : v2.1.2-rc2
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -123,7 +123,7 @@ void startWiFi(const char* hostname, int timeOut)
 
     //reset and try again, or maybe put it to deep sleep
     //delay(3000);
-    //ESP_RESET();
+    esp_reboot();
     //delay(2000);
     DebugTf(" took [%d] seconds ==> ERROR!\r\n", (millis() - lTime) / 1000);
     return;
