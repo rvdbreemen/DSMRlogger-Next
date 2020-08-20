@@ -99,13 +99,13 @@ void displayBoardInfo()
 #elif defined(ESP32)
   Debug(F("]\r\n         Chip Revision ["));  Debug( ESP.getChipRevision() );
 #endif
-  Debug(F("]\r\n               Chip ID ["));  Debug( ESP_GET_CHIPID(), HEX );
+  Debug(F("]\r\n               Chip ID ["));  Debug( esp_get_chipid(), HEX );
   Debug(F("]\r\n           SDK Version ["));  Debug( ESP.getSdkVersion() );
   Debug(F("]\r\n        CPU Freq (MHz) ["));  Debug( ESP.getCpuFreqMHz() );
   Debug(F("]\r\n      Sketch Size (kB) ["));  Debug( ESP.getSketchSize() / 1024.0 );
   Debug(F("]\r\nFree Sketch Space (kB) ["));  Debug( ESP.getFreeSketchSpace() / 1024.0 );
   Debug(F("]\r\n              FreeHeap ["));  Debug( ESP.getFreeHeap() );
-  Debug(F("]\r\n             max.Block ["));  Debug( ESP_GET_FREE_BLOCK() );
+  Debug(F("]\r\n             max.Block ["));  Debug( esp_get_free_block() );
 
 #if defined(ESP8266) 
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 

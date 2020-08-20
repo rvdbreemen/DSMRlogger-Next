@@ -13,9 +13,7 @@
 */  
 
 #if defined(ESP8266)
-  #define ESP_RESET()             ESP.reset()
-  #define ESP_GET_FREE_BLOCK()    ESP.getMaxFreeBlockSize()
-  #define ESP_GET_CHIPID()        ESP.getChipId()
+
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "Unknown" };
 //    #define LED_ON      LOW
 //    #define LED_OFF     HIGH
@@ -24,9 +22,7 @@
     #define DTR_ENABLE  12
   #endif  // is_esp12
 #elif defined(ESP32)
-  #define ESP_RESET()             ESP.restart()
-  #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()
-  #define ESP_GET_CHIPID()        ((uint32_t)ESP.getEfuseMac()) //The chipID is essentially its MAC address (length: 6 bytes) 
+
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
 //    #define LED_ON      HIGH
 //    #define LED_OFF     LOW
@@ -55,6 +51,8 @@
 #include <ezTime.h>             // https://github.com/ropg/ezTime
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "safeTimers.h"
+
+
 
 #ifdef USE_SYSLOGGER
   #include "ESP_SysLogger.h"      // https://github.com/mrWheel/ESP_SysLogger
@@ -107,7 +105,10 @@
 
 enum    { PERIOD_UNKNOWN, HOURS, DAYS, MONTHS, YEARS };
 
+//protype for debug
+uint32_t esp_get_free_block();
 #include "Debug.h"
+#include "espHelper.h"
 #include "oledStuff.h"
 #include "networkStuff.h"
 

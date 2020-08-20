@@ -143,9 +143,7 @@ void processSlimmemeter()
     {
       if (telegramCount > (UINT32_MAX - 10)) 
       {
-        delay(1000);
-        ESP_RESET();
-        delay(1000);
+        esp_reset();
       }
       digitalWrite(LED_BUILTIN, LED_OFF);
       if (DSMRdata.identification_present)

@@ -366,8 +366,8 @@ void sendDeviceInfo()
   sendNestedJsonObj("macaddress", WiFi.macAddress().c_str());
   sendNestedJsonObj("indexfile", settingIndexPage);
   sendNestedJsonObj("freeheap", ESP.getFreeHeap(), "bytes");
-  sendNestedJsonObj("maxfreeblock", ESP_GET_FREE_BLOCK(), "bytes");
-  sendNestedJsonObj("chipid", String( ESP_GET_CHIPID(), HEX ).c_str());
+  sendNestedJsonObj("maxfreeblock", esp_get_free_block(), "bytes");
+  sendNestedJsonObj("chipid", String( esp_get_chipid(), HEX ).c_str());
 #if defined(ESP8266) 
   sendNestedJsonObj("coreversion", String( ESP.getCoreVersion() ).c_str() );
 #elif defined(ESP32)
