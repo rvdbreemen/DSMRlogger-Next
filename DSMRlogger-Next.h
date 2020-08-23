@@ -30,7 +30,7 @@
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
 //    #define LED_ON      HIGH
 //    #define LED_OFF     LOW
-  #define SM_SERIAL Serial
+  #define SM_SERIAL Serial2   //UART2 on ESP32 = TX=
   
   #include "SPIFFS.h"
   #include <rom/rtc.h>          // SDK ESP32 for reset reason function (see helper function)

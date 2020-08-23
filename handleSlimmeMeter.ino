@@ -24,9 +24,11 @@ void initSlimmermeter()
   #elif defined(ESP32)
     DebugTf("Serialport set to (RX,TX) (%d/%d)\r\n", RXD2, TXD2 );
     #ifdef USE_PRE40_PROTOCOL                                                       
-      SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, TXD2, true );                            
+      //SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, TXD2, true );   
+      SM_SERIAL.begin(9600, SERIAL_7E1);                            
     #else   // DSMR 4.x & 5.x
-      SM_SERIAL.begin( 115200, SERIAL_8N1, RXD2, TXD2, true );
+      //SM_SERIAL.begin( 115200, SERIAL_8N1, RXD2, TXD2, true );
+      SM_SERIAL.begin(115200, SERIAL_8N1);
     #endif  // use_dsmr_30
   #endif
 
