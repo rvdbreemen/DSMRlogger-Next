@@ -42,14 +42,16 @@
   // LED PIN  24              //GPIO  --  data pin for WS2812B pixel
   // TX  PIN  17              //GPIO  -- UART2 TX -- n.c.
   // RX  PIN  16              //GPIO  -- UART2 RX -- connected to DSMR
-    //#define RXD2 13         //GPIO13 for prototype (rev 1)
-    //#define TXD2 1          //GPIO1 for prototype
-    #define RXD2 16           //GPIO16 for rev 2   
-    #define TXD2 17           //GPIO17 for rev 2   
+    #define TXD2 1          //GPIO1 for prototype
+    #define RXD2 13         //GPIO13 for prototype (rev 1)
+    //#define TXD2 17           //GPIO17 for rev 2   
+    //#define RXD2 16           //GPIO16 for rev 2   
   // Extra pins for IO - uses - eg. S0 pulse counter or whatever you like
   // PINS     26, 25, 32, 33  //GPIO
   // JTAG HEADER available for debug
 #endif
+
+
 
 //#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
 #include <ezTime.h>             // https://github.com/ropg/ezTime
@@ -107,7 +109,12 @@
 
 enum    { PERIOD_UNKNOWN, HOURS, DAYS, MONTHS, YEARS };
 
+//prototype esp helper
+void esp_reboot();
+uint32_t esp_get_free_block();
+
 #include "Debug.h"
+#include "espHelper.h"
 #include "oledStuff.h"
 #include "networkStuff.h"
 

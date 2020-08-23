@@ -13,9 +13,9 @@ void initSlimmermeter()
 {
 #if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
   #if defined(ESP8266) 
-    #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-      SM_SERIAL.begin(9600, SERIAL_7E1);                                                 //PRE40
-    #else   // not use_dsmr_30                                                        //PRE40
+    #ifdef USE_PRE40_PROTOCOL                                                        
+      SM_SERIAL.begin(9600, SERIAL_7E1);                                               
+    #else   // not use_dsmr_30                                                        
       SM_SERIAL.begin(115200, SERIAL_8N1);
     #endif  // use_dsmr_30
     DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
@@ -23,10 +23,10 @@ void initSlimmermeter()
     SM_SERIAL.swap();      // swap to SmartMeter
   #elif defined(ESP32)
     DebugTf("Serialport set to (RX,TX) (%d/%d)\r\n", RXD2, TXD2 );
-    #ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-      SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, -1, true );                            //PRE40
+    #ifdef USE_PRE40_PROTOCOL                                                       
+      SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, TXD2, true );                            
     #else   // DSMR 4.x & 5.x
-      SM_SERIAL.begin( 115200, SERIAL_8N1, RXD2, -1, true );
+      SM_SERIAL.begin( 115200, SERIAL_8N1, RXD2, TXD2, true );
     #endif  // use_dsmr_30
   #endif
 

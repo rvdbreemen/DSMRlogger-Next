@@ -63,7 +63,7 @@ void _debugBOL(const char *fn, int line)
    
   snprintf(_bol, sizeof(_bol), "[%02d:%02d:%02d][%7u|%6u] %-12.12s(%4d): ", \
                 hour(), minute(), second(), \
-                ESP.getFreeHeap(), ESP_GET_FREE_BLOCK(),\
+                ESP.getFreeHeap(), esp_get_free_block(),\
                 fn, line);
                  
   DEBUG_PORT.print (_bol);

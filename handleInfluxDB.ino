@@ -11,7 +11,7 @@
 ***************************************************************************      
 *      Created by Robert van den Breemen (26 june 2020)
 */  
-
+#ifdef USE_INFLUX
 // InfluxDB  server url. Don't use localhost, always server name or ip address.
 // For InfluxDB 2 e.g. http://192.168.1.48:9999 (Use: InfluxDB UI -> Load Data -> Client Libraries), 
 // For InfluxDB 1 e.g. http://192.168.1.48:8086
@@ -55,6 +55,7 @@ void initInfluxDB()
   snprintf(cMsg, sizeof(cMsg), "http://%s:%d", settingInfluxDBhostname , settingInfluxDBport);
   DebugTf("InfluxDB Connection Setup: [%s] - database: [%s]\r\n", cMsg , settingInfluxDBdatabasename);
   client.setConnectionParamsV1(cMsg, settingInfluxDBdatabasename);
+  Debugln("InfluxDB client setConnectionsParamsV1 done!");
   // Connect to influxdb server connection
 
   if (client.validateConnection()) {
@@ -118,7 +119,7 @@ void handleInfluxDB()
   }
   
 }
-
+#endif
 
 /***************************************************************************
 *

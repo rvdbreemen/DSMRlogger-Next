@@ -53,7 +53,7 @@
 //  #define USE_PRE40_PROTOCOL        // define if Slimme Meter is pre DSMR 4.0 (2.2 .. 3.0)
 //  #define USE_NTP_TIME              // define to generate Timestamp from NTP (Only Winter Time for now)
 //  #define HAS_NO_SLIMMEMETER        // define for testing only!
-#define USE_INFLUXDB                  // define if you want to use Influxdb (configure through webinterface)
+//#define USE_INFLUXDB                  // define if you want to use Influxdb (configure through webinterface)
 #define USE_MQTT                  // define if you want to use MQTT (configure through webinterface)
 #define USE_MINDERGAS             // define if you want to update mindergas (configure through webinterface)
 //  #define USE_SYSLOGGER             // define if you want to use the sysLog library for debugging
@@ -159,10 +159,10 @@ void setup()
   //================ Serial Debug ================================
 
   DEBUG_PORT.begin(115200, SERIAL_8N1);                   //DEBUG
-  Debugf("\n\nBooting [%s]\n", _FW_VERSION);
+  Debugf("\n\nBooting [%s]", _FW_VERSION);
   for(int i=10; i>0; i--)
   {
-    delay(100);
+    delay(300);
     Debugf(".");
   }
   Debugf("\r\n");
@@ -304,8 +304,8 @@ void setup()
 //================ Start ezTime ===================================
   DebugTln("before UTC TZ     : " + UTC.dateTime());
   DebugTln("Wait for timesync");
-  updateNTP();
   setInterval(600);  //every 10 minutes
+  updateNTP();
   waitForSync();
   localTZ.setLocation("Europe/Amsterdam");
   localTZ.setDefault();
@@ -540,7 +540,7 @@ void setup()
     oled_Print_Msg(3, "telegram .....", 500);
   }
 
-  DebugTln(F("Start slimmeMeter...\r"));
+  DebugTln(F("Start slimmeMeter..."));
   initSlimmermeter();
   slimmeMeter.enable(true);
 
@@ -605,8 +605,10 @@ void doReconnectWifi()
                                                             , WiFi.gatewayIP().toString().c_str());
         writeToSysLog("%s", cMsg);
 
-        //On reconnect wifi, also reconnect InfluxDB
-        initInfluxDB();
+        #ifdef USE_INFLUXDB
+          //On reconnect wifi, also reconnect InfluxDB
+          initInfluxDB();
+        #endif
   }
 }
 
