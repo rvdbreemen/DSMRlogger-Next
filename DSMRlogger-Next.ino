@@ -40,6 +40,37 @@
     - Erase Flash: "Only Sketch"
     - Port: <select correct port>
 */
+
+//================================================================================
+// There is a problem in the WebServer library!!!
+//
+// https://github.com/espressif/arduino-esp32/issues/3652#issuecomment-617058198
+//
+// -- changed WebServer.cpp in
+// ~/Library/Arduino15/packages/esp32/hardware/esp32/1.0.4/libraries/WebServer/src
+//
+//--------------------------------------------------------------------------
+//316  if (_currentClient.available()) {
+//       if (_parseRequest(_currentClient)) {
+//         // because HTTP_MAX_SEND_WAIT is expressed in milliseconds,
+//         // it must be divided by 1000
+//         _currentClient.setTimeout(HTTP_MAX_SEND_WAIT / 1000);
+//         _contentLength = CONTENT_LENGTH_NOT_SET;
+//         _handleRequest();
+//
+//         /* this comment out for chrome/maxthon browsers
+//         if (_currentClient.connected()) {
+//           _currentStatus = HC_WAIT_CLOSE;
+//           _statusChange = millis();
+//           keepCurrentClient = true;
+//         } 
+//         */
+//       }
+//     } else { // !_currentClient.available()
+//     ......
+//--------------------------------------------------------------------------
+// original file in ../srcORG/
+
 /*
 **  You can find more info in the following links (all in Dutch): 
 **   https://willem.aandewiel.nl/index.php/2020/02/28/restapis-zijn-hip-nieuwe-firmware-voor-de-dsmr-logger/
@@ -53,7 +84,7 @@
 //  #define USE_PRE40_PROTOCOL        // define if Slimme Meter is pre DSMR 4.0 (2.2 .. 3.0)
 //  #define USE_NTP_TIME              // define to generate Timestamp from NTP (Only Winter Time for now)
 //  #define HAS_NO_SLIMMEMETER        // define for testing only!
-//#define USE_INFLUXDB                  // define if you want to use Influxdb (configure through webinterface)
+//#define USE_INFLUXDB              // define if you want to use Influxdb (configure through webinterface)
 #define USE_MQTT                  // define if you want to use MQTT (configure through webinterface)
 #define USE_MINDERGAS             // define if you want to update mindergas (configure through webinterface)
 //  #define USE_SYSLOGGER             // define if you want to use the sysLog library for debugging
@@ -640,8 +671,6 @@ void doSystemTasks()
   httpServer.handleClient();
 #if defined(ESP8266)
   MDNS.update();
-#elif defined(ESP32)
-//Needs work for **TODO:ESP32**
 #endif
   handleKeyInput();
   if (settingOledType > 0)
@@ -670,9 +699,9 @@ void loop ()
     //The next few lines are just to "show alive messages" 
     if (Verbose1 || Verbose2) {
       if ((upTimeSeconds % 2) == 0 ){
-        Debugf("Blink OFF [%d]\r\n", upTimeSeconds);           
+        DebugTf("Blink OFF [%d]\r\n", upTimeSeconds);           
       } else {
-        Debugf("Blink ON [%d]\r\n", upTimeSeconds);           
+        DebugTf("Blink ON [%d]\r\n", upTimeSeconds);           
       }
     }
   }

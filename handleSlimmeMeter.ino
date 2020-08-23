@@ -57,11 +57,14 @@ void handleSlimmemeter()
 
 //==================================================================================
 
+uint32_t timerTlg;
+
 void tiggerNextTelegram()
 {
-    if (Verbose1|| Verbose2) Debugln("Enable DTR, get that telegram");
+    if (Verbose1|| Verbose2) DebugTln("Enable DTR, get that telegram...");
     // //-- enable DTR to read a telegram from the Slimme Meter
     slimmeMeter.enable(true); 
+    timerTlg = millis();
 } // tiggerNextTelegram()
 
 //==================================================================================
@@ -132,6 +135,7 @@ void processSlimmemeter()
   slimmeMeter.loop();
   if (slimmeMeter.available()) 
   {
+    if (Verbose2) DebugTf("Telegram received [%d] ms after DTR enable.\r\n",  (timerTlg-millis()));
     DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
     Debugln(F("\r\n[Time----][FreeHea| Frags| mBlck] Function----(line):\r"));
     //  Voorbeeld: [21:00:11][   9880|     9|  8960] loop        ( 997): read telegram [28] => [140307210001S]

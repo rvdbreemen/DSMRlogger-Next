@@ -13,7 +13,8 @@
 #include "SSD1306AsciiWire.h"   // Version 1.2.x - Commit 97a05cd on 24 Mar 2019
 
 // 0X3C+SA0 - 0x3C or 0x3D
-#define I2C_ADDRESS 0x3C
+//#define I2C_ADDRESS 0x3C
+#define I2C_ADDRESS 0x78 //or 0x7A
 
 // Define proper RST_PIN if required.
 #define RST_PIN -1

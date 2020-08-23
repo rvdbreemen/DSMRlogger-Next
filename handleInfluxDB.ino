@@ -11,7 +11,7 @@
 ***************************************************************************      
 *      Created by Robert van den Breemen (26 june 2020)
 */  
-#ifdef USE_INFLUX
+#ifdef USE_INFLUXDB
 // InfluxDB  server url. Don't use localhost, always server name or ip address.
 // For InfluxDB 2 e.g. http://192.168.1.48:9999 (Use: InfluxDB UI -> Load Data -> Client Libraries), 
 // For InfluxDB 1 e.g. http://192.168.1.48:8086
