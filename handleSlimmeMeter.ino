@@ -24,11 +24,12 @@ void initSlimmermeter()
   #elif defined(ESP32)
     DebugTf("Serialport set to (RX,TX) (%d/%d)\r\n", RXD2, TXD2 );
     #ifdef USE_PRE40_PROTOCOL                                                       
-      //SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, TXD2, true );   
-      SM_SERIAL.begin(9600, SERIAL_7E1);                            
+      SM_SERIAL.begin( 9600, SERIAL_7E1, RXD2, TXD2 );   
+      //SM_SERIAL.begin(9600, SERIAL_7E1);                            
     #else   // DSMR 4.x & 5.x
-      //SM_SERIAL.begin( 115200, SERIAL_8N1, RXD2, TXD2, true );
-      SM_SERIAL.begin(115200, SERIAL_8N1);
+      //Serial2.begin( 115200, SERIAL_8N1, 16, 17 );  
+      SM_SERIAL.begin( 115200, SERIAL_8N1, RXD2, TXD2 );
+      //SM_SERIAL.begin(115200, SERIAL_8N1);
     #endif  // use_dsmr_30
   #endif
 
@@ -87,7 +88,7 @@ void processSlimmemeterRaw()
   }
 
   slimmeMeter.enable(true);
-  SM_SERIAL.setTimeout(5000);  // 5 seconds must be enough ..
+  SM_SERIAL.setTimeout(10000);  // 10 seconds must be enough ..
   memset(tlgrm, 0, sizeof(tlgrm));
   int l = 0;
   // The terminator character is discarded from the serial buffer.
@@ -99,7 +100,7 @@ void processSlimmemeterRaw()
 //  DebugTf("read [%d] bytes\r\n", l);
   if (l == 0) 
   {
-    DebugTln(F("RawMode: Timerout - no telegram received within 5 seconds"));
+    DebugTln(F("RawMode: Timerout - no telegram received within 10 seconds"));
     return;
   }
 

@@ -9,6 +9,7 @@
         "random": "cpp",
         "algorithm": "cpp",
         "sstream": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "atomic": "cpp"
     }
 }

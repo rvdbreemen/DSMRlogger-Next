@@ -19,36 +19,39 @@
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "Unknown" };
 //    #define LED_ON      LOW
 //    #define LED_OFF     HIGH
-  #define SM_SERIAL Serial
   #ifdef USE_REQUEST_PIN
     #define DTR_ENABLE  12
-  #endif  // is_esp12
+  #endif
+  #define SM_SERIAL Serial
 #elif defined(ESP32)
   #define ESP_RESET()             ESP.restart()
   #define ESP_GET_FREE_BLOCK()    ESP.getMaxAllocHeap()
   #define ESP_GET_CHIPID()        ((uint32_t)ESP.getEfuseMac()) //The chipID is essentially its MAC address (length: 6 bytes) 
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
-//    #define LED_ON      HIGH
-//    #define LED_OFF     LOW
-  #define SM_SERIAL Serial2   //UART2 on ESP32 = TX=
-  
+
   #include "SPIFFS.h"
   #include <rom/rtc.h>          // SDK ESP32 for reset reason function (see helper function)
-
-  #ifdef USE_REQUEST_PIN
-    #define DTR_ENABLE  27
-  #endif
   // ESP32 JDJ REV2 
   // LED PIN  24              //GPIO  --  data pin for WS2812B pixel
-  // TX  PIN  17              //GPIO  -- UART2 TX -- n.c.
   // RX  PIN  16              //GPIO  -- UART2 RX -- connected to DSMR
-    #define TXD2 1          //GPIO1 for prototype
-    #define RXD2 13         //GPIO13 for prototype (rev 1)
-    //#define TXD2 17           //GPIO17 for rev 2   
-    //#define RXD2 16           //GPIO16 for rev 2   
+  // TX  PIN  17              //GPIO  -- UART2 TX -- n.c.
+  // DTR PIN  27              //GPIO  -- DTR Enable for Smart slimmeMeter
   // Extra pins for IO - uses - eg. S0 pulse counter or whatever you like
   // PINS     26, 25, 32, 33  //GPIO
   // JTAG HEADER available for debug
+    // ESP JDJ REV1
+  //#define RXD2 13         //GPIO13 for prototype (rev 1)
+  //#define TXD2 1          //GPIO1 for prototype
+  // ESP32 JDJ REV2 
+  // LED PIN  24              //GPIO  --  data pin for WS2812B pixel
+  // RX  PIN  16              //GPIO  -- UART2 RX -- connected to DSMR
+  // TX  PIN  17              //GPIO  -- UART2 TX -- n.c.
+  #define RXD2 16           //GPIO16 for rev 2   
+  #define TXD2 17           //GPIO17 for rev 2   
+  #define SM_SERIAL Serial2
+  #ifdef USE_REQUEST_PIN
+    #define DTR_ENABLE  27
+  #endif
 #endif
 
 
@@ -215,9 +218,9 @@ struct FSInfo {
 };
 **/
 #ifdef DTR_ENABLE
-  P1Reader    slimmeMeter(&Serial, DTR_ENABLE);
+  P1Reader    slimmeMeter(&SM_SERIAL, DTR_ENABLE);
 #else
-  P1Reader    slimmeMeter(&Serial, 0);
+  P1Reader    slimmeMeter(&SM_SERIAL, 0);
 #endif
 
 //===========================prototype's=======================================
