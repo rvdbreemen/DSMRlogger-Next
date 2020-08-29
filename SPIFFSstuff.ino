@@ -97,7 +97,7 @@ bool buildDataRecordFromSM(char *recIn)
   // DATA + \n + \0                                        
   fillRecord(record, DATA_RECLEN);
 
-  strncpy(recIn, record, sizeof(recIn));
+  strlcpy(recIn, record, DATA_RECLEN);
 
 } // buildDataRecordFromSM()
 
@@ -146,7 +146,7 @@ uint16_t buildDataRecordFromJson(char *recIn, String jsonIn)
   // DATA + \n + \0                                        
   fillRecord(record, DATA_RECLEN);
 
-  strncpy(recIn, record, sizeof(recIn));
+  strlcpy(recIn, record, DATA_RECLEN);
 
   return recSlot;
 
