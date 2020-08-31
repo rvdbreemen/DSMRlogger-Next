@@ -128,8 +128,8 @@ file.close();
 //=======================================================================
 void readSettings(bool show) 
 {
-  String sTmp, nColor;
-  String words[10];
+  String sTmp;
+  char word[10][25];
   
   File file;
   
@@ -189,67 +189,67 @@ void readSettings(bool show)
     sTmp      = file.readStringUntil('\n');
     sTmp.replace("\r", "");
     //DebugTf("[%s] (%d)\r\n", sTmp.c_str(), sTmp.length());
-    int8_t wc = splitString(sTmp.c_str(), '=', words, 10);
-    words[0].toLowerCase();
-    nColor    = words[1].substring(0,15);
+    
+    int8_t wc = splitCString(sTmp.c_str(), "=", words, 10);
+    //nColor    = words[1].substring(0,15);
 
-    if (words[0].equalsIgnoreCase("Hostname"))            strlcpy(settingHostname, words[1].c_str(), 29);
-    if (words[0].equalsIgnoreCase("EnergyDeliveredT1"))   settingEDT1         = words[1].toFloat();  
-    if (words[0].equalsIgnoreCase("EnergyDeliveredT2"))   settingEDT2         = words[1].toFloat();
-    if (words[0].equalsIgnoreCase("EnergyReturnedT1"))    settingERT1         = words[1].toFloat();
-    if (words[0].equalsIgnoreCase("EnergyReturnedT2"))    settingERT2         = words[1].toFloat();
-    if (words[0].equalsIgnoreCase("GasDeliveredT"))       settingGDT          = words[1].toFloat(); 
-    if (words[0].equalsIgnoreCase("EnergyVasteKosten"))   settingENBK         = words[1].toFloat();
-    if (words[0].equalsIgnoreCase("GasVasteKosten"))      settingGNBK         = words[1].toFloat();
-    if (words[0].equalsIgnoreCase("SmHasFaseInfo")) 
+    if (strcmpcase(words[0], "Hostname") == 0)                  strlcpy(settingHostname, words[1], 29);
+    if (strcmpcase(words[0], "EnergyDeliveredT1") == 0)         settingEDT1         = strtof(words[1]);  
+    if (strcmpcase(words[0], "EnergyDeliveredT2") == 0)         settingEDT2         = strtof(words[1]);
+    if (strcmpcase(words[0], "EnergyReturnedT1") == 0)          settingERT1         = strtof(words[1]);
+    if (strcmpcase(words[0], "EnergyReturnedT2") == 0)          settingERT2         = strtof(words[1]);
+    if (strcmpcase(words[0], "GasDeliveredT") == 0)             settingGDT          = strtof(words[1]);
+    if (strcmpcase(words[0], "EnergyVasteKosten") == 0)         settingENBK         = strtof(words[1]);
+    if (strcmpcase(words[0], "GasVasteKosten") == 0)            settingGNBK         = strtof(words[1]);
+    if (strcmpcase(words[0], "SmHasFaseInfo") == 0) 
     {
-      settingSmHasFaseInfo = words[1].toInt();
+      settingSmHasFaseInfo = atoi(words[1]);
       if (settingSmHasFaseInfo != 0)  settingSmHasFaseInfo = 1;
       else                            settingSmHasFaseInfo = 0;
     }
     
-    if (words[0].equalsIgnoreCase("OledType"))           
+    if (strcmpcase(words[0],"OledType") == 0)           
     {
-      settingOledType = words[1].toInt();
+      settingOledType = atoi(words[1]);
       if (settingOledType > 2) settingOledType = 1;
     }
-    if (words[0].equalsIgnoreCase("OledSleep"))           
+    if (strcmpcase(words[0],"OledSleep") == 0)           
     {
-      settingOledSleep    = words[1].toInt();    
+      settingOledSleep    = atoi(words[1]);    
       CHANGE_INTERVAL_MIN(oledSleepTimer, settingOledSleep);
     }
-    if (words[0].equalsIgnoreCase("OledFlip"))    settingOledFlip = words[1].toInt();
+    if (strcmpcase(words[0],"OledFlip") == 0)    settingOledFlip = atoi(words[1]);
     if (settingOledFlip != 0) settingOledFlip = 1;
     else                      settingOledFlip = 0;
     
-    if (words[0].equalsIgnoreCase("TelegramInterval"))   
+    if (strcmpcase(words[0], "TelegramInterval") == 0)   
     {
-      settingTelegramInterval     = words[1].toInt(); 
+      settingTelegramInterval     = atoi(words[1]); 
       CHANGE_INTERVAL_SEC(nextTelegram, settingTelegramInterval); 
     }
 
-    if (words[0].equalsIgnoreCase("IndexPage"))           strlcpy(settingIndexPage, words[1].c_str(), sizeof(settingIndexPage));  
+    if (strcmpcase(words[0], "IndexPage") == 0)           strlcpy(settingIndexPage, words[1], sizeof(settingIndexPage));  
 
 #ifdef USE_MINDERGAS
-    if (words[0].equalsIgnoreCase("MindergasAuthtoken"))  strlcpy(settingMindergasToken, words[1].c_str(), sizeof(settingMindergasToken));  
+    if (strcmpcase(words[0], "MindergasAuthtoken") == 0)  strlcpy(settingMindergasToken, words[1], sizeof(settingMindergasToken));  
 #endif
 
 #ifdef USE_MQTT
-    if (words[0].equalsIgnoreCase("MQTTbroker"))          strlcpy(settingMQTTbroker  , words[1].c_str(), sizeof(settingMQTTbroker));
-    if (words[0].equalsIgnoreCase("MQTTbrokerPort"))      settingMQTTbrokerPort      = words[1].toInt();  
-    if (words[0].equalsIgnoreCase("MQTTuser"))            strlcpy(settingMQTTuser    , words[1].c_str(), sizeof(settingMQTTuser) );  
-    if (words[0].equalsIgnoreCase("MQTTpasswd"))          strlcpy(settingMQTTpasswd  , words[1].c_str(), sizeof(settingMQTTpasswd) );  
-    if (words[0].equalsIgnoreCase("MQTTinterval"))        settingMQTTinterval        = words[1].toInt(); 
-    if (words[0].equalsIgnoreCase("MQTTtopTopic"))        strlcpy(settingMQTTtopTopic, words[1].c_str(), sizeof(settingMQTTtopTopic));  
+    if (strcmpcase(words[0],"MQTTbroker"))          strlcpy(settingMQTTbroker  , words[1].c_str(), sizeof(settingMQTTbroker));
+    if (strcmpcase(words[0],"MQTTbrokerPort"))      settingMQTTbrokerPort      = words[1].toInt();  
+    if (strcmpcase(words[0],"MQTTuser"))            strlcpy(settingMQTTuser    , words[1].c_str(), sizeof(settingMQTTuser) );  
+    if (strcmpcase(words[0],"MQTTpasswd"))          strlcpy(settingMQTTpasswd  , words[1].c_str(), sizeof(settingMQTTpasswd) );  
+    if (strcmpcase(words[0],"MQTTinterval"))        settingMQTTinterval        = words[1].toInt(); 
+    if (strcmpcase(words[0],"MQTTtopTopic"))        strlcpy(settingMQTTtopTopic, words[1].c_str(), sizeof(settingMQTTtopTopic));  
     
     CHANGE_INTERVAL_SEC(publishMQTTtimer, settingMQTTinterval);
     CHANGE_INTERVAL_MIN(reconnectMQTTtimer, 1);
 #endif
 
 #ifdef USE_INFLUXDB
-  if (words[0].equalsIgnoreCase("InfluxDBhostname"))    	strlcpy(settingInfluxDBhostname,     words[1].c_str(), sizeof(settingInfluxDBhostname));
-  if (words[0].equalsIgnoreCase("InfluxDBport"))          settingInfluxDBport                = words[1].toInt();  
-  if (words[0].equalsIgnoreCase("InfluxDBdatabasename"))  strlcpy(settingInfluxDBdatabasename, words[1].c_str(), sizeof(settingInfluxDBdatabasename));
+  if (strcmpcase(words[0],"InfluxDBhostname"))    	strlcpy(settingInfluxDBhostname,     words[1].c_str(), sizeof(settingInfluxDBhostname));
+  if (strcmpcase(words[0],"InfluxDBport"))          settingInfluxDBport                = words[1].toInt();  
+  if (strcmpcase(words[0],"InfluxDBdatabasename"))  strlcpy(settingInfluxDBdatabasename, words[1].c_str(), sizeof(settingInfluxDBdatabasename));
   initInfluxDB();
 #endif
     
