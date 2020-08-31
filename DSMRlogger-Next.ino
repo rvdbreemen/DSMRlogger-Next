@@ -84,7 +84,7 @@
 //  #define USE_PRE40_PROTOCOL        // define if Slimme Meter is pre DSMR 4.0 (2.2 .. 3.0)
 //  #define USE_NTP_TIME              // define to generate Timestamp from NTP (Only Winter Time for now)
 //  #define HAS_NO_SLIMMEMETER        // define for testing only!
-//#define USE_INFLUXDB              // define if you want to use Influxdb (configure through webinterface)
+#define USE_INFLUXDB              // define if you want to use Influxdb (configure through webinterface)
 #define USE_MQTT                  // define if you want to use MQTT (configure through webinterface)
 #define USE_MINDERGAS             // define if you want to update mindergas (configure through webinterface)
 //  #define USE_SYSLOGGER             // define if you want to use the sysLog library for debugging
@@ -238,40 +238,7 @@ void setup()
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
   lastReset = getResetReason();
   Debugf("\n\nReset reason....[%s]\r\n", lastReset.c_str());  
-  
-//================ SPIFFS ===========================================
-  if (SPIFFS.begin()) 
-  {
-    DebugTln(F("SPIFFS Mount succesfull\r"));
-    SPIFFSmounted = true;
-    if (settingOledType > 0)
-    {
-      oled_Print_Msg(0, " <DSMRlogger-Next>", 0);
-      oled_Print_Msg(3, "SPIFFS mounted", 1500);
-    }    
-  } else { 
-    DebugTln(F("SPIFFS Mount failed\r"));   // Serious problem with SPIFFS 
-    SPIFFSmounted = false;
-    if (settingOledType > 0)
-    {
-      oled_Print_Msg(0, " <DSMRlogger-Next>", 0);
-      oled_Print_Msg(3, "SPIFFS FAILED!", 2000);
-    }
-  }
 
-//------ read status file for last Timestamp --------------------
-  strncpy(actTimestamp, "040302010101X", sizeof(actTimestamp));
-  //==========================================================//
-  // writeLastStatus();  // only for firsttime initialization //
-  //==========================================================//
-  readLastStatus(); // place it in actTimestamp
-  // set the time to actTimestamp!
-  actT = epoch(actTimestamp, strlen(actTimestamp), true);
-  DebugTf("===> actTimestamp[%s]-> nrReboots[%u] - Errors[%u]\r\n\n", actTimestamp
-                                                                    , nrReboots++
-                                                                    , slotErrors);                                                                    
-  readSettings(true);
-  oled_Init();
   
 //=============start Networkstuff==================================
   if (settingOledType > 0)
@@ -312,8 +279,8 @@ void setup()
                                                                   , WiFi.localIP().toString().c_str()
                                                                   , WiFi.gatewayIP().toString().c_str());
   writeToSysLog("%s", cMsg);
-
 #endif
+//-----------------------------------------------------------------
 
   startMDNS(settingHostname);
   if (settingOledType > 0)
@@ -331,6 +298,42 @@ void setup()
   Debugln("Debug open for business on port 23");
   
 //=============end Networkstuff======================================
+
+//============= start SPIFFS ========================================
+  if (SPIFFS.begin()) 
+  {
+    DebugTln(F("SPIFFS Mount succesfull\r"));
+    SPIFFSmounted = true;
+    if (settingOledType > 0)
+    {
+      oled_Print_Msg(0, " <DSMRlogger-Next>", 0);
+      oled_Print_Msg(3, "SPIFFS mounted", 1500);
+    }    
+  } else { 
+    DebugTln(F("SPIFFS Mount failed\r"));   // Serious problem with SPIFFS 
+    SPIFFSmounted = false;
+    if (settingOledType > 0)
+    {
+      oled_Print_Msg(0, " <DSMRlogger-Next>", 0);
+      oled_Print_Msg(3, "SPIFFS FAILED!", 2000);
+    }
+  }
+
+//------ read status file for last Timestamp --------------------
+  strncpy(actTimestamp, "040302010101X", sizeof(actTimestamp));
+  //==========================================================//
+  // writeLastStatus();  // only for firsttime initialization //
+  //==========================================================//
+  readLastStatus(); // place it in actTimestamp
+  // set the time to actTimestamp!
+  actT = epoch(actTimestamp, strlen(actTimestamp), true);
+  DebugTf("===> actTimestamp[%s]-> nrReboots[%u] - Errors[%u]\r\n\n", actTimestamp
+                                                                    , nrReboots++
+                                                                    , slotErrors);                                                                    
+  readSettings(true);
+
+//============= end SPIFFS ========================================
+
 
 //================ Start ezTime ===================================
   DebugTln("before UTC TZ     : " + UTC.dateTime());
