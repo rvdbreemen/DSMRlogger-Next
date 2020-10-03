@@ -142,9 +142,9 @@ void processSlimmemeter()
     // Debugln(F("\r\n[Time----][FreeHea| mBlck] Function----(line):\r"));
     //     Voorbeeld: [21:00:11][   9880|  8960] loop        ( 997): read telegram [28] => [140307210001S]
     
+    telegramCount++;    
     DSMRdata = {};
     String    DSMRerror;
-        
     if (slimmeMeter.parse(&DSMRdata, &DSMRerror))   // Parse succesful, print result
     {
       if (telegramCount > (UINT32_MAX - 10)) 
@@ -202,6 +202,7 @@ void processSlimmemeter()
     } 
     else                  // Parser error, print error
     {
+      DebugTln("Parse Telegram: Failed, try again!"); 
       telegramErrors++;
       #ifdef USE_SYSLOGGER
         sysLog.writef("Parse error\r\n%s\r\n\r\n", DSMRerror.c_str());
