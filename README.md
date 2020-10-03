@@ -31,7 +31,7 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
    <td valign="top">2.1.2-rc2</td>
    <td>Release Candidate (rc2) of DSMRlogger-Next
    <br>Back to InfluxDB client library
-   <br>ezTime implementation done right
+   <br>ezTime implementation done right (removed it)
    <br>No more bailout with low heap, this broke MQTT and Mindergas
    </td>
 </tr>

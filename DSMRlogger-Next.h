@@ -56,8 +56,8 @@
 
 
 
-//#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
-#include <ezTime.h>             // https://github.com/ropg/ezTime
+#include <TimeLib.h>            // https://github.com/PaulStoffregen/Time
+//#include <ezTime.h>             // https://github.com/ropg/ezTime
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "safeTimers.h"
 
@@ -280,7 +280,15 @@ char      settingIndexPage[50];
 char      settingMQTTbroker[101], settingMQTTuser[40], settingMQTTpasswd[30], settingMQTTtopTopic[21];
 int32_t   settingMQTTinterval, settingMQTTbrokerPort;
 String    pTimestamp;
-Timezone  localTZ;
+//Timezone  localTZ;
+
+//SolarEdge ModbusTCP
+// #include <ModbusIP_ESP8266.h>
+// const int Modbus_SolarEdge_Reg_offset = 40069;                // Modbus Hreg Offset
+// const int Modbus_SolarEdge_Reg_number = 39;
+// IPAddress Modbus_SolarEdge_IP(192, 168, 88, 22);    // Address of Modbus Slave device
+// const int Modbus_SolarEdge_port = 1502;             // Portnumber
+// ModbusIP  Modbus_SolarEdge;                         //ModbusIP object
 
 //===========================================================================================
 // setup timers 

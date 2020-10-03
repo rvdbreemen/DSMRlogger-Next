@@ -194,7 +194,6 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
   
   nT = now();
 
-  syncTime=false;  //do never sync time
   if (!syncTime)
   {
     setTime(savEpoch);

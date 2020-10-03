@@ -136,13 +136,12 @@ void processSlimmemeter()
   if (slimmeMeter.available()) 
   {
     if (Verbose2) DebugTf("Telegram received [%d] ms after DTR enable.\r\n",  (timerTlg-millis()));
-    DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
     Debugln(F("\r\n[Time----][FreeHea| Frags| mBlck] Function----(line):\r"));
+    DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
     //  Voorbeeld: [21:00:11][   9880|     9|  8960] loop        ( 997): read telegram [28] => [140307210001S]
     // Debugln(F("\r\n[Time----][FreeHea| mBlck] Function----(line):\r"));
     //     Voorbeeld: [21:00:11][   9880|  8960] loop        ( 997): read telegram [28] => [140307210001S]
-    telegramCount++;
-        
+    
     DSMRdata = {};
     String    DSMRerror;
         
@@ -151,7 +150,7 @@ void processSlimmemeter()
       if (telegramCount > (UINT32_MAX - 10)) 
       {
         delay(1000);
-        ESP_RESET();
+        esp_reboot();
         delay(1000);
       }
       digitalWrite(LED_BUILTIN, LED_OFF);
@@ -218,7 +217,8 @@ void processSlimmemeter()
       DebugTf("Processed [%d] telegrams ([%d] errors)\r\n", telegramCount, telegramErrors);
       writeToSysLog("Processed [%d] telegrams ([%d] errors)", telegramCount, telegramErrors);
     }
-        
+    
+    DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);    
   } // if (slimmeMeter.available()) 
   
 } // processSlimmeMeter()

@@ -18,7 +18,7 @@
 *
 * DSMRlogger-Next instructions:
 * -   Install InfluxDBclient library    (https://github.com/tobiasschuerg/InfluxDB-Client-for-Arduino)
-* -   Install ezTime library            (https://github.com/ropg/ezTime)
+
 *
 ***************************************************************************      
   Arduino-IDE settings for DSMR-logger Version 4 (ESP-12):
@@ -336,17 +336,17 @@ void setup()
 
 
 //================ Start ezTime ===================================
-  DebugTln("before UTC TZ     : " + UTC.dateTime());
-  DebugTln("Wait for timesync");
-  setInterval(600);  //every 10 minutes
-  updateNTP();
-  waitForSync();
-  localTZ.setLocation("Europe/Amsterdam");
-  localTZ.setDefault();
-  DebugTln("before local TZ   : " + localTZ.dateTime());
-  DebugTln("after  UTC TZ     : " + UTC.dateTime());
-  DebugTln("after  local TZ   : " + localTZ.dateTime());
-  DebugTln("after  default TZ : " + dateTime());
+  // DebugTln("before UTC TZ     : " + UTC.dateTime());
+  // DebugTln("Wait for timesync");
+  // setInterval(600);  //every 10 minutes
+  // updateNTP();
+  // waitForSync();
+  // localTZ.setLocation("Europe/Amsterdam");
+  // localTZ.setDefault();
+  // DebugTln("before local TZ   : " + localTZ.dateTime());
+  // DebugTln("after  UTC TZ     : " + UTC.dateTime());
+  // DebugTln("after  local TZ   : " + localTZ.dateTime());
+  // DebugTln("after  default TZ : " + dateTime());
 //================ End ezTime   ===================================
 
 #if defined(USE_NTP_TIME)                                   //USE_NTP
@@ -564,6 +564,10 @@ void setup()
 
 //================ End of InfluxDB ================================
 
+//================ Start SolarEdge_Modbus =========================
+//  Modbus_SolarEdge.client();
+//================ End SolarEdge_Modbus ===========================
+
 //================ Start Slimme Meter ===============================
 
   if (settingOledType > 0)
@@ -645,6 +649,24 @@ void doReconnectWifi()
         #endif
   }
 }
+//==[ Do Read Solaredge Modbus TCP ]==========================================================
+// void doReadSolarEdge()
+// {
+//   uint16_t result = 0;
+//   for (uint8_t i =0;  i < Modbus_SolarEdge_Reg_number; i++)
+//   { 
+
+//     if (Modbus_SolarEdge.isConnected(Modbus_SolarEdge_IP)) {                // Check if connection to Modbus Slave is established
+//       Modbus_SolarEdge.readHreg(Modbus_SolarEdge_IP, Modbus_SolarEdge_Reg_offset, &result);     // Initiate Read Coil from Modbus Slave
+//     } else {
+//       Modbus_SolarEdge.connect(Modbus_SolarEdge_IP, Modbus_SolarEdge_port);           // Try to connect if no connection
+//     }
+//     Modbus_SolarEdge.task();                                   // Common local Modbus task
+//     delay(100);                                                  // Pulling interval
+//     Serial.printf("[reg][resp]=[%d][%d]\r\n", i, result);
+
+//   }
+// }
 
 //==[ Do Telegram Processing ]===============================================================
 void doTaskTelegram()
@@ -681,7 +703,7 @@ void doSystemTasks()
     checkFlashButton();
   }
 
-  events(); //ezTime handler
+ //events(); //ezTime handler
   yield();
 
 } // doSystemTasks()
@@ -704,7 +726,7 @@ void loop ()
       if ((upTimeSeconds % 2) == 0 ){
         DebugTf("Blink OFF [%d]\r\n", upTimeSeconds);           
       } else {
-        DebugTf("Blink ON [%d]\r\n", upTimeSeconds);           
+        DebugTf("Blink ON  [%d]\r\n", upTimeSeconds);           
       }
     }
   }
@@ -713,6 +735,7 @@ void loop ()
   if DUE(nextTelegram)
   {
     doTaskTelegram();
+    //doReadSolarEdge();
   }
 
 //--- if an OLED screen attached, display the status

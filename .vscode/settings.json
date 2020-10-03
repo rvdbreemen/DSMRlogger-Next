@@ -19,6 +19,7 @@
         "vector": "cpp",
         "initializer_list": "cpp",
         "xhash": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "functional": "cpp"
     }
 }
