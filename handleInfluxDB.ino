@@ -80,7 +80,7 @@ struct writeInfluxDataPoints {
       {
         //when there is a unit, then it is a measurement
         Point pointItem(Item::unit());
-        //pointItem.setTime(thisEpoch);
+        pointItem.setTime(thisEpoch);
         pointItem.addTag("instance",Item::name);     
         pointItem.addField("value", i.val());
 //        pointItem.addField((String)(Item::name), i.val());
@@ -106,7 +106,7 @@ void handleInfluxDB()
     //New telegram received, let's forward that to influxDB
     lastTelegram = telegramCount;
     //Setup the timestamp for this telegram, so all points for this batch are the same.
-    //thisEpoch = UTC.now();  
+    thisEpoch = now()-7200;  
     //DebugTf("Writing telegram to influxdb - Epoc = %d (this) %d (NL) %d (UTC) \r\n", (int)thisEpoch, (int)localTZ.now(), (int)UTC.now());
     uint32_t timeThis = millis();
     DSMRdata.applyEach(writeInfluxDataPoints());
