@@ -14,7 +14,11 @@
 
 // 0X3C+SA0 - 0x3C or 0x3D
 //#define I2C_ADDRESS 0x3C
-#define I2C_ADDRESS 0x78 //or 0x7A
+#if defined(USE_WEMOSLOLIN32)
+  #define I2C_ADDRESS 0x3C
+#else
+  #define I2C_ADDRESS 0x78 //or 0x7A
+#endif 
 
 // Define proper RST_PIN if required.
 #define RST_PIN -1
@@ -77,7 +81,12 @@ void checkFlashButton()
 //===========================================================================================
 void oled_Init() 
 {
-    Wire.begin();
+    #if defined(USE_WEMOSLOLIN32)
+      Wire.begin(5,4);
+    #else
+      Wire.begin();
+    #endif 
+
     if (settingOledType == 2)
           oled.begin(&SH1106_128x64, I2C_ADDRESS);
     else  oled.begin(&Adafruit128x64, I2C_ADDRESS);

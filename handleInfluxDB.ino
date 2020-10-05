@@ -106,7 +106,7 @@ void handleInfluxDB()
     //New telegram received, let's forward that to influxDB
     lastTelegram = telegramCount;
     //Setup the timestamp for this telegram, so all points for this batch are the same.
-    thisEpoch = now()-7200;  
+    thisEpoch = now()-7200;  // ThisEpoch needs to be the true epoch being the UTC epoch. As the clock is synced to NL timezone, it needs to be lowered by 7200 in summer, and 3600 in winter :-\
     //DebugTf("Writing telegram to influxdb - Epoc = %d (this) %d (NL) %d (UTC) \r\n", (int)thisEpoch, (int)localTZ.now(), (int)UTC.now());
     uint32_t timeThis = millis();
     DSMRdata.applyEach(writeInfluxDataPoints());

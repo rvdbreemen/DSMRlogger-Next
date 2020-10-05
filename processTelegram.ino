@@ -82,6 +82,7 @@ void processTelegram()
   strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
   actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
 
+  isdsmrDST(actTimestamp, strlen(actTimestamp));
 
 // If the MQTT timer is DUE, also send MQTT message
 #ifdef USE_MQTT
