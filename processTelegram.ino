@@ -47,19 +47,22 @@ void processTelegram()
   if (hour(actT) != hour(newT)) {
     writeToSysLog("actHour[%02d] -- newHour[%02d]", hour(actT), hour(newT));
   }
-  //--- has the hour changed (or the day or month)  
+
+
+//fix Rob Roos
+//--- has the hour changed (or the day or month)  
   //--- in production testing on hour only would
   //--- suffice, but in testing I need all three
   //--- if we have a new hour() update the previous hour(actT)
-  if (     (hour(actT) != hour(newT)  ) 
-       ||   (day(actT) != day(newT)   ) 
-       || (month(actT) != month(newT) ) )
+  if (     (HourFromTimestamp(actTimestamp) != HourFromTimestamp(newTimestamp)  ) 
+       ||   (DayFromTimestamp(actTimestamp) != DayFromTimestamp(newTimestamp)   ) 
+       || (MonthFromTimestamp(actTimestamp) != MonthFromTimestamp(newTimestamp) ) )
   {
     writeToSysLog("Update RING-files");
     writeDataToFiles();
     writeLastStatus();
     //--- now see if the day() has changed also
-    if ( day(actT) != day(newT) )
+    if ( DayFromTimestamp(actTimestamp) != DayFromTimestamp(newTimestamp) )
     {
       //--- YES! actTimestamp := newTimestamp
       //--- and update the files with the actTimestamp
@@ -71,13 +74,53 @@ void processTelegram()
       char      record[DATA_RECLEN + 1] = "";
       //--- actTimestamp := newTimestamp
       strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
+
       buildDataRecordFromSM(record);
       uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
       //--- and update the files with the actTimestamp
       writeDataToFile(HOURS_FILE, record, recSlot, HOURS);
       DebugTf(">%s\r\n", record); // record ends in a \n
     }
-  }
+  } 
+
+//fix
+
+
+//old code: before fix Rob Roos
+
+  // //--- has the hour changed (or the day or month)  
+  // //--- in production testing on hour only would
+  // //--- suffice, but in testing I need all three
+  // //--- if we have a new hour() update the previous hour(actT)
+  // if (     (hour(actT) != hour(newT)  ) 
+  //      ||   (day(actT) != day(newT)   ) 
+  //      || (month(actT) != month(newT) ) )
+  // {
+  //   writeToSysLog("Update RING-files");
+  //   writeDataToFiles();
+  //   writeLastStatus();
+  //   //--- now see if the day() has changed also
+  //   if ( day(actT) != day(newT) )
+  //   {
+  //     //--- YES! actTimestamp := newTimestamp
+  //     //--- and update the files with the actTimestamp
+  //     strlcpy(actTimestamp,  newTimestamp, sizeof(actTimestamp));
+  //     writeDataToFiles();
+  //   }
+  //   else  //--- NO, only the hour has changed
+  //   {
+  //     char      record[DATA_RECLEN + 1] = "";
+  //     //--- actTimestamp := newTimestamp
+  //     strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
+  //     buildDataRecordFromSM(record);
+  //     uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
+  //     //--- and update the files with the actTimestamp
+  //     writeDataToFile(HOURS_FILE, record, recSlot, HOURS);
+  //     DebugTf(">%s\r\n", record); // record ends in a \n
+  //   }
+  // }
+
+//old code: before fix Rob Roos
 
   strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
   actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
