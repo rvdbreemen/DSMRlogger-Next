@@ -28,6 +28,18 @@ void processTelegram()
   }
                                                     
   strlcpy(newTimestamp, DSMRdata.timestamp.c_str(), sizeof(newTimestamp)); 
+  DebugTf("Timestamp(now)=[%s]\r\n", newTimestamp);
+  
+  isDST = isdsmrDST(DSMRdata.timestamp.c_str());
+  if (isDST)
+    {
+      DebugTln("Summertime");
+    }
+    else 
+    {
+      DebugTln("Wintertime");
+    }
+
   //--- newTimestamp is the timestamp from the last telegram
   newT = epoch(newTimestamp, strlen(newTimestamp), true); // update system time
   //--- actTimestamp is the timestamp from the previous telegram
@@ -125,7 +137,7 @@ void processTelegram()
   strlcpy(actTimestamp, newTimestamp, sizeof(actTimestamp));
   actT = epoch(actTimestamp, strlen(actTimestamp), true);   // update system time
 
-  isdsmrDST(actTimestamp, strlen(actTimestamp));
+  //isdsmrDST(actTimestamp, strlen(actTimestamp));
 
 // If the MQTT timer is DUE, also send MQTT message
 #ifdef USE_MQTT

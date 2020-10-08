@@ -130,7 +130,7 @@ int32_t HoursKeyTimestamp(const char *timeStamp)
 {
   char aHK[10] = "";
   // 0123456789ab
-  // YYMMDDHHmmss YY = 0-1
+  // YYMMDDHHmmssX YY = 0-1
   
   if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
   strncpy(aHK, timeStamp+0,  8);
@@ -142,24 +142,10 @@ int32_t HoursKeyTimestamp(const char *timeStamp)
 } // HourFromTimestamp()
 
 //===========================================================================================
-void isdsmrDST(const char *timeStamp, int8_t len) {
-  // //based on the current telegram determine if is Summer or Wintertime
-  // char fullTimeStamp[16] = "";
-  // strlcat(fullTimeStamp, timeStamp, sizeof(fullTimeStamp));
-
-  // DebugTf("Timestamp=[%s]\r\n", fullTimeStamp);
-  // DebugTf("Flag=[%s]\r\n", timeStamp[strlen(fullTimeStamp)-1]);
-  // bool _ret = (timeStamp[strlen(fullTimeStamp)-1] == 'S');
-
-  // if (_ret) {
-  //   DebugTln("Zomertijd");
-  // } else
-  // {
-  //   DebugTln("Wintertijd");
-  // }
-  // //return _ret;
-
-  //return (DSMRdata.timestamp.substring(DSMRdata.timestamp.size()-1,1)=="S");
+int isdsmrDST(const char *timeStamp) {
+  // YYMMDDHHmmssX    X = S of W
+  return ( strcasecmp( timeStamp + 12, "s" ) == 0 ); //when equal then Summertime
+  //Debugf("aDST[%s]r\n", aDST); 
 }
 
 //===========================================================================================

@@ -280,6 +280,8 @@ char      settingIndexPage[50];
 char      settingMQTTbroker[101], settingMQTTuser[40], settingMQTTpasswd[30], settingMQTTtopTopic[21];
 int32_t   settingMQTTinterval, settingMQTTbrokerPort;
 String    pTimestamp;
+bool      isDST = false;
+
 //Timezone  localTZ;
 
 //SolarEdge ModbusTCP
