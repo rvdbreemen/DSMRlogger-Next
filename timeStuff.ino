@@ -142,10 +142,9 @@ int32_t HoursKeyTimestamp(const char *timeStamp)
 } // HourFromTimestamp()
 
 //===========================================================================================
-int isdsmrDST(const char *timeStamp) {
+bool isdsmrDST(const char *timeStamp) {
   // YYMMDDHHmmssX    X = S of W
-  return ( strcasecmp( timeStamp + 12, "s" ) == 0 ); //when equal then Summertime
-  //Debugf("aDST[%s]r\n", aDST); 
+  return ( strcasecmp( timeStamp + 12, "s" ) == 0 ); //when equal then Summertime 
 }
 
 //===========================================================================================
@@ -184,7 +183,7 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
                                                                  ,YearFromTimestamp(timeStamp)
                                                                  ,HourFromTimestamp(timeStamp)
                                                                  ,MinuteFromTimestamp(timeStamp)
-                                                                 ,0
+                                                                 ,SecondFromTimestamp(timeStamp)
                        );
    
  
@@ -198,7 +197,6 @@ time_t epoch(const char *timeStamp, int8_t len, bool syncTime)
          ,MonthFromTimestamp(fullTimeStamp)
          ,YearFromTimestamp(fullTimeStamp));
 
-  
   nT = now();
 
   if (!syncTime)

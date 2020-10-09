@@ -587,7 +587,17 @@ void setup()
 
   DebugTf("Startup complete! actTimestamp[%s]\r\n", actTimestamp);  
   writeToSysLog("Startup complete! actTimestamp[%s]", actTimestamp);  
-  
+
+//================ Find out DST--------------- =====================
+  isDST = isdsmrDST(String(actTimestamp).c_str());
+  if (isDST)
+  {
+    DebugTln("Summertime");
+  }
+  else 
+  {
+    DebugTln("Wintertime");
+  }
 //================ End of Slimmer Meter ============================
 } // setup()
 
