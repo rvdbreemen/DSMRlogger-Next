@@ -141,12 +141,19 @@ int32_t HoursKeyTimestamp(const char *timeStamp)
     
 } // HourFromTimestamp()
 
-//===========================================================================================
+// //===========================================================================================
+// bool isdsmrDST(const char *timeStamp) {
+//   // YYMMDDHHmmssX    X = S of W
+//   return ( strcasecmp( timeStamp + 12, "s" ) == 0 ); //when equal then Summertime 
+// }
+
 bool isdsmrDST(const char *timeStamp) {
   // YYMMDDHHmmssX    X = S of W
-  return ( strcasecmp( timeStamp + 12, "s" ) == 0 ); //when equal then Summertime 
+  if (strlen(timeStamp)>= 13) {
+    return ( timeStamp[12]=='S' ); //when equal then Summertime
+  }
+  else return false; //then defaults to "wintertijd"
 }
-
 //===========================================================================================
 // calculate epoch from timeStamp
 // if syncTime is true, set system time to calculated epoch-time
