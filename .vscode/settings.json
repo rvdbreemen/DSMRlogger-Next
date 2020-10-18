@@ -1,25 +1,6 @@
 {
     "files.associations": {
-        "string": "cpp",
-        "xlocale": "cpp",
-        "xstring": "cpp",
-        "xutility": "cpp",
-        "*.tcc": "cpp",
-        "locale": "cpp",
-        "random": "cpp",
-        "algorithm": "cpp",
-        "sstream": "cpp",
-        "memory": "cpp",
-        "atomic": "cpp",
-        "array": "cpp",
-        "deque": "cpp",
-        "list": "cpp",
-        "unordered_map": "cpp",
-        "unordered_set": "cpp",
-        "vector": "cpp",
-        "initializer_list": "cpp",
-        "xhash": "cpp",
-        "xtree": "cpp",
-        "functional": "cpp"
+        "*.yaml": "home-assistant",
+        "*.inc": "cpp"
     }
 }

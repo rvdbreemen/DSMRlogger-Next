@@ -732,14 +732,6 @@ void loop ()
   if DUE(updateSeconds)
   {
     upTimeSeconds++;
-    //The next few lines are just to "show alive messages" 
-    if (Verbose1 || Verbose2) {
-      if ((upTimeSeconds % 2) == 0 ){
-        DebugTf("Blink OFF [%d]\r\n", upTimeSeconds);           
-      } else {
-        DebugTf("Blink ON  [%d]\r\n", upTimeSeconds);           
-      }
-    }
   }
     
   //--- verwerk volgend telegram

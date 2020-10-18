@@ -169,9 +169,9 @@ void ESP32_APIlistFiles()
         // directory is skipped
     } else {
       DebugT("  FILE: ");
-      DebugT(file.name());
-      DebugT("\tSIZE: ");
-      DebugTln(file.size());
+      Debug(file.name());
+      Debug("\tSIZE: ");
+      Debugln(file.size());
       dirMap[fileNr].Name[0] = '\0';
       strncat(dirMap[fileNr].Name, file.name(), 29); // first copy file.name() to dirMap
       memmove(dirMap[fileNr].Name, dirMap[fileNr].Name+1, strlen(dirMap[fileNr].Name)); // remove leading '/'
@@ -197,7 +197,7 @@ void ESP32_APIlistFiles()
     } /* end for */
   } /* end for */
 
-  DebugTln(F("\r\n"));
+  //Debugln(F("\r\n"));
   for(int f=0; f<fileNr; f++)
   {
     Debugf("%-25s %6d bytes \r\n", dirMap[f].Name, dirMap[f].Size);

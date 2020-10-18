@@ -48,10 +48,10 @@ int8_t SecondFromTimestamp(const char *timeStamp)
   // 0123456789ab
   // YYMMDDHHmmss SS = 4-5
   
-  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  // if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
   strncpy(aSS, timeStamp+10,  2);
   //strCopy(aSS, 4, timeStamp, 10, 11);
-  if (Verbose2) Debugf("aSe[%s], aSe[%02d]\r\n", aSS, String(aSS).toInt()); 
+  // if (Verbose2) Debugf("aSe[%s], aSe[%02d]\r\n", aSS, String(aSS).toInt()); 
   return String(aSS).toInt();
     
 } // SecondFromTimestamp()
@@ -62,10 +62,10 @@ int8_t MinuteFromTimestamp(const char *timeStamp)
   char aMM[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss MM = 8-9
-  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  //if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
   strncpy(aMM, timeStamp+8,  2);
   //strCopy(aMM, 4, timeStamp, 8, 9);
-  if (Verbose2) Debugf("aMi[%s], nMi[%02d]\r\n", aMM, String(aMM).toInt()); 
+  //if (Verbose2) Debugf("aMi[%s], nMi[%02d]\r\n", aMM, String(aMM).toInt()); 
   return String(aMM).toInt();
     
 } // MinuteFromTimestamp()
@@ -74,10 +74,10 @@ int8_t MinuteFromTimestamp(const char *timeStamp)
 int8_t HourFromTimestamp(const char *timeStamp) 
 {
   char aHH[4] = "";
-  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp); // YYMMDDHHmmss HH = 5-6
+  //if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp); // YYMMDDHHmmss HH = 5-6
   strncpy(aHH, timeStamp+6,  2);
   //strCopy(aHH, 4, timeStamp, 6, 7);
-  if (Verbose2) Debugf("aHo[%s], nHo[%02d]\r\n", aHH, String(aHH).toInt()); 
+  //if (Verbose2) Debugf("aHo[%s], nHo[%02d]\r\n", aHH, String(aHH).toInt()); 
   return String(aHH).toInt();
     
 } // HourFromTimestamp()
@@ -88,10 +88,10 @@ int8_t DayFromTimestamp(const char *timeStamp)
   char aDD[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss DD = 4-5
-  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  //if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
   strncpy(aDD, timeStamp+4,  2);
   //strCopy(aDD, 4, timeStamp, 4, 5);
-  if (Verbose2) Debugf("aDD[%s], nDD[%02d]\r\n", aDD, String(aDD).toInt()); 
+  //if (Verbose2) Debugf("aDD[%s], nDD[%02d]\r\n", aDD, String(aDD).toInt()); 
   return String(aDD).toInt();
     
 } // DayFromTimestamp()
@@ -102,10 +102,10 @@ int8_t MonthFromTimestamp(const char *timeStamp)
   char aMM[4] = "";
   // 0123456789ab
   // YYMMDDHHmmss MM = 2-3
-  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  //if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
   strncpy(aMM, timeStamp+2,  2);
   //strCopy(aMM, 4, timeStamp, 2, 3);
-  if (Verbose2) Debugf("aMM[%s], nMM[%02d]\r\n", aMM, String(aMM).toInt()); 
+  //if (Verbose2) Debugf("aMM[%s], nMM[%02d]\r\n", aMM, String(aMM).toInt()); 
   return String(aMM).toInt();
     
 } // MonthFromTimestamp()
@@ -117,10 +117,10 @@ int8_t YearFromTimestamp(const char *timeStamp)
   // 0123456789ab
   // YYMMDDHHmmss YY = 0-1
   
-  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  //if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
   strncpy(aYY, timeStamp+0,  2);
   //strCopy(aYY, 4, timeStamp, 0, 1);
-  if (Verbose2) Debugf("aYY[%s], nYY[%02d]\r\n", aYY, String(aYY).toInt()); 
+  //if (Verbose2) Debugf("aYY[%s], nYY[%02d]\r\n", aYY, String(aYY).toInt()); 
   return String(aYY).toInt();
     
 } // YearFromTimestamp()
@@ -132,10 +132,10 @@ int32_t HoursKeyTimestamp(const char *timeStamp)
   // 0123456789ab
   // YYMMDDHHmmssX YY = 0-1
   
-  if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
+  //if (Verbose2) DebugTf("timeStamp[%s] => ", timeStamp);
   strncpy(aHK, timeStamp+0,  8);
   //strCopy(aHK, 4, timeStamp, 0, 7);
-  if (Verbose2) Debugf("aHK[%s], nHK[%02d]\r\n", aHK, String(aHK).toInt()); 
+  //if (Verbose2) Debugf("aHK[%s], nHK[%02d]\r\n", aHK, String(aHK).toInt()); 
   //return timeStamp.substring(0, 8).toInt();
   return String(aHK).toInt();
     

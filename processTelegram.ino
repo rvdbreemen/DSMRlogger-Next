@@ -29,8 +29,9 @@ void processTelegram()
                                                     
   strlcpy(newTimestamp, DSMRdata.timestamp.c_str(), sizeof(newTimestamp)); 
   DebugTf("Timestamp(now)=[%s]\r\n", newTimestamp);
-  
-  isDST = isdsmrDST(DSMRdata.timestamp.c_str());
+
+  isDST = isdsmrDST(newTimestamp);
+  //isDST = isdsmrDST(DSMRdata.timestamp.c_str());
   if (isDST)
     {
       DebugTln("Summertime");

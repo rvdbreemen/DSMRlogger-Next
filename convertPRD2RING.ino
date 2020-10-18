@@ -130,7 +130,7 @@ void writeToRINGfile(int8_t fileType, const char *key, float EDT1, float EDT2
   // DATA + \n + \0                                        
   fillRecord(record, DATA_RECLEN);
 
-  if (Verbose2) Debugf("key[%s], slot[%02d] %s\r", newKey, recSlot, record);
+  if (Verbose2) Debugf("key[%s], slot[%02d] [%s] [%d]\n\r", newKey, recSlot, record, strlen(record));
   
   switch(fileType)
   {
