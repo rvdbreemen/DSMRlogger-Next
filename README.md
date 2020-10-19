@@ -28,6 +28,22 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
 <table>
 <tr><th>Versie</th><th>Opmerking</th></tr>
 <tr>
+   <td valign="top">2.1.4-rc4</td>
+   <td>Release Candidate (rc4) of DSMRlogger-Next
+   <br>upgraded to latest InfluxDB and modified API for writeOptions
+   <br>cleaned up the debug code in ESP32 library
+   <br>changed processTelegram so detection is now based on timestamp, not on internal clock
+   <br>thanks to Rob Roos for help with testing, and validating 8266 compilation
+   </td>
+</tr>
+<tr>
+   <td valign="top">2.1.3-rc3</td>
+   <td>Release Candidate (rc3) of DSMRlogger-Next
+   <br>removed ezTime implementation due to fundamental problem with epoch
+   <br>added isdsmrDST() to detect summer/winter time for correct influxDB setting
+   </td>
+</tr>
+<tr>
    <td valign="top">2.1.2-rc2</td>
    <td>Release Candidate (rc2) of DSMRlogger-Next
    <br>Back to InfluxDB client library

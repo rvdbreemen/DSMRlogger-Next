@@ -67,8 +67,14 @@ void initInfluxDB()
   }
     
   //Enable messages batching and retry buffer
-  client.setWriteOptions(WRITE_PRECISION, MAX_BATCH_SIZE, WRITE_BUFFER_SIZE);
-//  client.setWriteOptions(WRITE_PRECISION);
+  //deprecated writeoptions: client.setWriteOptions(WRITE_PRECISION, MAX_BATCH_SIZE, WRITE_BUFFER_SIZE);
+  client.setWriteOptions(WriteOptions().writePrecision(WRITE_PRECISION));
+  client.setWriteOptions(WriteOptions().batchSize(MAX_BATCH_SIZE));
+  client.setWriteOptions(WriteOptions().bufferSize(WRITE_BUFFER_SIZE));
+
+  //setup the HTTPoptions to reuse HTTP
+  client.setHTTPOptions(HTTPOptions().connectionReuse(true));
+
 }
 struct writeInfluxDataPoints {
   template<typename Item>
@@ -83,7 +89,6 @@ struct writeInfluxDataPoints {
         pointItem.setTime(thisEpoch);
         pointItem.addTag("instance",Item::name);     
         pointItem.addField("value", i.val());
-//        pointItem.addField((String)(Item::name), i.val());
         if (Verbose1) {
           DebugT("Writing to influxdb:");
           Debugln(pointItem.toLineProtocol());          
@@ -108,7 +113,6 @@ void handleInfluxDB()
     //Setup the timestamp for this telegram, so all points for this batch are the same.
     // ThisEpoch needs to be the true epoch being the UTC epoch. As the clock is synced to NL timezone, it needs to be lowered by 7200 in summer, and 3600 in winter
     thisEpoch = now()- (isDST ? 7200 : 3600);  
-    //DebugTf("Writing telegram to influxdb - Epoc = %d (this) %d (NL) %d (UTC) \r\n", (int)thisEpoch, (int)localTZ.now(), (int)UTC.now());
     uint32_t timeThis = millis();
     DSMRdata.applyEach(writeInfluxDataPoints());
     // Check whether buffer in not empty

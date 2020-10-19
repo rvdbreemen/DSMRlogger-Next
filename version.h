@@ -1,14 +1,14 @@
 //The version number conforms to semver.org format
 #define _VERSION_MAJOR 2
 #define _VERSION_MINOR 1  
-#define _VERSION_PATCH 3
-#define _VERSION_BUILD 447
-#define _VERSION_PRERELEASE rc3
-#define _VERSION_DATE "18-10-2020"
-#define _VERSION_TIME "01:58:48"
-#define _SEMVER_CORE "2.1.3"
-#define _SEMVER_BUILD "2.1.3+447"
-#define _SEMVER_FULL "2.1.3-rc3+447"
-#define _SEMVER_NOBUILD "2.1.3-rc3 (18-10-2020)"
-#define _VERSION "2.1.3-rc3+447 (18-10-2020)"
+#define _VERSION_PATCH 4
+#define _VERSION_BUILD 458
+#define _VERSION_PRERELEASE rc4
+#define _VERSION_DATE "19-10-2020"
+#define _VERSION_TIME "11:51:57"
+#define _SEMVER_CORE "2.1.4"
+#define _SEMVER_BUILD "2.1.4+458"
+#define _SEMVER_FULL "2.1.4-rc4+458"
+#define _SEMVER_NOBUILD "2.1.4-rc4 (19-10-2020)"
+#define _VERSION "2.1.4-rc4+458 (19-10-2020)"
 //The version information is created automatically, more information here: https://github.com/rvdbreemen/autoinc-semver

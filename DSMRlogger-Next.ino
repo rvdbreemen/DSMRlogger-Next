@@ -335,21 +335,6 @@ void setup()
 
 //============= end SPIFFS ========================================
 
-
-//================ Start ezTime ===================================
-  // DebugTln("before UTC TZ     : " + UTC.dateTime());
-  // DebugTln("Wait for timesync");
-  // setInterval(600);  //every 10 minutes
-  // updateNTP();
-  // waitForSync();
-  // localTZ.setLocation("Europe/Amsterdam");
-  // localTZ.setDefault();
-  // DebugTln("before local TZ   : " + localTZ.dateTime());
-  // DebugTln("after  UTC TZ     : " + UTC.dateTime());
-  // DebugTln("after  local TZ   : " + localTZ.dateTime());
-  // DebugTln("after  default TZ : " + dateTime());
-//================ End ezTime   ===================================
-
 #if defined(USE_NTP_TIME)                                   //USE_NTP
 //================ startNTP =========================================
   if (settingOledType > 0)                                  //USE_NTP
@@ -714,7 +699,6 @@ void doSystemTasks()
     checkFlashButton();
   }
 
- //events(); //ezTime handler
   yield();
 
 } // doSystemTasks()
