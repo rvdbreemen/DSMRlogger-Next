@@ -356,12 +356,12 @@ void createMQTTjsonMessage(char *mqttBuff, const char *cName, const char *cValue
 {
   if (strlen(cUnit) == 0)
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": \"%s\"}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": \"%s\"}}"
                                       , cName, cValue);
   }
   else
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": \"%s\", \"unit\": \"%s\"}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": \"%s\", \"unit\": \"%s\"}}"
                                       , cName, cValue, cUnit);
   }
 
@@ -388,18 +388,18 @@ void createMQTTjsonMessage(char *mqttBuff, const char *cName, String sValue, con
     if ((hdrSize + sValue.length()) >= 128)
     {
       String tmp = sValue.substring(0, (128 - hdrSize));
-      snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": \"%s\"}]}"
+      snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": \"%s\"}}"
                          , cName, tmp.c_str());
     }
     else
     {
-      snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": \"%s\"}]}"
+      snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": \"%s\"}}"
                                       , cName, sValue.c_str());
     }
   }
   else
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": \"%s\", \"unit\": \"%s\"}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": \"%s\", \"unit\": \"%s\"}}"
                                       , cName, sValue.c_str(), cUnit);
   }
 
@@ -420,12 +420,12 @@ void createMQTTjsonMessage(char *mqttBuff, const char *cName, int32_t iValue, co
 {
   if (strlen(cUnit) == 0)
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": %d}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": %d}}"
                                       , cName, iValue);
   }
   else
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": %d, \"unit\": \"%s\"}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": %d, \"unit\": \"%s\"}}"
                                       , cName, iValue, cUnit);
   }
 
@@ -446,12 +446,12 @@ void createMQTTjsonMessage(char *mqttBuff, const char *cName, uint32_t uValue, c
 {
   if (strlen(cUnit) == 0)
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": %u}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": %u}}"
                                       , cName, uValue);
   }
   else
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": %u, \"unit\": \"%s\"}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": %u, \"unit\": \"%s\"}}"
                                       , cName, uValue, cUnit);
   }
 
@@ -472,12 +472,12 @@ void createMQTTjsonMessage(char *mqttBuff, const char *cName, float fValue, cons
 {
   if (strlen(cUnit) == 0)
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": %.3f}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": %.3f}}"
                                       , cName, fValue);
   }
   else
   {
-    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": [{\"value\": %.3f, \"unit\": \"%s\"}]}"
+    snprintf(mqttBuff, MQTT_BUFF_MAX, "{\"%s\": {\"value\": %.3f, \"unit\": \"%s\"}}"
                                       , cName, fValue, cUnit);
   }
 

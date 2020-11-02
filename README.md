@@ -28,12 +28,19 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
 <table>
 <tr><th>Versie</th><th>Opmerking</th></tr>
 <tr>
+   <td valign="top">2.3.0-rc3</td>
+   <td>Release Candidate (rc3) of DSMRlogger-Next
+   <br>Removed ezTime due to systematic bug
+   <br>Implemented HomeAssistant Autodiscovery for MQTT
+   </td>
+</tr>
+<tr>
    <td valign="top">2.1.2-rc2</td>
    <td>Release Candidate (rc2) of DSMRlogger-Next
    <br>Back to InfluxDB client library
    <br>ezTime implementation done right
    <br>No more bailout with low heap, this broke MQTT and Mindergas
-   <br>Fixes corrupt records in ring-files
+   <br>Fixes corrupt records in ring-files (Thanks to Rob Roos)
    </td>
 </tr>
 <tr>

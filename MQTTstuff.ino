@@ -124,6 +124,7 @@ bool connectMQTT_FSM()
             reconnectAttempts = 0;  
             Debugf(" .. connected -> MQTT status, rc=%d\r\n", MQTTclient.state());
             MQTTclient.loop();
+            doAutoConfigure(); //HA Auto-Discovery 
             stateMQTT = MQTT_STATE_IS_CONNECTED;
             return true;
           }
@@ -197,7 +198,7 @@ struct buildJsonMQTT {
         
         //snprintf(cMsg, sizeof(cMsg), "%s", jsonString.c_str());
         //DebugTf("topicId[%s] -> [%s]\r\n", topicId, mqttBuff);
-        if (!MQTTclient.publish(topicId, mqttBuff) )
+        if (!MQTTclient.publish(topicId, mqttBuff, true))
         {
           DebugTf("Error publish(%s) [%s] [%d bytes]\r\n", topicId, mqttBuff, (strlen(topicId) + strlen(mqttBuff)));
         }
@@ -263,7 +264,103 @@ void sendMQTTData()
 #endif
 
 } // sendMQTTData()
- 
+
+//===========================================================================================
+void sendMQTTData(const String item, const String json)
+{
+  sendMQTTData(item.c_str(), json.c_str());
+} 
+
+void sendMQTTData(const char* item, const char *json) 
+{
+/*  
+* The maximum message size, including header, is 128 bytes by default. 
+* This is configurable via MQTT_MAX_PACKET_SIZE in PubSubClient.h.
+* Als de json string te lang wordt zal de string niet naar de MQTT server
+* worden gestuurd. Vandaar de korte namen als ED en PDl1.
+* Mocht je langere, meer zinvolle namen willen gebruiken dan moet je de
+* MQTT_MAX_PACKET_SIZE dus aanpassen!!!
+*/
+//===========================================================================================
+
+  if (!MQTTclient.connected() || !isValidIP(MQTTbrokerIP)) return;
+  // DebugTf("Sending data to MQTT server [%s]:[%d]\r\n", settingMQTTbroker.c_str(), settingMQTTbrokerPort);
+  char topic[100];
+  snprintf(topic, sizeof(topic), "%s/", settingMQTTtopTopic);
+  strlcat(topic, item, sizeof(topic));
+  DebugTf("Sending MQTT: TopicId [%s] Message [%s]\r\n", topic, json);
+  if (!MQTTclient.publish(topic, json, true)) DebugTln("MQTT publish failed.");
+  delay(0);
+} // sendMQTTData()
+
+//===========================================================================================
+void sendMQTT(const char* topic, const char *json, const int8_t len) 
+{
+  if (!MQTTclient.connected() || !isValidIP(MQTTbrokerIP)) return;
+  // DebugTf("Sending data to MQTT server [%s]:[%d] ", settingMQTTbroker.c_str(), settingMQTTbrokerPort);  
+  DebugTf("Sending MQTT: TopicId [%s] Message [%s]\r\n", topic, json);
+  if (MQTTclient.getBufferSize() < len) MQTTclient.setBufferSize(len); //resize buffer when needed
+  if (!MQTTclient.publish(topic, json, true)) DebugTln("MQTT publish failed."); 
+  delay(0);
+} // sendMQTTData()
+
+//===========================================================================================
+bool splitString(String sIn, char del, String& cKey, String& cVal)
+{
+  sIn.trim();                                 //trim spaces
+  cKey=""; cVal="";
+  if (sIn.indexOf("//")==0) return false;     //comment, skip split
+  if (sIn.length()<=3) return false;          //not enough buffer, skip split
+  int pos = sIn.indexOf(del);                 //determine split point
+  if ((pos==0) || (pos==(sIn.length()-1))) return false; // no key or no value
+  cKey = sIn.substring(0,pos-1); cKey.trim(); //before, and trim spaces
+  cVal = sIn.substring(pos+1); cVal.trim();   //after,and trim spaces
+  return true;
+}
+
+//===========================================================================================
+/*  
+* The maximum message size, including header, is 128 bytes by default. 
+* This is configurable via MQTT_MAX_PACKET_SIZE in PubSubClient.h.
+* Als de json string te lang wordt zal de string niet naar de MQTT server
+* worden gestuurd. 
+* Check de langste auto discovery string die verzonden gaat worden, 
+* indien meer dan MQTT_MAX_PACKET_SIZE !!!
+* 
+* Advies (3 november 2020): Stel het voor de zekerheid op 400 bytes in. 
+*
+*/
+void doAutoConfigure()
+{
+
+  const char* cfgFilename = "/mqttha.cfg";
+  String sTopic="";
+  String sMsg="";
+  File fh; //filehandle
+  //Let's open the MQTT autoconfig file
+  SPIFFS.begin();
+  if (SPIFFS.exists(cfgFilename))
+  {
+    fh = SPIFFS.open(cfgFilename, "r");
+    if (fh) {
+      //Lets go read the config and send it out to MQTT line by line
+      while(fh.available()) 
+      {  //read file line by line, split and send to MQTT (topic, msg)
+          delay(0);
+          String sLine = fh.readStringUntil('\n');
+          // DebugTf("sline[%s]\r\n", sLine.c_str());
+          if (splitString( sLine, ',', sTopic, sMsg))
+          {
+            DebugTf("sTopic[%s], sMsg[%s]\r\n", sTopic.c_str(), sMsg.c_str());
+            sendMQTT(sTopic.c_str(), sMsg.c_str(), (sTopic.length() + sMsg.length()+2));
+          } else DebugTf("Either comment or invalid config line: [%s]\r\n", sLine.c_str());
+      } // while available()
+      fh.close();  
+    } 
+  } 
+}
+
+
 /***************************************************************************
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
