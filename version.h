@@ -1,9 +1,9 @@
 //The version number conforms to semver.org format
 #define _VERSION_MAJOR 2
-#define _VERSION_MINOR 1  
-#define _VERSION_PATCH 4
-#define _VERSION_BUILD 462
-#define _VERSION_PRERELEASE rc4
+#define _VERSION_MINOR 3  
+#define _VERSION_PATCH 0
+#define _VERSION_BUILD 500
+#define _VERSION_PRERELEASE rc5
 #define _VERSION_DATE "26-10-2020"
 #define _VERSION_TIME "00:05:13"
 #define _SEMVER_CORE "2.1.4"
