@@ -1,6 +1,9 @@
 # DSMRlogger-Next
 The Next firmware for the DSMR-logger 
 
+**Important: The active development branch is currently:  
+https://github.com/rvdbreemen/DSMRlogger-Next/tree/esp32-merge-next-firmware**
+
 Find out more about the Next firmware [in this blogpost](https://willem.aandewiel.nl/index.php/2020/07/22/dsmr-logger-schrijft-nu-rechtstreeks-in-influxdb-grafana/)
 
 **This is the FORK of the original DSMRloggerAPI from Willem Aandewiel.** 
@@ -30,7 +33,6 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
 <tr>
    <td valign="top">2.3.0-rc3</td>
    <td>Release Candidate (rc3) of DSMRlogger-Next
-   <br>Removed ezTime due to systematic bug
    <br>Implemented HomeAssistant Autodiscovery for MQTT
    </td>
 </tr>
