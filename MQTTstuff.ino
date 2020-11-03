@@ -3,12 +3,14 @@
 **  Program  : MQTTstuff, part of DSMRlogger-Next
 **  Version  : v2.1.2-rc2
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2020 Robert van den Breemen
+**   Based on (c) 2020 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
 **  RvdB  changed MQTT stuff to FSM 
 **  AaW   simplified and restructured the FSM 
+**  RvdB  added automatic discovery home assistant style (and domoticz?)
 */
 
 // Declare some variables within global scope
