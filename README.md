@@ -1,5 +1,7 @@
 # DSMRlogger-Next
-The Next firmware for the DSMR-logger 
+The Next firmware for the DSMR-logger for ESP32 and ESP8266
+
+**This dev branch is supporting both ESP32, WEMOS LOLIN32, and the orginal ESP8266**
 
 Find out more about the Next firmware [in this blogpost](https://willem.aandewiel.nl/index.php/2020/07/22/dsmr-logger-schrijft-nu-rechtstreeks-in-influxdb-grafana/)
 
@@ -11,10 +13,16 @@ With the launch of the Final version of DSMRloggerAPI, version 2.0.1. This compl
 
 Willem contributed a large part of his time and effort in creating the open hardware design, making it easy ot get a PCB and components and the firmware in an Open Source way. I plan to extend building features I care about, try to fix bugs and improve code (if even possible). I thank Willem for his contribution to the community and I will keep posting the work as a fork from his original code base. 
 
-The first release candidate of DSMRlogger-Next will contain:
+The release candidate of DSMRlogger-Next will contain:
 - Direct writting to InfluxDB;
-- Fixing DSMR handling so that DSMR spec 4.2 meter will work properly once more;
+- Fixing DSMR handling so that DSMR spec 4.2 meter will work properly once more
+- Improved c-style string implementation
+- Home Assitant Auto-Discovery through MQTT integration
+- Reboot instead of "Bailout" for 8266 (due to memory leak, means more reboots, but is stable)
+- Support for WEMOS LOLIN32 (for Rob Roos)
 - Minor improvements.
+
+Bughunting help by: Rob Roos
 
 If you have any idea's or suggestions, just ask for them through the issues of this project on GitHub. Did you want to join me in development, then just do a Pull Request this project and I will consider it.
 
