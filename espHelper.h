@@ -1,6 +1,6 @@
 /**************************************************************************
 **  Program  : espHelper.h
-**  Version  : v2.1.2-rc2
+**  Version  : v2.3.0-rc5
 **
 **  Supporting the ESP 8266 port to ESP 32 and vise versa 
 **

@@ -1,7 +1,7 @@
 /* 
 ***************************************************************************  
 **  Program  : ESP32ModUpdateServer.h
-**  Version  : v0.0.1
+**  Version  : v2.3.0-rc5
 **
 **  Modified by 2020 Robert van den Breemen
 **
