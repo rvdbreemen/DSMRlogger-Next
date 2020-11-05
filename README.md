@@ -39,6 +39,7 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
    <td valign="top">2.3.0-rc5</td>
    <td>Release Candidate (rc5) of DSMRlogger-Next
    <br>Implemented auto-discovery for Homeassistant and Domoticz
+   <br>Removed JSON on MQTT messages (backward compatible with HA integration)
 </td>
 </tr>
 <tr>
