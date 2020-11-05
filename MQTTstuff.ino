@@ -19,6 +19,7 @@
   static char       MQTTbrokerIPchar[20] {0};
 
 #ifdef USE_MQTT
+//  https://github.com/knolleary/pubsubclient
 //  #include <PubSubClient.h>           // MQTT client publish and subscribe functionality
   
 //  static PubSubClient MQTTclient(wifiClient);
