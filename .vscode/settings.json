@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "*.yaml": "home-assistant",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "string": "cpp",
+        "xlocale": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
     }
 }

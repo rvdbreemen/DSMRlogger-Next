@@ -177,10 +177,10 @@ struct buildJsonMQTT {
       if (i.present()) 
       {
         String Name = Item::name;
-        //-- for dsmr30 -----------------------------------------------
-  #if defined( USE_PRE40_PROTOCOL )
-        if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";
-  #endif
+        #if defined( USE_PRE40_PROTOCOL )
+          //-- for dsmr30 ----------------------------------------------- 
+          if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";
+        #endif
         String Unit = Item::unit();
 
         if (settingMQTTtopTopic[strlen(settingMQTTtopTopic)-1] == '/')
@@ -189,20 +189,21 @@ struct buildJsonMQTT {
         strlcat(topicId, Name.c_str(), sizeof(topicId));
         if (Verbose2) DebugTf("topicId[%s]\r\n", topicId);
         
-        if (Unit.length() > 0)
-        {
-          createMQTTjsonMessage(mqttBuff, Name.c_str(), i.val(), Unit.c_str());
-        }
-        else
-        {
-          createMQTTjsonMessage(mqttBuff, Name.c_str(), i.val());
-        }
-        
+        // if (Unit.length() > 0)
+        // {
+        //   createMQTTjsonMessage(mqttBuff, Name.c_str(), i.val(), Unit.c_str());
+        // }
+        // else
+        // {
+        // createMQTTjsonMessage(mqttBuff, Name.c_str(), i.val());
+        // }
+        // snprintf(mqttBuff, MQTT_BUFF_MAX, "%s" , cName, fValue);
         //snprintf(cMsg, sizeof(cMsg), "%s", jsonString.c_str());
         //DebugTf("topicId[%s] -> [%s]\r\n", topicId, mqttBuff);
-        if (!MQTTclient.publish(topicId, mqttBuff, true))
+         
+        if (!MQTTclient.publish(topicId, String(i.val()).c_str(), true))
         {
-          DebugTf("Error publish(%s) [%s] [%d bytes]\r\n", topicId, mqttBuff, (strlen(topicId) + strlen(mqttBuff)));
+          DebugTf("Error publish(%s) [%s] [%d bytes]\r\n", topicId, String(i.val()).c_str(), (strlen(topicId) + strlen(String(i.val()).c_str())));
         }
       }
   }
