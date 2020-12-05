@@ -1,11 +1,17 @@
 # DSMRlogger-Next
 The Next firmware for the DSMR-logger for ESP32 and ESP8266
 
-**IMPORTANT: Release 2.3.0-RC5 does have breaking changes to the codebase when integrating with MQTT to Home Automation applications like: OpenHAB, Domoticz and Home Assistant.**
+# Important news: Breaking MQTT Messages 
+With the introduction of Auto Discovery and simplified MQTT messages this also breaks current integrations based on JSON messages over MQTT. Two things about that:
+1. The JSON based MQTT message code is still in the codebase, and can be switch back on.
+2. Simplified MQTT messages allow for easy integration with any platform.
+3. Auto Discovery will update your Home Assistant configuration. You can remove any existing configuration templates in your setup.
 
-The DSMR API logger now has support for ESP32, WEMOS LOLIN32 and ESP8266 hardware setups. Besides supporting the original DSMR logger hardware from Willem Aandewiel. Make sure you setup the right switches for your hardware architecture. Default is ESP8266 in master.
-
-**Important: The active development branch is currently:  
+Please be aware of these changes, moving over to RC5 is breaking some stuff. 
+# Hardware support
+This codebase support the original ESP8266 based DSMR API logger hardware. Starting with RC5 the code is also supporting the ESP32 hardware version that is in development currently. Just select the correct hardware board and compile, it should work fine. 
+# Active Development
+The active development branch is currently:  
 https://github.com/rvdbreemen/DSMRlogger-Next/tree/esp32-merge-next-firmware**
 
 Find out more about the Next firmware [in this blogpost](https://willem.aandewiel.nl/index.php/2020/07/22/dsmr-logger-schrijft-nu-rechtstreeks-in-influxdb-grafana/)
