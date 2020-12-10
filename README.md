@@ -1,3 +1,6 @@
+
+[![Join the chat at https://gitter.im/DSMRlogger-Next/community](https://badges.gitter.im/DSMRlogger-Next/community.svg)](https://gitter.im/DSMRlogger-Next/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 # DSMRlogger-Next
 The Next firmware for the DSMR-logger for ESP32 and ESP8266
 
