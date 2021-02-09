@@ -85,19 +85,20 @@ void ESP8266_APIlistFiles()
 {   
   FSInfo SPIFFSinfo;
 
+  #define LEN_FILENAME 32
   typedef struct _fileMeta {
-    char    Name[30];     
+    char    Name[LEN_FILENAME];     
     int32_t Size;
   } fileMeta;
 
-  _fileMeta dirMap[30];
+  _fileMeta dirMap[LEN_FILENAME];
   int fileNr = 0;
   
   Dir dir = SPIFFS.openDir("/");         // List files on SPIFFS
   while (dir.next())  
   {
     dirMap[fileNr].Name[0] = '\0';
-    strncat(dirMap[fileNr].Name, dir.fileName().substring(1).c_str(), 29); // remove leading '/'
+    strlcat(dirMap[fileNr].Name, dir.fileName().substring(1).c_str(), LEN_FILENAME); // remove leading '/'
     dirMap[fileNr].Size = dir.fileSize();
     fileNr++;
   }
