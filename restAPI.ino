@@ -352,7 +352,7 @@ void sendDeviceInfo()
     strlcat(compileOptions, "[USE_SYSLOGGER]", sizeof(compileOptions));
 #endif
 #ifdef USE_NTP_TIME
-    strlcat(compileOptions, sizeof(compileOptions), "[USE_NTP_TIME]");
+    strlcat(compileOptions, "[USE_NTP_TIME]", sizeof(compileOptions));
 #endif
 
   sendStartJsonObj("devinfo");
