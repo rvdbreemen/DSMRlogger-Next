@@ -1,9 +1,9 @@
 /*
 ***************************************************************************  
 **  Program  : networkStuff.h, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -31,8 +31,8 @@ ESP8266WebServer        httpServer (80);
 #endif
 
 
-static      FSInfo SPIFFSinfo;
-bool        SPIFFSmounted; 
+static      FSInfo LittleFSinfo;
+bool        LittleFSmounted; 
 bool        isConnected = false;
 
 //gets called when WiFiManager enters configuration mode
@@ -62,7 +62,7 @@ void startWiFi(const char* hostname, int timeOut)
   uint32_t lTime = millis();
   String thisAP = String(hostname) + "-" + WiFi.macAddress();
 
-  DebugT("start ...");
+  DebugTln("start ...");
   
   manageWiFi.setDebugOutput(true);
   

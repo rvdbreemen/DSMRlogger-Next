@@ -1,9 +1,9 @@
 /*
 ***************************************************************************  
 **  Program  : DSMRloggerAPI.h - definitions for DSMRloggerAPI
-**  Version  : v2.0.1
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -19,6 +19,8 @@
 
 // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf#include <TelnetStream.h>       
 #include "safeTimers.h"
+
+#include "LittleFS.h"
 
 #ifdef USE_SYSLOGGER
   // https://github.com/mrWheel/ESP_SysLogger
@@ -36,7 +38,7 @@
 // https://github.com/mrWheel/dsmr2Lib
 #include <dsmr2.h>                
 
-#define _DEFAULT_HOSTNAME  "DSMR-TST"  
+#define _DEFAULT_HOSTNAME  "DSMR-API3"  
 #ifdef USE_REQUEST_PIN
     #define DTR_ENABLE  12
 #endif  // is_esp12
@@ -220,7 +222,7 @@ void delayms(unsigned long);
 
 char      cMsg[150], fChar[10];
 String    lastReset           = "";
-bool      spiffsNotPopulated  = false;
+bool      FSnotPopulated  = false;
 bool      hasAlternativeIndex = false;
 bool      mqttIsConnected     = false;
 bool      doLog = false, Verbose1 = false, Verbose2 = false;

@@ -1,9 +1,9 @@
 /*
 ***************************************************************************  
 **  Program  : DSMRindex.js, part of DSMRfirmwareAPI
-**  Version  : v2.0.1
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -79,9 +79,9 @@
                                                 {openTab('SysInfoTab');});
     document.getElementById('bAPIdocTab').addEventListener('click',function() 
                                                 {openTab('APIdocTab');});
-    document.getElementById('FSexplorer').addEventListener('click',function() 
-                                                { console.log("newTab: goFSexplorer");
-                                                  location.href = "/FSexplorer";
+    document.getElementById('FSmanager').addEventListener('click',function() 
+                                                { console.log("newTab: goFSmanager");
+                                                  location.href = "/FSmanager.html";
                                                 });
     document.getElementById('Settings').addEventListener('click',function() 
                                                 {openPage('settingsPage');});
@@ -100,6 +100,8 @@
     openTab("ActualTab");
     setPresentationType('TAB');
     readGitHubVersion();
+    
+    console.log("..exit bootsTrapMain()!");
       
   } // bootsTrapMain()
   

@@ -1,9 +1,9 @@
 /* 
 ***************************************************************************  
 **  Program  : menuStuff, part of DSMRloggerAPI
-**  Version  : v2.0.1
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -85,12 +85,12 @@ void displayBoardInfo()
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
 
-  SPIFFS.info(SPIFFSinfo);
+  LittleFS.info(LittleFSinfo);
 
   Debug(F("]\r\n         Flash Chip ID ["));  Debug( cMsg );
   Debug(F("]\r\n  Flash Chip Size (kB) ["));  Debug( ESP.getFlashChipSize() / 1024 );
   Debug(F("]\r\n   Chip Real Size (kB) ["));  Debug( ESP.getFlashChipRealSize() / 1024 );
-  Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFSinfo.totalBytes / 1024 );
+  Debug(F("]\r\n          FS Size (kB) ["));  Debug( LittleFSinfo.totalBytes / 1024 );
 
   Debug(F("]\r\n      Flash Chip Speed ["));  Debug( ESP.getFlashChipSpeed() / 1000 / 1000 );
   FlashMode_t ideMode = ESP.getFlashChipMode();
@@ -213,7 +213,7 @@ void handleKeyInput()
                     ESP.reset();
                     break;
       case 's':
-      case 'S':     listSPIFFS();
+      case 'S':     listLittleFS();
                     break;
       case 'v':
       case 'V':     if (Verbose2) 
@@ -253,11 +253,11 @@ void handleKeyInput()
                     break;
       default:      Debugln(F("\r\nCommands are:\r\n"));
                     Debugln(F("   B - Board Info\r"));
-                    Debugln(F("  *E - erase file from SPIFFS\r"));
+                    Debugln(F("  *E - erase file from LittleFS\r"));
                     Debugln(F("   L - list Settings\r"));
-                    Debugln(F("   D - Display Day table from SPIFFS\r"));
-                    Debugln(F("   H - Display Hour table from SPIFFS\r"));
-                    Debugln(F("   M - Display Month table from SPIFFS\r"));
+                    Debugln(F("   D - Display Day table from LittleFS\r"));
+                    Debugln(F("   H - Display Hour table from LittleFS\r"));
+                    Debugln(F("   M - Display Month table from LittleFS\r"));
                   #if defined(HAS_NO_SLIMMEMETER)
                     Debugln(F("  *F - Force build RING files\r"));
                   #endif
@@ -276,8 +276,8 @@ void handleKeyInput()
                     Debugln(F("   Q - dump sysLog file\r"));
 #endif
                     Debugln(F("  *R - Reboot\r"));
-                    Debugln(F("   S - File info on SPIFFS\r"));
-                    Debugln(F("  *U - Update SPIFFS (save Data-files)\r"));
+                    Debugln(F("   S - File info on LittleFS\r"));
+                    Debugln(F("  *U - Update LittleFS (save Data-files)\r"));
                     Debugln(F("  *Z - Zero counters\r\n"));
                     if (Verbose1 & Verbose2)  Debugln(F("   V - Toggle Verbose Off\r"));
                     else if (Verbose1)        Debugln(F("   V - Toggle Verbose 2\r"));

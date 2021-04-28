@@ -20,6 +20,7 @@
   Lesser General Public License for more details.
 *******************************************************************
 */
+#ifdef USE_FSEXPLORER
 
 const char Helper[] = R"(
   <br>You first need to upload these two files:
@@ -41,19 +42,19 @@ const char Header[] = "HTTP/1.1 303 OK\r\nLocation:FSexplorer.html\r\nCache-Cont
 //=====================================================================================
 void setupFSexplorer()    // Funktionsaufruf "spiffs();" muss im Setup eingebunden werden
 {    
-  SPIFFS.begin();
+  LittleFS.begin();
   
-  if (SPIFFS.exists("/FSexplorer.html")) 
+  if (LittleFS.exists("/FSmanager.html")) 
   {
-    httpServer.serveStatic("/FSexplorer.html", SPIFFS, "/FSexplorer.html");
-    httpServer.serveStatic("/FSexplorer",      SPIFFS, "/FSexplorer.html");
+    httpServer.serveStatic("/FSmanager.html", SPIFFS, "/FSmanager.html");
+    httpServer.serveStatic("/FSmanager",      SPIFFS, "/FSmanager.html");
   }
   else 
   {
-    httpServer.send(200, "text/html", Helper); //Upload the FSexplorer.html
+    httpServer.send(200, "text/html", Helper); //Upload the FSmanager.html
   }
   httpServer.on("/api/listfiles", APIlistFiles);
-  httpServer.on("/SPIFFSformat", formatSpiffs);
+  httpServer.on("/SPIFFSformat", formatLittleFS);
   httpServer.on("/upload", HTTP_POST, []() {}, handleFileUpload);
   httpServer.on("/ReBoot", reBootESP);
   httpServer.on("/update", updateFirmware);
@@ -76,13 +77,13 @@ void setupFSexplorer()    // Funktionsaufruf "spiffs();" muss im Setup eingebund
     }
   });
   
-} // setupFSexplorer()
+} // setupFS()
 
 
 //=====================================================================================
 void APIlistFiles()             // Senden aller Daten an den Client
 {   
-  FSInfo SPIFFSinfo;
+  FSInfo LittleFSinfo;
 
   typedef struct _fileMeta {
     char    Name[30];     
@@ -92,7 +93,7 @@ void APIlistFiles()             // Senden aller Daten an den Client
   _fileMeta dirMap[30];
   int fileNr = 0;
   
-  Dir dir = SPIFFS.openDir("/");         // List files on SPIFFS
+  Dir dir = LittleFS.openDir("/");         // List files on SPIFFS
   while (dir.next())  
   {
     dirMap[fileNr].Name[0] = '\0';
@@ -128,10 +129,10 @@ void APIlistFiles()             // Senden aller Daten an den Client
     if (temp != "[") temp += ",";
     temp += R"({"name":")" + String(dirMap[f].Name) + R"(","size":")" + formatBytes(dirMap[f].Size) + R"("})";
   }
-  SPIFFS.info(SPIFFSinfo);
-  temp += R"(,{"usedBytes":")" + formatBytes(SPIFFSinfo.usedBytes * 1.05) + R"(",)" +       // Berechnet den verwendeten Speicherplatz + 5% Sicherheitsaufschlag
-          R"("totalBytes":")" + formatBytes(SPIFFSinfo.totalBytes) + R"(","freeBytes":")" + // Zeigt die Größe des Speichers
-          (SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05)) + R"("}])";               // Berechnet den freien Speicherplatz + 5% Sicherheitsaufschlag
+  LittleFS.info(LittleFSinfo);
+  temp += R"(,{"usedBytes":")" + formatBytes(LittleFSinfo.usedBytes * 1.05) + R"(",)" +       // Berechnet den verwendeten Speicherplatz + 5% Sicherheitsaufschlag
+          R"("totalBytes":")" + formatBytes(LittleFSinfo.totalBytes) + R"(","freeBytes":")" + // Zeigt die Größe des Speichers
+          (LittleFSinfo.totalBytes - (LittleFSinfo.usedBytes * 1.05)) + R"("}])";               // Berechnet den freien Speicherplatz + 5% Sicherheitsaufschlag
   httpServer.send(200, "application/json", temp);
   
 } // APIlistFiles()
@@ -143,13 +144,13 @@ bool handleFile(String&& path)
   if (httpServer.hasArg("delete")) 
   {
     DebugTf("Delete -> [%s]\n\r",  httpServer.arg("delete").c_str());
-    SPIFFS.remove(httpServer.arg("delete"));    // Datei löschen
+    LittleFS.remove(httpServer.arg("delete"));    // Datei löschen
     httpServer.sendContent(Header);
     return true;
   }
-  if (!SPIFFS.exists("/FSexplorer.html")) httpServer.send(200, "text/html", Helper); //Upload the FSexplorer.html
+  if (!LittleFS.exists("/FSmanager.html")) httpServer.send(200, "text/html", Helper); //Upload the FSmanager.html
   if (path.endsWith("/")) path += "index.html";
-  return SPIFFS.exists(path) ? ({File f = SPIFFS.open(path, "r"); httpServer.streamFile(f, contentType(path)); f.close(); true;}) : false;
+  return LittleFS.exists(path) ? ({File f = LittleFS.open(path, "r"); httpServer.streamFile(f, contentType(path)); f.close(); true;}) : false;
 
 } // handleFile()
 
@@ -166,7 +167,7 @@ void handleFileUpload()
       upload.filename = upload.filename.substring(upload.filename.length() - 30, upload.filename.length());  // Dateinamen auf 30 Zeichen kürzen
     }
     Debugln("FileUpload Name: " + upload.filename);
-    fsUploadFile = SPIFFS.open("/" + httpServer.urlDecode(upload.filename), "w");
+    fsUploadFile = LittleFS.open("/" + httpServer.urlDecode(upload.filename), "w");
   } 
   else if (upload.status == UPLOAD_FILE_WRITE) 
   {
@@ -188,9 +189,9 @@ void handleFileUpload()
 //=====================================================================================
 void formatSpiffs() 
 {       //Formatiert den Speicher
-  if (!SPIFFS.exists("/!format")) return;
+  if (!LittleFS.exists("/!format")) return;
   DebugTln(F("Format SPIFFS"));
-  SPIFFS.format();
+  LittleFS.format();
   httpServer.sendContent(Header);
   
 } // formatSpiffs()
@@ -225,10 +226,10 @@ const String &contentType(String& filename)
 //=====================================================================================
 bool freeSpace(uint16_t const& printsize) 
 {    
-  FSInfo SPIFFSinfo;
-  SPIFFS.info(SPIFFSinfo);
-  Debugln(formatBytes(SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05)) + " im Spiffs frei");
-  return (SPIFFSinfo.totalBytes - (SPIFFSinfo.usedBytes * 1.05) > printsize) ? true : false;
+  FSInfo LittleFSinfo;
+  LittleFS.info(LittleFSinfo);
+  Debugln(formatBytes(LittleFSinfo.totalBytes - (LittleFSinfo.usedBytes * 1.05)) + " im Spiffs frei");
+  return (LittleFSinfo.totalBytes - (LittleFSinfo.usedBytes * 1.05) > printsize) ? true : false;
   
 } // freeSpace()
 
@@ -265,7 +266,7 @@ void doRedirect(String msg, int wait, const char* URL, bool reboot)
   "</style>"
   "<title>Redirect to Main Program</title>"
   "</head>"
-  "<body><h1>FSexplorer</h1>"
+  "<body><h1>FSmanager</h1>"
   "<h3>"+msg+"</h3>"
   "<br><div style='width: 500px; position: relative; font-size: 25px;'>"
   "  <div style='float: left;'>Redirect over &nbsp;</div>"
@@ -297,3 +298,7 @@ void doRedirect(String msg, int wait, const char* URL, bool reboot)
   }
   
 } // doRedirect()
+
+#endif
+
+/* eof */

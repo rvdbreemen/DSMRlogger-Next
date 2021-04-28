@@ -2,7 +2,7 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v2.1.0 (27-04-2021)"
+#define _FW_VERSION "v3.0.0 (28-04-2021)"
 /*
 **  Copyright (c) 2021 Willem Aandewiel
 **
@@ -14,7 +14,7 @@
     - Board: "Generic ESP8266 Module"
     - Builtin Led: "2"  // GPIO02 for Wemos and ESP-12
     - Flash mode: "DOUT" | "DIO"    // changes only after power-off and on again!
-    - Flash size: "4MB (FS: 2MB OAT:~1019KB)"  << LET OP! 2MB SPIFFS
+    - Flash size: "4MB (FS: 2MB OAT:~1019KB)"  << LET OP! 2MB FS
     - DebugT port: "Disabled"
     - DebugT Level: "None"
     - IwIP Variant: "v2 Lower Memory"
@@ -174,23 +174,23 @@ void setup()
     oled_Print_Msg(3, "telnet (poort 23)", 2500);
   }
   
-//================ SPIFFS ===========================================
-  if (SPIFFS.begin()) 
+//================ LittleFS ===========================================
+  if (LittleFS.begin()) 
   {
-    DebugTln(F("SPIFFS Mount succesfull\r"));
-    SPIFFSmounted = true;
+    DebugTln(F("LittleFS Mount succesfull\r"));
+    LittleFSmounted = true;
     if (settingOledType > 0)
     {
       oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
-      oled_Print_Msg(3, "SPIFFS mounted", 1500);
+      oled_Print_Msg(3, "LittleFS mounted", 1500);
     }    
   } else { 
-    DebugTln(F("SPIFFS Mount failed\r"));   // Serious problem with SPIFFS 
-    SPIFFSmounted = false;
+    DebugTln(F("LittleFS Mount failed\r"));   // Serious problem with LittleFS 
+    LittleFSmounted = false;
     if (settingOledType > 0)
     {
       oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
-      oled_Print_Msg(3, "SPIFFS FAILED!", 2000);
+      oled_Print_Msg(3, "LittleFS FAILED!", 2000);
     }
   }
 
@@ -275,7 +275,7 @@ void setup()
   Serial.print (WiFi.localIP());
   Serial.println("' voor verdere debugging\r\n");
 
-//=============now test if SPIFFS is correct populated!============
+//=============now test if LittleFS is correct populated!============
   if (DSMRfileExist(settingIndexPage, false) )
   {
     if (strcmp(settingIndexPage, "DSMRindex.html") != 0)
@@ -292,7 +292,7 @@ void setup()
   }
   if (!hasAlternativeIndex && !DSMRfileExist("/DSMRindex.html", false) )
   {
-    spiffsNotPopulated = true;
+    FSnotPopulated = true;
   }
   if (!hasAlternativeIndex)    //--- there's no alternative index.html
   {
@@ -300,25 +300,25 @@ void setup()
     DSMRfileExist("/DSMRindex.css",   false);
     DSMRfileExist("/DSMRgraphics.js", false);
   }
-  if (!DSMRfileExist("/FSexplorer.html", true))
+  if (!DSMRfileExist("/FSmanager.html", true))
   {
-    spiffsNotPopulated = true;
+    FSnotPopulated = true;
   }
-  if (!DSMRfileExist("/FSexplorer.css", true))
+  if (!DSMRfileExist("/FSmanager.css", true))
   {
-    spiffsNotPopulated = true;
+    FSnotPopulated = true;
   }
-//=============end SPIFFS =========================================
+//=============end LittleFS =========================================
 #ifdef USE_SYSLOGGER
-  if (spiffsNotPopulated)
+  if (FSnotPopulated)
   {
-    sysLog.write("SPIFFS is not correct populated (files are missing)");
+    sysLog.write("LittleFS is not correct populated (files are missing)");
   }
 #endif
   
 //=============now test if "convertPRD" file exists================
 
-  if (SPIFFS.exists("/!PRDconvert") )
+  if (LittleFS.exists("/!PRDconvert") )
   {
     convertPRD2RING();
   }
@@ -356,49 +356,51 @@ void setup()
 
 //================ Start HTTP Server ================================
 
-  if (!spiffsNotPopulated) {
-    DebugTln(F("SPIFFS correct populated -> normal operation!\r"));
+  if (!FSnotPopulated) {
+    DebugTln(F("File System correct populated -> normal operation!\r"));
     if (settingOledType > 0)
     {
       oled_Print_Msg(0, " <DSMRloggerAPI>", 0); 
-      oled_Print_Msg(1, "OK, SPIFFS correct", 0);
+      oled_Print_Msg(1, "OK, LittleFS correct", 0);
       oled_Print_Msg(2, "Verder met normale", 0);
       oled_Print_Msg(3, "Verwerking ;-)", 2500);
     }
     if (hasAlternativeIndex)
     {
-      httpServer.serveStatic("/",                 SPIFFS, settingIndexPage);
-      httpServer.serveStatic("/index",            SPIFFS, settingIndexPage);
-      httpServer.serveStatic("/index.html",       SPIFFS, settingIndexPage);
-      httpServer.serveStatic("/DSMRindex.html",   SPIFFS, settingIndexPage);
+      httpServer.serveStatic("/",                 LittleFS, settingIndexPage);
+      httpServer.serveStatic("/index",            LittleFS, settingIndexPage);
+      httpServer.serveStatic("/index.html",       LittleFS, settingIndexPage);
+      httpServer.serveStatic("/DSMRindex.html",   LittleFS, settingIndexPage);
     }
     else
     {
-      httpServer.serveStatic("/",                 SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/DSMRindex.html",   SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/index",            SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/index.html",       SPIFFS, "/DSMRindex.html");
-      httpServer.serveStatic("/DSMRindex.css",    SPIFFS, "/DSMRindex.css");
-      httpServer.serveStatic("/DSMRindex.js",     SPIFFS, "/DSMRindex.js");
-      httpServer.serveStatic("/DSMRgraphics.js",  SPIFFS, "/DSMRgraphics.js");
+      httpServer.serveStatic("/",                 LittleFS, "/DSMRindex.html");
+      httpServer.serveStatic("/DSMRindex.html",   LittleFS, "/DSMRindex.html");
+      httpServer.serveStatic("/index",            LittleFS, "/DSMRindex.html");
+      httpServer.serveStatic("/index.html",       LittleFS, "/DSMRindex.html");
+      httpServer.serveStatic("/DSMRindex.css",    LittleFS, "/DSMRindex.css");
+      httpServer.serveStatic("/DSMRindex.js",     LittleFS, "/DSMRindex.js");
+      httpServer.serveStatic("/DSMRgraphics.js",  LittleFS, "/DSMRgraphics.js");
     }
   } else {
-    DebugTln(F("Oeps! not all files found on SPIFFS -> present FSexplorer!\r"));
-    spiffsNotPopulated = true;
+    DebugTln(F("Oeps! not all files found on LittleFS -> present FSmanager!\r"));
+    FSnotPopulated = true;
     if (settingOledType > 0)
     {
       oled_Print_Msg(0, "!OEPS! niet alle", 0);
-      oled_Print_Msg(1, "files op SPIFFS", 0);
+      oled_Print_Msg(1, "files op LittleFS", 0);
       oled_Print_Msg(2, "gevonden! (fout!)", 0);
-      oled_Print_Msg(3, "Start FSexplorer", 2000);
+      oled_Print_Msg(3, "Start FSmanager", 2000);
     }
   }
 
-  setupFSexplorer();
-  httpServer.serveStatic("/FSexplorer.png",   SPIFFS, "/FSexplorer.png");
+  setupFS();
+  //httpServer.serveStatic("/FSmanager",       LittleFS, "/FSmanager.html");
+  //httpServer.serveStatic("/FSmanager.html",  LittleFS, "/FSmanager.html");
+  httpServer.serveStatic("/FSmanager.png",   LittleFS, "/FSexplorer.png");
 
   httpServer.on("/api", HTTP_GET, processAPI);
-  // all other api calls are catched in FSexplorer onNotFounD!
+  // all other api calls are catched in FSmanager onNotFounD!
 
   httpServer.begin();
   DebugTln( "HTTP server gestart\r" );
