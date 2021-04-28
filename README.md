@@ -18,7 +18,7 @@ Documentation can be found [here](https://mrwheel-docs.gitbook.io/dsmrloggerapi/
      <li>Choose the DSMR version to use (Pré 40, 4+ or Belgium 5+). No more need for 
          compiler switches and different firmware versions (one fits all).
      </li>
-     <li>Coose on which MBus channel the Gas meter is connected and what type
+     <li>Choose on which MBus channel the Gas meter is connected and what type
          of format it uses to present meter values (Temp. Corrected or not, value
          on second record).  </li>
    </ul>
