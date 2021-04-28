@@ -2,9 +2,9 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v2.0.1 (17-04-2020)"
+#define _FW_VERSION "v2.1.0 (27-04-2021)"
 /*
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -36,9 +36,6 @@
 /******************** compiler options  ********************************************/
 #define USE_REQUEST_PIN           // define if it's a esp8266 with GPIO 12 connected to SM DTR pin
 #define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
-//  #define USE_BELGIUM_PROTOCOL      // define if Slimme Meter is a Belgium Smart Meter
-//  #define USE_PRE40_PROTOCOL        // define if Slimme Meter is pre DSMR 4.0 (2.2 .. 3.0)
-//  #define USE_NTP_TIME              // define to generate Timestamp from NTP (Only Winter Time for now)
 //  #define HAS_NO_SLIMMEMETER        // define for testing only!
 #define USE_MQTT                  // define if you want to use MQTT (configure through webinterface)
 #define USE_MINDERGAS             // define if you want to update mindergas (configure through webinterface)
@@ -51,18 +48,14 @@
 struct showValues {
   template<typename Item>
   void apply(Item &i) {
-    TelnetStream.print("showValues: ");
     if (i.present()) 
     {
+      TelnetStream.print(F("showValues: "));
       TelnetStream.print(Item::name);
       TelnetStream.print(F(": "));
       TelnetStream.print(i.val());
-      TelnetStream.print(Item::unit());
-    //} else 
-    //{
-    //  TelnetStream.print(F("<no value>"));
+      TelnetStream.println(Item::unit());
     }
-    TelnetStream.println();
   }
 };
 
@@ -88,7 +81,7 @@ void displayStatus()
     }
 
     oled_Print_Msg(3, cMsg, 0);
-    msgMode= (msgMode+1) % 5; //modular 5 = number of message displayed (hence it cycles thru the messages
+    msgMode= (msgMode+1) % 5; //modular 5 = snumber of message displayed (hence it cycles thru the messages
   }  
 } // displayStatus()
 
@@ -137,12 +130,7 @@ void openSysLog(bool empty)
 //===========================================================================================
 void setup() 
 {
-#ifdef USE_PRE40_PROTOCOL                                                         //PRE40
-//Serial.begin(115200);                                                           //DEBUG
-  Serial.begin(9600, SERIAL_7E1);                                                 //PRE40
-#else   // not use_dsmr_30                                                        //PRE40
   Serial.begin(115200, SERIAL_8N1);
-#endif  // use_dsmr_30
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(FLASH_BUTTON, INPUT);
 #ifdef DTR_ENABLE
@@ -251,6 +239,16 @@ void setup()
     delay(200);
   }
   digitalWrite(LED_BUILTIN, LED_OFF);
+  
+  //--- ezTime initialisation
+  setDebug(INFO); 
+  waitForSync();
+  CET.setLocation(F("Europe/Amsterdam"));
+  CET.setDefault(); 
+  
+  Debugln("UTC time: "+ UTC.dateTime());
+  Debugln("CET time: "+ CET.dateTime());
+  prevNtpHour = hour();
 
 //-----------------------------------------------------------------
 #ifdef USE_SYSLOGGER
@@ -269,37 +267,6 @@ void setup()
   }
   
 //=============end Networkstuff======================================
-
-#if defined(USE_NTP_TIME)                                   //USE_NTP
-//================ startNTP =========================================
-  if (settingOledType > 0)                                  //USE_NTP
-  {                                                         //USE_NTP
-    oled_Print_Msg(3, "setup NTP server", 100);             //USE_NTP
-  }                                                         //USE_NTP
-                                                            //USE_NTP
-  if (!startNTP())                                          //USE_NTP
-  {                                                         //USE_NTP
-    DebugTln(F("ERROR!!! No NTP server reached!\r\n\r"));   //USE_NTP
-    if (settingOledType > 0)                                //USE_NTP
-    {                                                       //USE_NTP
-      oled_Print_Msg(0, " <DSMRloggerAPI>", 0);              //USE_NTP
-      oled_Print_Msg(2, "geen reactie van", 100);           //USE_NTP
-      oled_Print_Msg(2, "NTP server's", 100);               //USE_NTP 
-      oled_Print_Msg(3, "Reboot DSMR-logger", 2000);        //USE_NTP
-    }                                                       //USE_NTP
-    delay(2000);                                            //USE_NTP
-    ESP.restart();                                          //USE_NTP
-    delay(3000);                                            //USE_NTP
-  }                                                         //USE_NTP
-  if (settingOledType > 0)                                  //USE_NTP
-  {                                                         //USE_NTP
-    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);                //USE_NTP
-    oled_Print_Msg(3, "NTP gestart", 1500);                 //USE_NTP
-  }                                                         //USE_NTP
-  prevNtpHour = hour();                                     //USE_NTP
-                                                            //USE_NTP
-#endif  //USE_NTP_TIME                                      //USE_NTP
-//================ end NTP =========================================
 
   snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
   DebugTln(cMsg);
@@ -358,14 +325,12 @@ void setup()
 
 //=================================================================
 
-#if defined(USE_NTP_TIME)                                                           //USE_NTP
   time_t t = now(); // store the current time in time variable t                    //USE_NTP
   snprintf(cMsg, sizeof(cMsg), "%02d%02d%02d%02d%02d%02dW\0\0"                      //USE_NTP
                                                , (year(t) - 2000), month(t), day(t) //USE_NTP
                                                , hour(t), minute(t), second(t));    //USE_NTP
   pTimestamp = cMsg;                                                                //USE_NTP
-  DebugTf("Time is set to [%s] from NTP\r\n", cMsg);                                //USE_NTP
-#endif  // use_dsmr_30
+  DebugTf("Time is set to [%s] from Last Saved Status\r\n", cMsg);                                //USE_NTP
 
   if (settingOledType > 0)
   {
@@ -478,12 +443,28 @@ void setup()
   }
 
 //================ Start Slimme Meter ===============================
-
   DebugTln(F("Enable slimmeMeter..\r"));
 
-#if defined( USE_REQUEST_PIN ) && !defined( HAS_NO_SLIMMEMETER )
+#if !defined( HAS_NO_SLIMMEMETER )
     DebugTf("Swapping serial port to Smart Meter, debug output will continue on telnet\r\n");
-    DebugFlush();
+    if (settingPreDSMR40 == 0)
+    {
+      DebugTln("Serial will be set to 115200 baud / 7N1");
+      DebugFlush();
+      Serial.end();
+      delay(100);
+      Serial.begin(115200, SERIAL_8N1);
+      slimmeMeter.doChecksum(true);
+    }
+    else
+    {                //PRE40
+     DebugTln("Serial will be set to 9600 baud / 7N1");
+     DebugFlush();
+     Serial.end();
+     delay(100);
+     Serial.begin(9600, SERIAL_7E1);
+     slimmeMeter.doChecksum(false);
+    }                                    
     Serial.swap();
 #endif // is_esp12
 
@@ -511,10 +492,12 @@ void delayms(unsigned long delay_ms)
 //==[ Do Telegram Processing ]===============================================================
 void doTaskTelegram()
 {
-  if (Verbose1) DebugTln("doTaskTelegram");
+  
   #if defined(HAS_NO_SLIMMEMETER)
+    if (Verbose1) DebugTln("call: handleTestData()");
     handleTestdata();
   #else
+    if (Verbose1) DebugTln("call: handleSlimmemeter()");
     //-- enable DTR to read a telegram from the Slimme Meter
     slimmeMeter.enable(true); 
     slimmeMeter.loop();
@@ -538,6 +521,7 @@ void doSystemTasks()
   #endif
   httpServer.handleClient();
   MDNS.update();
+  events(); // trigger ezTime update etc.
   handleKeyInput();
   if (settingOledType > 0)
   {
@@ -601,17 +585,17 @@ void loop ()
   }
 
 //--- if NTP set, see if it needs synchronizing
-#if defined(USE_NTP_TIME)                                           //USE_NTP
-  if DUE(synchrNTP)                                                 //USE_NTP
-  {
-  //if (timeStatus() == timeNeedsSync || prevNtpHour != hour())     //USE_NTP
-  //{
-      //prevNtpHour = hour();                                         //USE_NTP
-      setSyncProvider(getNtpTime);                                  //USE_NTP
-      setSyncInterval(600);                                         //USE_NTP
-  //}
-  }
-#endif                                                              //USE_NTP
+//#if defined(USE_NTP_TIME)                                           //USE_NTP
+//  if DUE(synchrNTP)                                                 //USE_NTP
+//  {
+//  //if (timeStatus() == timeNeedsSync || prevNtpHour != hour())     //USE_NTP
+//  //{
+//      //prevNtpHour = hour();                                         //USE_NTP
+//      setSyncProvider(getNtpTime);                                  //USE_NTP
+//      setSyncInterval(600);                                         //USE_NTP
+//  //}
+//  }
+//#endif                                                              //USE_NTP
   
   yield();
   

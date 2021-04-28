@@ -17,8 +17,9 @@ char fieldName[40] = "";
 char fieldsArray[50][35] = {{0}}; // to lookup fields 
 int  fieldsElements      = 0;
 
-int  actualElements = 20;
-char actualArray[][35] = { "timestamp"
+int  actualElements = 24;
+char actualArray[][35] = { 
+                           "timestamp"
                           ,"energy_delivered_tariff1","energy_delivered_tariff2"
                           ,"energy_returned_tariff1","energy_returned_tariff2"
                           ,"power_delivered","power_returned"
@@ -26,11 +27,14 @@ char actualArray[][35] = { "timestamp"
                           ,"current_l1","current_l2","current_l3"
                           ,"power_delivered_l1","power_delivered_l2","power_delivered_l3"
                           ,"power_returned_l1","power_returned_l2","power_returned_l3"
-                          ,"gas_delivered"
+                          ,"mbus1_delivered","mbus2_delivered"
+                          ,"mbus3_delivered","mbus4_delivered"
                           ,"\0"};
-int  infoElements = 7;
+      
+int  infoElements = 10;
 char infoArray[][35]   = { "identification","p1_version","equipment_id","electricity_tariff"
-                          ,"gas_device_type","gas_equipment_id"
+                          ,"mbus1_delivered","mbus2_delivered"
+                          ,"mbus3_delivered","mbus4_delivered"
                           , "\0" };
   
 bool onlyIfPresent  = false;
@@ -293,16 +297,13 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
     }
 
     tlgrm[l++] = '!';
-#if !defined( USE_PRE40_PROTOCOL )
     // next 6 bytes are "<CRC>\r\n"
-    for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
+    for (int i=0; ( (i<6) && (i<(sizeof(tlgrm)-7)) && (tlgrm[l] != '\n') ); i++)
     {
       tlgrm[l++] = (char)Serial.read();
     }
-#else
-    tlgrm[l++]    = '\r';
+//  tlgrm[l++]    = '\r';
     tlgrm[l++]    = '\n';
-#endif
     tlgrm[(l +1)] = '\0';
     // shift telegram 1 char to the right (make room at pos [0] for '/')
     for (int i=strlen(tlgrm); i>=0; i--) { tlgrm[i+1] = tlgrm[i]; yield(); }
@@ -324,13 +325,6 @@ void sendDeviceInfo()
 
 #ifdef USE_REQUEST_PIN
     strConcat(compileOptions, sizeof(compileOptions), "[USE_REQUEST_PIN]");
-#endif
-#if defined( USE_PRE40_PROTOCOL )
-    strConcat(compileOptions, sizeof(compileOptions), "[USE_PRE40_PROTOCOL]");
-#elif defined( USE_BELGIUM_PROTOCOL )
-    strConcat(compileOptions, sizeof(compileOptions), "[USE_BELGIUM_PROTOCOL]");
-#else
-    strConcat(compileOptions, sizeof(compileOptions), "[USE_DUTCH_PROTOCOL]");
 #endif
 #ifdef USE_UPDATE_SERVER
     strConcat(compileOptions, sizeof(compileOptions), "[USE_UPDATE_SERVER]");
@@ -403,6 +397,8 @@ void sendDeviceInfo()
 #endif
   sendNestedJsonObj("wifirssi", WiFi.RSSI());
   sendNestedJsonObj("uptime", upTime());
+  sendNestedJsonObj("pre_dsmr40",       (int)settingPreDSMR40);
+  sendNestedJsonObj("mbus_nr_gas",      (int)settingMbusNrGas);
   sendNestedJsonObj("oled_type",        (int)settingOledType);
   sendNestedJsonObj("oled_flip_screen", (int)settingOledFlip);
   sendNestedJsonObj("smhasfaseinfo",    (int)settingSmHasFaseInfo);
@@ -453,6 +449,7 @@ void sendDeviceSettings()
   sendStartJsonObj("settings");
   
   sendJsonSettingObj("hostname",          settingHostname,        "s", sizeof(settingHostname) -1);
+  sendJsonSettingObj("pre_dsmr40",        settingPreDSMR40,       "i", 0, 1);
   sendJsonSettingObj("ed_tariff1",        settingEDT1,            "f", 0, 10,  5);
   sendJsonSettingObj("ed_tariff2",        settingEDT2,            "f", 0, 10,  5);
   sendJsonSettingObj("er_tariff1",        settingERT1,            "f", 0, 10,  5);
@@ -460,6 +457,7 @@ void sendDeviceSettings()
   sendJsonSettingObj("gd_tariff",         settingGDT,             "f", 0, 10,  5);
   sendJsonSettingObj("electr_netw_costs", settingENBK,            "f", 0, 100, 2);
   sendJsonSettingObj("gas_netw_costs",    settingGNBK,            "f", 0, 100, 2);
+  sendJsonSettingObj("mbus_nr_gas",       settingMbusNrGas,       "i", 1, 4);
   sendJsonSettingObj("sm_has_fase_info",  settingSmHasFaseInfo,   "i", 0, 1);
   sendJsonSettingObj("tlgrm_interval",    settingTelegramInterval,"i", 2, 60);
   sendJsonSettingObj("oled_type",         settingOledType,        "i", 0, 2);
@@ -521,10 +519,6 @@ struct buildJsonApiV0SmActual
     void apply(Item &i) {
       skip = false;
       String Name = Item::name;
-      //-- for dsmr30 -----------------------------------------------
-#if defined( USE_PRE40_PROTOCOL )
-      if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";
-#endif
       if (!isInFieldsArray(Name.c_str(), fieldsElements))
       {
         skip = true;
@@ -534,7 +528,9 @@ struct buildJsonApiV0SmActual
         if (i.present()) 
         {
           //String Unit = Item::unit();
-          sendNestedJsonV0Obj(Name.c_str(), typecastValue(i.val()));
+          if (Name.indexOf("_delivered") == 5)
+                sendNestedJsonV0Obj(Name.c_str(), gasDelivered);
+          else  sendNestedJsonV0Obj(Name.c_str(), typecastValue(i.val()));
         }
       }
   }
@@ -565,13 +561,19 @@ struct buildJsonApi
     void apply(Item &i) {
       skip = false;
       String Name = Item::name;
-      //-- for dsmr30 -----------------------------------------------
-#if defined( USE_PRE40_PROTOCOL )
-      if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";
-#endif
       if (!isInFieldsArray(Name.c_str(), fieldsElements))
       {
         skip = true;
+      }
+      if (Name.indexOf("mbus") == 0)
+      {
+        switch(settingMbusNrGas)
+        {
+          case 2:   if (Name.indexOf("mbus2_") != 0) skip = true;  break;
+          case 3:   if (Name.indexOf("mbus3_") != 0) skip = true;  break;
+          case 4:   if (Name.indexOf("mbus4_") != 0) skip = true;  break;
+          default:  if (Name.indexOf("mbus1_") != 0) skip = true;  break;
+        }
       }
       if (!skip)
       {
@@ -581,7 +583,9 @@ struct buildJsonApi
         
           if (Unit.length() > 0)
           {
-            sendNestedJsonObj(Name.c_str(), typecastValue(i.val()), Unit.c_str());
+            if (Name.indexOf("_delivered") == 5)
+                  sendNestedJsonObj(Name.c_str(), gasDelivered, Unit.c_str());
+            else  sendNestedJsonObj(Name.c_str(), typecastValue(i.val()), Unit.c_str());
           }
           else 
           {

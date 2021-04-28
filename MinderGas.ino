@@ -16,7 +16,7 @@
 void handleMindergas()
 {
   #ifdef USE_MINDERGAS
-    processMindergas_FSM();
+    processMindermbus1_FSM();
   #endif
 
 } // handleMindergas()
@@ -56,7 +56,7 @@ void forceMindergasUpdate()
     MGminuten=1;
     CHANGE_INTERVAL_MIN(minderGasTimer, 1);
     stateMindergas = MG_DO_COUNTDOWN;
-    processMindergas_FSM();
+    processMindermbus1_FSM();
   }
   else
   {
@@ -65,7 +65,7 @@ void forceMindergasUpdate()
     writeToSysLog("Force Write Data to [%s]", MG_FILENAME);
     CHANGE_INTERVAL_MIN(minderGasTimer, 1);
     stateMindergas = MG_WRITE_TO_FILE;  // write file is next state
-    processMindergas_FSM();
+    processMindermbus1_FSM();
   }
   
 } // forceMindergasUpdate()
@@ -73,7 +73,7 @@ void forceMindergasUpdate()
 
 //=======================================================================
 // handle finite state machine of mindergas
-void processMindergas_FSM()
+void processMindermbus1_FSM()
 {
   if (handleMindergasSemaphore) // if already running ? then return...
   {
@@ -253,7 +253,7 @@ void processMindergas_FSM()
   //on exit, allow next handle state event
   handleMindergasSemaphore = false;
   
-} // processMindergas_FSM()
+} // processMindermbus1_FSM()
 
 
 //=======================================================================
@@ -405,9 +405,9 @@ void writePostToFile()
                                                           , year(t)
                                                           , month(t)
                                                           , day(t)
-                                                          , DSMRdata.gas_delivered.val());
+                                                          , gasDelivered);
   //--- write the POST to a file...
-  minderGasFile.println(F("POST /api/gas_meter_readings HTTP/1.1"));
+  minderGasFile.println(F("POST /api/mbus1_meter_readings HTTP/1.1"));
   minderGasFile.print(F("AUTH-TOKEN:")); minderGasFile.println(settingMindergasToken);
   minderGasFile.println(F("Host: mindergas.nl"));
   minderGasFile.println(F("User-Agent: DSMRAPI"));

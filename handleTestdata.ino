@@ -101,16 +101,16 @@ void handleTestdata()
   currentCRC = 0;
   memset(telegram,0,sizeof(telegram));
   
-#if defined( USE_PRE40_PROTOCOL )
-    for (int16_t line = 0; line < 20; line++) {
-      yield();
-      int16_t len = buildTelegram30(line, telegramLine);  // also: prints to DSMRsend
-//    calcCRC = decodeTelegram(len);  // why??
-    }
-    if (Verbose2) Debugf("!\r\n");
-    strConcat(telegram, sizeof(telegram), "!\r\n");
-
-#else
+//#if defined( USE_PRE40_PROTOCOL )
+//    for (int16_t line = 0; line < 20; line++) {
+//      yield();
+//      int16_t len = buildTelegram30(line, telegramLine);  // also: prints to DSMRsend
+////    calcCRC = decodeTelegram(len);  // why??
+//    }
+//    if (Verbose2) Debugf("!\r\n");
+//    strConcat(telegram, sizeof(telegram), "!\r\n");
+//
+//#else
     for (int16_t line = 0; line < 38; line++) {
       yield();
       int16_t len = buildTelegram40(line, telegramLine);  // also: prints to DSMRsend
@@ -120,7 +120,7 @@ void handleTestdata()
     if (Verbose2) Debug(cMsg);
     strConcat(telegram, sizeof(telegram), cMsg);
     
-#endif
+//#endif
 
   DebugFlush();
   telegramCount++;

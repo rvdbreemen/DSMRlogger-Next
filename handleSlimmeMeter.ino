@@ -29,7 +29,8 @@ void handleSlimmemeter()
 //==================================================================================
 void processSlimmemeterRaw()
 {
-  char    tlgrm[1200] = "";
+  char    tlgrm[1200]   = "";
+  char    checkSum[10]  = "";
    
   DebugTf("handleSlimmerMeter RawCount=[%4d]\r\n", showRawCount);
   showRawCount++;
@@ -52,7 +53,7 @@ void processSlimmemeterRaw()
   slimmeMeter.enable(true);
   Serial.setTimeout(5000);  // 5 seconds must be enough ..
   memset(tlgrm, 0, sizeof(tlgrm));
-  int l = 0;
+  int l = 0, lc = 0;
   // The terminator character is discarded from the serial buffer.
   l = Serial.readBytesUntil('/', tlgrm, sizeof(tlgrm));
   // now read from '/' to '!'
@@ -62,21 +63,24 @@ void processSlimmemeterRaw()
 //  DebugTf("read [%d] bytes\r\n", l);
   if (l == 0) 
   {
-    DebugTln(F("RawMode: Timerout - no telegram received within 5 seconds"));
+    DebugTln(F("RawMode: Timeout - no telegram received within 5 seconds"));
     return;
   }
 
   tlgrm[l++] = '!';
-#if !defined( USE_PRE40_PROTOCOL )
+  DebugTf("found \"!\" at pos[%d]\r\n", l);
   // next 6 bytes are "<CRC>\r\n"
-  for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
+  lc = Serial.readBytesUntil('\n', checkSum, sizeof(checkSum));
+  DebugTf("found [%d] chars after \"!\"\r\n", lc);
+  for (int i=0; i<lc; i++)
   {
-    tlgrm[l++] = (char)Serial.read();
+    tlgrm[l++] = checkSum[i];
+    if (checkSum[i] == '\r')      DebugTf("added '\\r' at pos[%d]\r\n", l);
+    else if (checkSum[i] == '\n') DebugTf("added '\\n' at pos[%d]\r\n", l);
+    else  DebugTf("added [%c] at pos[%d]\r\n", checkSum[i], l);
   }
-#else
-  tlgrm[l++]    = '\r';
   tlgrm[l++]    = '\n';
-#endif
+  DebugTf("added '\\n' at pos[%d]\r\n", l);
   tlgrm[(l +1)] = '\0';
   // shift telegram 1 char to the right (make room at pos [0] for '/')
   for (int i=strlen(tlgrm); i>=0; i--) { tlgrm[i+1] = tlgrm[i]; yield(); }
@@ -91,8 +95,13 @@ void processSlimmemeterRaw()
 //==================================================================================
 void processSlimmemeter()
 {
+  bool doParseChecksum = true;
+  
+  if (settingPreDSMR40 == 1) doParseChecksum = false;
+
   slimmeMeter.loop();
-  if (slimmeMeter.available()) 
+
+  if (slimmeMeter.available() ) 
   {
     DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
     Debugln(F("\r\n[Time----][FreeHeap/mBlck][Function----(line):\r"));
@@ -101,8 +110,10 @@ void processSlimmemeter()
         
     DSMRdata = {};
     String    DSMRerror;
-        
-    if (slimmeMeter.parse(&DSMRdata, &DSMRerror))   // Parse succesful, print result
+
+    // Parse succesful, print result
+    //if (slimmeMeter.parse(&DSMRdata, &DSMRerror, doParseChecksum) )
+    if (slimmeMeter.parse(&DSMRdata, &DSMRerror) )
     {
       if (telegramCount > (UINT32_MAX - 10)) 
       {
@@ -121,6 +132,14 @@ void processSlimmemeter()
           yield();
         }
       }
+      
+      if (DSMRdata.p1_version_be_present)
+      {
+        DSMRdata.p1_version = DSMRdata.p1_version_be;
+        DSMRdata.p1_version_be_present  = false;
+        DSMRdata.p1_version_present     = true;
+      }
+      
       if (!settingSmHasFaseInfo)
       {
         if (DSMRdata.power_delivered_present && !DSMRdata.power_delivered_l1_present)
@@ -139,20 +158,68 @@ void processSlimmemeter()
         }
       } // No Fase Info
 
-#ifdef USE_NTP_TIME
-      if (!DSMRdata.timestamp_present)                        //USE_NTP
-      {                                                       //USE_NTP
-        sprintf(cMsg, "%02d%02d%02d%02d%02d%02dW\0\0"         //USE_NTP
-                        , (year() - 2000), month(), day()     //USE_NTP
-                        , hour(), minute(), second());        //USE_NTP
-        DSMRdata.timestamp         = cMsg;                    //USE_NTP
-        DSMRdata.timestamp_present = true;                    //USE_NTP
-      }                                                       //USE_NTP
-#endif
+      if (!DSMRdata.timestamp_present)                        //ezTime
+      {                                                       //ezTime
+        sprintf(cMsg, "%02d%02d%02d%02d%02d%02dW\0\0"         //ezTime
+                        , (year() - 2000), month(), day()     //ezTime
+                        , hour(), minute(), second());        //ezTime
+        DSMRdata.timestamp         = cMsg;                    //ezTime
+        DSMRdata.timestamp_present = true;                    //ezTime
+      }                                                       //ezTime
 
+      //-- handle mbus delivered values
+      DebugTf("settingMbusNrGas [%d] => ", settingMbusNrGas);
+      switch (settingMbusNrGas)
+      {
+        case 2:   if (DSMRdata.mbus2_device_type == 3)
+                  {
+                    gasDelivered =  (float)DSMRdata.mbus2_delivered
+                                  + (float)DSMRdata.mbus2_delivered_ntc
+                                  + (float)DSMRdata.mbus2_delivered_dbl;
+                    DSMRdata.mbus2_delivered_present     = true;
+                    DSMRdata.mbus2_delivered_ntc_present = false;
+                    DSMRdata.mbus2_delivered_dbl_present = false;
+                  }
+                  break;
+        case 3:   if (DSMRdata.mbus3_device_type == 3)
+                  {
+                    gasDelivered =  (float)DSMRdata.mbus3_delivered
+                                  + (float)DSMRdata.mbus3_delivered_ntc
+                                  + (float)DSMRdata.mbus3_delivered_dbl;
+                    DSMRdata.mbus3_delivered_present     = true;
+                    DSMRdata.mbus3_delivered_ntc_present = false;
+                    DSMRdata.mbus3_delivered_dbl_present = false;
+                  }
+                  break;
+        case 4:   if (DSMRdata.mbus4_device_type == 3)
+                  {
+                    gasDelivered =  (float)DSMRdata.mbus4_delivered
+                                  + (float)DSMRdata.mbus4_delivered_ntc
+                                  + (float)DSMRdata.mbus4_delivered_dbl;
+                    DSMRdata.mbus4_delivered_present     = true;
+                    DSMRdata.mbus4_delivered_ntc_present = false;
+                    DSMRdata.mbus4_delivered_dbl_present = false;
+                  }
+                  break;
+        default:  if (DSMRdata.mbus1_device_type == 3)
+                  {
+                    Debug("MBus1 devType == 3 =>");
+                    gasDelivered =  (float)DSMRdata.mbus1_delivered
+                                  + (float)DSMRdata.mbus1_delivered_ntc
+                                  + (float)DSMRdata.mbus1_delivered_dbl;
+                    DSMRdata.mbus1_delivered_present     = true;
+                    DSMRdata.mbus1_delivered_ntc_present = false;
+                    DSMRdata.mbus1_delivered_dbl_present = false;
+                  }
+                  break;
+ 
+      } // switch(settingMbusNrGas)
+      Debugf("gasDelivered [%f]\r\n", gasDelivered);
+      
       processTelegram();
       if (Verbose2) 
       {
+        DebugTln("Show Values:");
         DSMRdata.applyEach(showValues());
       }
           
@@ -176,7 +243,7 @@ void processSlimmemeter()
     }
         
   } // if (slimmeMeter.available()) 
-  
+
 } // handleSlimmeMeter()
 
 #endif

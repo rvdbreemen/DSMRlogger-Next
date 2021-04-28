@@ -34,7 +34,9 @@
   var gd_tariff             = 0;
   var electr_netw_costs     = 0;
   var gas_netw_costs        = 0;
-  var hostName            =  "-";
+  var hostName              =  "-";
+  var pre_dsmr40            =  0;
+  var mbus_nr_gas           =  1;
   
   var data       = [];
                   
@@ -269,7 +271,9 @@
         for( let i in data )
         {
             var tableRef = document.getElementById('devInfoTable').getElementsByTagName('tbody')[0];
-            data[i].humanName = translateToHuman(data[i].name);
+            //data[i].humanName = translateToHuman(data[i].name);
+            bName = translateToHuman(data[i].name);
+            data[i].humanName = bName.replace("<2>", "<br>");
 
             if( ( document.getElementById("devInfoTable_"+data[i].name)) == null )
             {
@@ -374,7 +378,7 @@
     fetch(APIGW+"v1/sm/actual")
       .then(response => response.json())
       .then(json => {
-          //console.log("parsed .., fields is ["+ JSON.stringify(json)+"]");
+          console.log("parsed .., fields is ["+ JSON.stringify(json)+"]");
           data = json.actual;
           copyActualToChart(data);
           if (presentationType == "TAB")
@@ -401,7 +405,10 @@
           data = json.fields;
           for (var i in data) 
           {
-            data[i].humanName = translateToHuman(data[i].name);
+            //data[i].humanName = translateToHuman(data[i].name);
+            bName = translateToHuman(data[i].name);
+            data[i].humanName = bName.replace("<2>", "<br>");
+
             var tableRef = document.getElementById('fieldsTable').getElementsByTagName('tbody')[0];
             if( ( document.getElementById("fieldsTable_"+data[i].name)) == null )
             {
@@ -1007,6 +1014,14 @@
             {
               gas_netw_costs = json.settings[i].value;
             }
+            else if (json.settings[i].name == "mbus_nr_gas")
+            {
+              mbus_nr_gas = json.settings[i].value;
+            }
+            else if (json.settings[i].name == "pre_dsmr40")
+            {
+              pre_dsmr40 = json.settings[i].value;
+            }
             else if (json.settings[i].name == "hostname")
             {
               hostName = json.settings[i].value;
@@ -1191,7 +1206,9 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
                   fldDiv.setAttribute("style", "margin-right: 10px;");
                   fldDiv.style.width = "250px";
                   fldDiv.style.float = 'left';
-                  fldDiv.textContent = translateToHuman(data[i].name);
+                  //fldDiv.textContent = translateToHuman(data[i].name);
+                  fldDiv.innerText = translateToHuman(data[i].name);
+
                   rowDiv.appendChild(fldDiv);
             //--- input ---
               var inputDiv = document.createElement("div");
@@ -1939,6 +1956,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
            [ "author",                    "Auteur" ]
           ,[ "identification",            "Slimme Meter ID" ]
           ,[ "p1_version",                "P1 Versie" ]
+          ,[ "p1_version_be",             "P1 Versie (BE)" ]
           ,[ "energy_delivered_tariff1",  "Energie Gebruikt tarief 1" ]
           ,[ "energy_delivered_tariff2",  "Energie Gebruikt tarief 2" ]
           ,[ "energy_returned_tariff1",   "Energie Opgewekt tarief 1" ]
@@ -1971,6 +1989,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
           ,[ "power_returned_l1",         "Vermogen Opgewekt l1" ]
           ,[ "power_returned_l2",         "Vermogen Opgewekt l2" ]
           ,[ "power_returned_l3",         "Vermogen Opgewekt l3" ]
+          ,[ "mbus_nr_gas",               "GAS meter on MBus ID (1-4)" ]
           ,[ "gas_device_type",           "Gas Device Type" ]
           ,[ "gas_equipment_id",          "Gas Equipment ID" ]
           ,[ "gas_valve_position",        "Gas Klep Positie" ]
@@ -1997,6 +2016,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
           
           ,[ "smhasfaseinfo",             "SM Has Fase Info (0=No, 1=Yes)" ]
           ,[ "sm_has_fase_info",          "SM Has Fase Info (0=No, 1=Yes)" ]
+          ,[ "pre_dsmr40",                "Pré DSMR 40 (0=No, 1=Yes)" ]
           ,[ "oled_type",                 "OLED type (0=None, 1=SDD1306, 2=SH1106)" ]
           ,[ "oled_flip_screen",          "Flip OLED scherm (0=No, 1=Yes)" ]
           ,[ "tlgrm_interval",            "Telegram Lees Interval (Sec.)" ]

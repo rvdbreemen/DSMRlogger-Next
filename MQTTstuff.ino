@@ -180,10 +180,15 @@ struct buildJsonMQTT {
       if (i.present()) 
       {
         String Name = Item::name;
-        //-- for dsmr30 -----------------------------------------------
-  #if defined( USE_PRE40_PROTOCOL )
-        if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";
-  #endif
+
+        if (   (Name.indexOf("mbus1_delivered") == 0)
+            || (Name.indexOf("mbus2_delivered") == 0) 
+            || (Name.indexOf("mbus3_delivered") == 0) 
+            || (Name.indexOf("mbus4_delivered") == 0) 
+           ) 
+        {
+          Name = "gasDelivered";
+        }
         String Unit = Item::unit();
 
         if (settingMQTTtopTopic[strlen(settingMQTTtopTopic)-1] == '/')
