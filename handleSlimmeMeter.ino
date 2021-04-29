@@ -68,10 +68,8 @@ void processSlimmemeterRaw()
   }
 
   tlgrm[l++] = '!';
-  DebugTf("found \"!\" at pos[%d]\r\n", l);
   // next 6 bytes are "<CRC>\r\n"
   lc = Serial.readBytesUntil('\n', checkSum, sizeof(checkSum));
-  DebugTf("found [%d] chars after \"!\"\r\n", lc);
   for (int i=0; i<lc; i++)
   {
     tlgrm[l++] = checkSum[i];
@@ -80,7 +78,6 @@ void processSlimmemeterRaw()
     else  DebugTf("added [%c] at pos[%d]\r\n", checkSum[i], l);
   }
   tlgrm[l++]    = '\n';
-  DebugTf("added '\\n' at pos[%d]\r\n", l);
   tlgrm[(l +1)] = '\0';
   // shift telegram 1 char to the right (make room at pos [0] for '/')
   for (int i=strlen(tlgrm); i>=0; i--) { tlgrm[i+1] = tlgrm[i]; yield(); }

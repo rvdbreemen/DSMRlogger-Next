@@ -2,7 +2,7 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v3.0.0 (28-04-2021)"
+#define _FW_VERSION "v3.0.0 (29-04-2021)"
 /*
 **  Copyright (c) 2021 Willem Aandewiel
 **
@@ -270,6 +270,11 @@ void setup()
 
   snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
   DebugTln(cMsg);
+  if (ESP.getResetReason() == "Software/System restart")
+  {
+    DebugTln("  ==> zero number of reboots counter");
+    nrReboots = 0;
+  }
 
   Serial.print("\nGebruik 'telnet ");
   Serial.print (WiFi.localIP());

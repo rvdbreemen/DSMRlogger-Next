@@ -67,11 +67,18 @@ void setupFS() {                                                                
   httpServer.onNotFound([]() 
   {
     if (Verbose1) DebugTf("in 'onNotFound()'!! [%s] => \r\n", String(httpServer.uri()).c_str());
-    if (httpServer.uri() == "/") 
+    /**
+    if (httpServer.uri() == "/main") 
     {
       if (Verbose1) DebugTf("next: index.html\r\n", String(httpServer.uri()).c_str());
       doRedirect("Back in .. ", 0, "/", false);
     }
+    if (httpServer.uri() == "/update") 
+    {
+      if (Verbose1) DebugTf("next: update\r\n", String(httpServer.uri()).c_str());
+      doRedirect("Back in .. ", 0, "/updateIndex", false);
+    }
+    **/
     if (httpServer.uri().indexOf("/api/") == 0) 
     {
       if (Verbose1) DebugTf("next: processAPI(%s)\r\n", String(httpServer.uri()).c_str());
@@ -255,7 +262,7 @@ void updateFirmware()
 {
 #ifdef USE_UPDATE_SERVER
   DebugTln(F("Redirect to updateIndex .."));
-  doRedirect("wait ... ", 1, "/updateIndex ", false);
+  doRedirect("wait ... ", 0, "/updateIndex", false);
 #else
   doRedirect("UpdateServer not available", 10, "/", false);
 #endif
@@ -312,7 +319,7 @@ void doRedirect(String msg, int wait, const char* URL, bool reboot)
   else  
   {
     redirectHTML += 
-      "  <div style='float: left; display:none;' id='counter'>2</div>"
+      "  <div style='position:absolute; bottom:0; right:0;' id='counter'>3</div>"
       "  <script>"
       "      setInterval(function() {"
       "          var div = document.querySelector('#counter');"
@@ -321,7 +328,7 @@ void doRedirect(String msg, int wait, const char* URL, bool reboot)
       "          if (count <= 0) {"
       "              window.location.replace('"+String(URL)+"'); "
       "          } "
-      "      }, 100); "
+      "      }, 500); "
       "  </script> "
       "</body></html>\r\n";
   }
