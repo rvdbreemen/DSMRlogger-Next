@@ -1,5 +1,5 @@
 
-static const char UpdateServerIndex[] PROGMEM =
+static const char updateServerIndex[] PROGMEM =
   R"(<html charset="UTF-8">
      <style type='text/css'>
         body {background-color: lightblue;}
@@ -40,7 +40,7 @@ static const char UpdateServerIndex[] PROGMEM =
      </script>
      </html>)";
 
-static const char UpdateServerSuccess[] PROGMEM = 
+static const char updateServerSuccess[] PROGMEM = 
   R"(<html charset="UTF-8">
      <style type='text/css'>
         body {background-color: lightgray;}
@@ -69,3 +69,5 @@ static const char UpdateServerSuccess[] PROGMEM =
          }, 1000);
      </script>
      </html>)";
+
+/* eof */

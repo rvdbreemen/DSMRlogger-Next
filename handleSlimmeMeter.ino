@@ -73,9 +73,9 @@ void processSlimmemeterRaw()
   for (int i=0; i<lc; i++)
   {
     tlgrm[l++] = checkSum[i];
-    if (checkSum[i] == '\r')      DebugTf("added '\\r' at pos[%d]\r\n", l);
-    else if (checkSum[i] == '\n') DebugTf("added '\\n' at pos[%d]\r\n", l);
-    else  DebugTf("added [%c] at pos[%d]\r\n", checkSum[i], l);
+    //if (checkSum[i] == '\r')      DebugTf("added '\\r' at pos[%d]\r\n", l);
+    //else if (checkSum[i] == '\n') DebugTf("added '\\n' at pos[%d]\r\n", l);
+    //else  DebugTf("added [%c] at pos[%d]\r\n", checkSum[i], l);
   }
   tlgrm[l++]    = '\n';
   tlgrm[(l +1)] = '\0';
@@ -101,7 +101,7 @@ void processSlimmemeter()
   if (slimmeMeter.available() ) 
   {
     DebugTf("telegramCount=[%d] telegramErrors=[%d]\r\n", telegramCount, telegramErrors);
-    Debugln(F("\r\n[Time----][FreeHeap/mBlck][Function----(line):\r"));
+    Debugln(F("\r\n[Time----][FreeHeap/Stack][Function----(line):\r"));
     // Voorbeeld: [21:00:11][   9880/  8960] loop        ( 997): read telegram [28] => [140307210001S]
     telegramCount++;
         
@@ -115,7 +115,7 @@ void processSlimmemeter()
       if (telegramCount > (UINT32_MAX - 10)) 
       {
         delay(1000);
-        ESP.reset();
+        ESP.restart();
         delay(1000);
       }
       digitalWrite(LED_BUILTIN, LED_OFF);
@@ -136,24 +136,8 @@ void processSlimmemeter()
         DSMRdata.p1_version_be_present  = false;
         DSMRdata.p1_version_present     = true;
       }
-      
-      if (!settingSmHasFaseInfo)
-      {
-        if (DSMRdata.power_delivered_present && !DSMRdata.power_delivered_l1_present)
-        {
-          DSMRdata.power_delivered_l1 = DSMRdata.power_delivered;
-          DSMRdata.power_delivered_l1_present = true;
-          DSMRdata.power_delivered_l2_present = true;
-          DSMRdata.power_delivered_l3_present = true;
-        }
-        if (DSMRdata.power_returned_present && !DSMRdata.power_returned_l1_present)
-        {
-          DSMRdata.power_returned_l1 = DSMRdata.power_returned;
-          DSMRdata.power_returned_l1_present = true;
-          DSMRdata.power_returned_l2_present = true;
-          DSMRdata.power_returned_l3_present = true;
-        }
-      } // No Fase Info
+
+      modifySmFaseInfo();
 
       if (!DSMRdata.timestamp_present)                        //ezTime
       {                                                       //ezTime
@@ -165,53 +149,7 @@ void processSlimmemeter()
       }                                                       //ezTime
 
       //-- handle mbus delivered values
-      DebugTf("settingMbusNrGas [%d] => ", settingMbusNrGas);
-      switch (settingMbusNrGas)
-      {
-        case 2:   if (DSMRdata.mbus2_device_type == 3)
-                  {
-                    gasDelivered =  (float)DSMRdata.mbus2_delivered
-                                  + (float)DSMRdata.mbus2_delivered_ntc
-                                  + (float)DSMRdata.mbus2_delivered_dbl;
-                    DSMRdata.mbus2_delivered_present     = true;
-                    DSMRdata.mbus2_delivered_ntc_present = false;
-                    DSMRdata.mbus2_delivered_dbl_present = false;
-                  }
-                  break;
-        case 3:   if (DSMRdata.mbus3_device_type == 3)
-                  {
-                    gasDelivered =  (float)DSMRdata.mbus3_delivered
-                                  + (float)DSMRdata.mbus3_delivered_ntc
-                                  + (float)DSMRdata.mbus3_delivered_dbl;
-                    DSMRdata.mbus3_delivered_present     = true;
-                    DSMRdata.mbus3_delivered_ntc_present = false;
-                    DSMRdata.mbus3_delivered_dbl_present = false;
-                  }
-                  break;
-        case 4:   if (DSMRdata.mbus4_device_type == 3)
-                  {
-                    gasDelivered =  (float)DSMRdata.mbus4_delivered
-                                  + (float)DSMRdata.mbus4_delivered_ntc
-                                  + (float)DSMRdata.mbus4_delivered_dbl;
-                    DSMRdata.mbus4_delivered_present     = true;
-                    DSMRdata.mbus4_delivered_ntc_present = false;
-                    DSMRdata.mbus4_delivered_dbl_present = false;
-                  }
-                  break;
-        default:  if (DSMRdata.mbus1_device_type == 3)
-                  {
-                    Debug("MBus1 devType == 3 =>");
-                    gasDelivered =  (float)DSMRdata.mbus1_delivered
-                                  + (float)DSMRdata.mbus1_delivered_ntc
-                                  + (float)DSMRdata.mbus1_delivered_dbl;
-                    DSMRdata.mbus1_delivered_present     = true;
-                    DSMRdata.mbus1_delivered_ntc_present = false;
-                    DSMRdata.mbus1_delivered_dbl_present = false;
-                  }
-                  break;
- 
-      } // switch(settingMbusNrGas)
-      Debugf("gasDelivered [%f]\r\n", gasDelivered);
+      gasDelivered = modifyMbusDelivered();
       
       processTelegram();
       if (Verbose2) 
@@ -243,7 +181,93 @@ void processSlimmemeter()
 
 } // handleSlimmeMeter()
 
-#endif
+#endif  // HAS_NO_SLIMMEMETER
+
+
+//==================================================================================
+void modifySmFaseInfo()
+{
+  if (!settingSmHasFaseInfo)
+  {
+        if (DSMRdata.power_delivered_present && !DSMRdata.power_delivered_l1_present)
+        {
+          DSMRdata.power_delivered_l1 = DSMRdata.power_delivered;
+          DSMRdata.power_delivered_l1_present = true;
+          DSMRdata.power_delivered_l2_present = true;
+          DSMRdata.power_delivered_l3_present = true;
+        }
+        if (DSMRdata.power_returned_present && !DSMRdata.power_returned_l1_present)
+        {
+          DSMRdata.power_returned_l1 = DSMRdata.power_returned;
+          DSMRdata.power_returned_l1_present = true;
+          DSMRdata.power_returned_l2_present = true;
+          DSMRdata.power_returned_l3_present = true;
+        }
+  } // No Fase Info
+  
+} //  modifySmFaseInfo()
+
+
+//==================================================================================
+float modifyMbusDelivered()
+{
+  float gasDelivered = 0;
+  
+      mbus1Delivered =  (float)DSMRdata.mbus1_delivered
+                      + (float)DSMRdata.mbus1_delivered_ntc
+                      + (float)DSMRdata.mbus1_delivered_dbl;
+      DebugTf("mbus1Delivered [%.2f]\r\n", mbus1Delivered);
+      DSMRdata.mbus1_delivered_present     = true;
+      DSMRdata.mbus1_delivered_ntc_present = false;
+      DSMRdata.mbus1_delivered_dbl_present = false;
+      if ( (settingMbus1Type == 3) && (DSMRdata.mbus1_device_type == 3) )
+      {
+        gasDelivered = mbus1Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+      mbus2Delivered =  (float)DSMRdata.mbus2_delivered
+                      + (float)DSMRdata.mbus2_delivered_ntc
+                      + (float)DSMRdata.mbus2_delivered_dbl;
+      DebugTf("mbus2Delivered [%.2f]\r\n", mbus2Delivered);
+      DSMRdata.mbus2_delivered_present     = true;
+      DSMRdata.mbus2_delivered_ntc_present = false;
+      DSMRdata.mbus2_delivered_dbl_present = false;
+      if ( (settingMbus2Type == 3) && (DSMRdata.mbus2_device_type == 3) )
+      {
+        gasDelivered = mbus2Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+      mbus3Delivered =  (float)DSMRdata.mbus3_delivered
+                      + (float)DSMRdata.mbus3_delivered_ntc
+                      + (float)DSMRdata.mbus3_delivered_dbl;
+      DebugTf("mbus3Delivered [%.2f]\r\n", mbus3Delivered);
+      DSMRdata.mbus3_delivered_present     = true;
+      DSMRdata.mbus3_delivered_ntc_present = false;
+      DSMRdata.mbus3_delivered_dbl_present = false;
+      if ( (settingMbus3Type == 3) && (DSMRdata.mbus3_device_type == 3) )
+      {
+        gasDelivered = mbus3Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+      mbus4Delivered =  (float)DSMRdata.mbus4_delivered
+                      + (float)DSMRdata.mbus4_delivered_ntc
+                      + (float)DSMRdata.mbus4_delivered_dbl;
+      DebugTf("mbus4Delivered [%.2f]\r\n", mbus4Delivered);
+      DSMRdata.mbus4_delivered_present     = true;
+      DSMRdata.mbus4_delivered_ntc_present = false;
+      DSMRdata.mbus4_delivered_dbl_present = false;
+      if ( (settingMbus4Type == 3) && (DSMRdata.mbus4_device_type == 3) )
+      {
+        gasDelivered = mbus4Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+    return gasDelivered;
+    
+} //  modifyMbusDelivered()
 
 /***************************************************************************
 *

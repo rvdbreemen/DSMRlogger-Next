@@ -9,29 +9,51 @@
 ***************************************************************************      
 */
 
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>        // ESP8266 Core WiFi Library         
+  #include <ESP8266WebServer.h>   // Version 1.0.0 - part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <ESP8266mDNS.h>        // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #ifdef USE_UPDATE_SERVER
+    #include "ModUpdateServer.h"  // https://github.com/mrWheel/ModUpdateServer
+    #include "UpdateServerHtml.h"
+  #endif
 
-#include <ESP8266WiFi.h>        // ESP8266 Core WiFi Library         
-#include <ESP8266WebServer.h>   // Version 1.0.0 - part of ESP8266 Core https://github.com/esp8266/Arduino
-#include <ESP8266mDNS.h>        // part of ESP8266 Core https://github.com/esp8266/Arduino
-
-#include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
-#ifdef USE_UPDATE_SERVER
-  //#include "ESP8266HTTPUpdateServer.h"
-  #include "ModUpdateServer.h"  // https://github.com/mrWheel/ModUpdateServer
-  #include "UpdateServerHtml.h"
+#elif defined(ESP32)
+  #include <WiFi.h>        // ESP32 Core WiFi Library         
+  #include <WebServer.h>   // Version 1.0.0 - part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <ESPmDNS.h>        // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #ifdef USE_UPDATE_SERVER
+    #include "esp32ModUpdateServer.h"  // see: https://github.com/mrWheel/ModUpdateServer
+    #include "UpdateServerHtml.h"
 #endif
+
+#else
+    #error wrong processor type!
+#endif 
+
+
+
 #include <WiFiManager.h>        // version 0.15.0 - https://github.com/tzapu/WiFiManager
 // included in main program: #include <TelnetStream.h>       // Version 0.0.1 - https://github.com/jandrassy/TelnetStream
 #include <FS.h>                 // part of ESP8266 Core https://github.com/esp8266/Arduino
 
-
-ESP8266WebServer        httpServer (80);
-#ifdef USE_UPDATE_SERVER
-  ESP8266HTTPUpdateServer httpUpdater(true);
+#if defined(ESP8266)
+  ESP8266WebServer        httpServer (80);
+  #ifdef USE_UPDATE_SERVER
+    ESP8266HTTPUpdateServer httpUpdater(true);
+  #endif
+#elif defined(ESP32)
+  WebServer               httpServer(80);
+  #ifdef USE_UPDATE_SERVER
+    ESP32HTTPUpdateServer httpUpdater(true);
+  #endif
 #endif
 
-
-static      FSInfo LittleFSinfo;
+#if defined(ESP8266)
+  static      FSInfo LittleFSinfo;
+#endif
 bool        LittleFSmounted; 
 bool        isConnected = false;
 
@@ -92,7 +114,7 @@ void startWiFi(const char* hostname, int timeOut)
 
     //reset and try again, or maybe put it to deep sleep
     //delay(3000);
-    //ESP.reset();
+    //ESP.restart();
     //delay(2000);
     DebugTf(" took [%d] seconds ==> ERROR!\r\n", (millis() - lTime) / 1000);
     return;
@@ -104,12 +126,21 @@ void startWiFi(const char* hostname, int timeOut)
     oled_Clear();
   }
 
-#ifdef USE_UPDATE_SERVER
-  httpUpdater.setup(&httpServer);
-  httpUpdater.setIndexPage(UpdateServerIndex);
-  httpUpdater.setSuccessPage(UpdateServerSuccess);
+#if defined(ESP8266)
+  #ifdef USE_UPDATE_SERVER
+    httpUpdater.setup(&httpServer);
+    httpUpdater.setIndexPage(updateServerIndex);
+    httpUpdater.setSuccessPage(updateServerSuccess);
+  #endif
+
+#elif defined(ESP32)
+  #ifdef USE_UPDATE_SERVER
+    httpUpdater.setup(&httpServer);
+    httpUpdater.setIndexPage(updateServerIndex);
+    httpUpdater.setSuccessPage(updateServerSuccess);
+  #endif
 #endif
-  DebugTf(" took [%d] seconds => OK!\r\n", (millis() - lTime) / 1000);
+  DebugTf(" took [%d] milli-seconds => OK!\r\n", (millis() - lTime) / 1);
   
 } // startWiFi()
 

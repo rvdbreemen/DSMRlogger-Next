@@ -20,7 +20,16 @@
 // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf#include <TelnetStream.h>       
 #include "safeTimers.h"
 
-#include "LittleFS.h"
+#include "FS.h"
+#if defined(ESP8266)
+  #include "LittleFS.h"
+  #define FSYS  LittleFS
+  
+#elif defined(ESP32)
+  #include "SPIFFS.h"
+  #define FSYS  SPIFFS
+  
+#endif
 
 #ifdef USE_SYSLOGGER
   // https://github.com/mrWheel/ESP_SysLogger
@@ -51,6 +60,10 @@
 #define MAXCOLORNAME       15
 #define JSON_BUFF_MAX     255
 #define MQTT_BUFF_MAX     200
+
+#if defined(ESP32)
+  #define LED_BUILTIN 2 // GPIO-02
+#endif
 
 //-------------------------.........1....1....2....2....3....3....4....4....5....5....6....6....7....7
 //-------------------------1...5....0....5....0....5....0....5....0....5....0....5....0....5....0....5
@@ -97,15 +110,15 @@ using MyData = ParsedData<
   /* uint8_t */       ,electricity_switch_position
   /* uint32_t */      ,electricity_failures
   /* uint32_t */      ,electricity_long_failures
-  /* String */        ,electricity_failure_log
+//  /* String */        ,electricity_failure_log
   /* uint32_t */      ,electricity_sags_l1
   /* uint32_t */      ,electricity_sags_l2
   /* uint32_t */      ,electricity_sags_l3
   /* uint32_t */      ,electricity_swells_l1
   /* uint32_t */      ,electricity_swells_l2
   /* uint32_t */      ,electricity_swells_l3
-  /* String */        ,message_short
-  /* String */        ,message_long
+//  /* String */        ,message_short
+//  /* String */        ,message_long
   /* FixedValue */    ,voltage_l1
   /* FixedValue */    ,voltage_l2
   /* FixedValue */    ,voltage_l3
@@ -204,6 +217,7 @@ void delayms(unsigned long);
   bool        showRaw = false;
   int8_t      showRawCount = 0;
   float       gasDelivered;
+  float       mbus1Delivered, mbus2Delivered, mbus3Delivered, mbus4Delivered;
 
 
 #ifdef USE_MQTT
@@ -222,7 +236,7 @@ void delayms(unsigned long);
 
 char      cMsg[150], fChar[10];
 String    lastReset           = "";
-bool      FSnotPopulated  = false;
+bool      FSnotPopulated      = false;
 bool      hasAlternativeIndex = false;
 bool      mqttIsConnected     = false;
 bool      doLog = false, Verbose1 = false, Verbose2 = false;
@@ -234,7 +248,10 @@ float     settingEDT1, settingEDT2, settingERT1, settingERT2, settingGDT;
 float     settingENBK, settingGNBK;
 uint8_t   settingTelegramInterval;
 uint8_t   settingSmHasFaseInfo  = 1;
-uint8_t   settingMbusNrGas      = 1;
+uint8_t   settingMbus1Type      = 3;
+uint8_t   settingMbus2Type      = 0;
+uint8_t   settingMbus3Type      = 0;
+uint8_t   settingMbus4Type      = 0;
 uint8_t   settingPreDSMR40      = 0;
 char      settingHostname[30];
 char      settingIndexPage[50];

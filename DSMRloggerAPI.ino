@@ -2,7 +2,7 @@
 ***************************************************************************  
 **  Program  : DSMRloggerAPI (restAPI)
 */
-#define _FW_VERSION "v3.0.0 (29-04-2021)"
+#define _FW_VERSION "v3.0.0 (06-05-2021)"
 /*
 **  Copyright (c) 2021 Willem Aandewiel
 **
@@ -11,10 +11,14 @@
 *      
   Arduino-IDE settings for DSMR-logger Version 4 (ESP-12):
 
-    - Board: "Generic ESP8266 Module"
+    - Board: "Generic ESP8266 Module" or "ESP32 Dev Module"
     - Builtin Led: "2"  // GPIO02 for Wemos and ESP-12
     - Flash mode: "DOUT" | "DIO"    // changes only after power-off and on again!
-    - Flash size: "4MB (FS: 2MB OAT:~1019KB)"  << LET OP! 2MB FS
+    esp8266:
+      - Flash size: "4MB (FS: 2MB OAT:~1019KB)"  << LET OP! 2MB FS
+    esp32:
+      - Flash size: "4MB (32Mb)"
+      - Flash size: "No OTA (2MB APP/2MB SPIFFS)"  << LET OP! 2MB FS
     - DebugT port: "Disabled"
     - DebugT Level: "None"
     - IwIP Variant: "v2 Lower Memory"
@@ -36,7 +40,7 @@
 /******************** compiler options  ********************************************/
 #define USE_REQUEST_PIN           // define if it's a esp8266 with GPIO 12 connected to SM DTR pin
 #define USE_UPDATE_SERVER         // define if there is enough memory and updateServer to be used
-//  #define HAS_NO_SLIMMEMETER        // define for testing only!
+  #define HAS_NO_SLIMMEMETER        // define for testing only!
 #define USE_MQTT                  // define if you want to use MQTT (configure through webinterface)
 #define USE_MINDERGAS             // define if you want to update mindergas (configure through webinterface)
 //  #define USE_SYSLOGGER             // define if you want to use the sysLog library for debugging
@@ -117,7 +121,7 @@ void openSysLog(bool empty)
   {
     sysLog.write("******************************************************************************************************");
   }
-  writeToSysLog("Last Reset Reason [%s]", ESP.getResetReason().c_str());
+  writeToSysLog("Last Reset Reason [%s]", lastESPresetReason().c_str());
   writeToSysLog("actTimestamp[%s], nrReboots[%u], Errors[%u]", actTimestamp
                                                              , nrReboots
                                                              , slotErrors);
@@ -130,17 +134,23 @@ void openSysLog(bool empty)
 //===========================================================================================
 void setup() 
 {
+  char stack;
+  stackStart = &stack;
+
   Serial.begin(115200, SERIAL_8N1);
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(FLASH_BUTTON, INPUT);
 #ifdef DTR_ENABLE
   pinMode(DTR_ENABLE, OUTPUT);
 #endif
-  
+
+#if defined(ESP8266)
   //--- setup randomseed the right way
   //--- This is 8266 HWRNG used to seed the Random PRNG
   //--- Read more: https://config9.com/arduino/getting-a-truly-random-number-in-arduino/
   randomSeed(RANDOM_REG32); 
+#endif
+
   snprintf(settingHostname, sizeof(settingHostname), "%s", _DEFAULT_HOSTNAME);
   Serial.printf("\n\nBooting....[%s]\r\n\r\n", String(_FW_VERSION).c_str());
 
@@ -165,17 +175,10 @@ void setup()
     }
   }
   digitalWrite(LED_BUILTIN, LED_OFF);  // HIGH is OFF
-  lastReset     = ESP.getResetReason();
-
-  startTelnet();
-  if (settingOledType > 0)
-  {
-    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
-    oled_Print_Msg(3, "telnet (poort 23)", 2500);
-  }
+  lastReset     = lastESPresetReason();
   
 //================ LittleFS ===========================================
-  if (LittleFS.begin()) 
+  if (FSYS.begin()) 
   {
     DebugTln(F("LittleFS Mount succesfull\r"));
     LittleFSmounted = true;
@@ -224,10 +227,17 @@ void setup()
     oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
     oled_Print_Msg(1, WiFi.SSID(), 0);
     snprintf(cMsg, sizeof(cMsg), "IP %s", WiFi.localIP().toString().c_str());
-    oled_Print_Msg(2, cMsg, 1500);
+    oled_Print_Msg(2, cMsg, 2500);
   }
   digitalWrite(LED_BUILTIN, LED_OFF);
   
+  startTelnet();
+  if (settingOledType > 0)
+  {
+    oled_Print_Msg(0, " <DSMRloggerAPI>", 0);
+    oled_Print_Msg(3, "telnet (poort 23)", 1500);
+  }
+
   Debugln();
   Debug (F("Connected to " )); Debugln (WiFi.SSID());
   Debug (F("IP address: " ));  Debugln (WiFi.localIP());
@@ -242,9 +252,11 @@ void setup()
   
   //--- ezTime initialisation
   setDebug(INFO); 
-  waitForSync();
+  waitForSync(60);  // wait for in seconds!
   CET.setLocation(F("Europe/Amsterdam"));
   CET.setDefault(); 
+  events(); // trigger ezTime update etc.
+
   
   Debugln("UTC time: "+ UTC.dateTime());
   Debugln("CET time: "+ CET.dateTime());
@@ -268,13 +280,8 @@ void setup()
   
 //=============end Networkstuff======================================
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", lastESPresetReason().c_str());
   DebugTln(cMsg);
-  if (ESP.getResetReason() == "Software/System restart")
-  {
-    DebugTln("  ==> zero number of reboots counter");
-    nrReboots = 0;
-  }
 
   Serial.print("\nGebruik 'telnet ");
   Serial.print (WiFi.localIP());
@@ -323,7 +330,7 @@ void setup()
   
 //=============now test if "convertPRD" file exists================
 
-  if (LittleFS.exists("/!PRDconvert") )
+  if (FSYS.exists("/!PRDconvert") )
   {
     convertPRD2RING();
   }
@@ -372,20 +379,20 @@ void setup()
     }
     if (hasAlternativeIndex)
     {
-      httpServer.serveStatic("/",                 LittleFS, settingIndexPage);
-      httpServer.serveStatic("/index",            LittleFS, settingIndexPage);
-      httpServer.serveStatic("/index.html",       LittleFS, settingIndexPage);
-      httpServer.serveStatic("/DSMRindex.html",   LittleFS, settingIndexPage);
+      httpServer.serveStatic("/",                 FSYS, settingIndexPage);
+      httpServer.serveStatic("/index",            FSYS, settingIndexPage);
+      httpServer.serveStatic("/index.html",       FSYS, settingIndexPage);
+      httpServer.serveStatic("/DSMRindex.html",   FSYS, settingIndexPage);
     }
     else
     {
-      httpServer.serveStatic("/",                 LittleFS, "/DSMRindex.html");
-      httpServer.serveStatic("/DSMRindex.html",   LittleFS, "/DSMRindex.html");
-      httpServer.serveStatic("/index",            LittleFS, "/DSMRindex.html");
-      httpServer.serveStatic("/index.html",       LittleFS, "/DSMRindex.html");
-      httpServer.serveStatic("/DSMRindex.css",    LittleFS, "/DSMRindex.css");
-      httpServer.serveStatic("/DSMRindex.js",     LittleFS, "/DSMRindex.js");
-      httpServer.serveStatic("/DSMRgraphics.js",  LittleFS, "/DSMRgraphics.js");
+      httpServer.serveStatic("/",                 FSYS, "/DSMRindex.html");
+      httpServer.serveStatic("/DSMRindex.html",   FSYS, "/DSMRindex.html");
+      httpServer.serveStatic("/index",            FSYS, "/DSMRindex.html");
+      httpServer.serveStatic("/index.html",       FSYS, "/DSMRindex.html");
+      httpServer.serveStatic("/DSMRindex.css",    FSYS, "/DSMRindex.css");
+      httpServer.serveStatic("/DSMRindex.js",     FSYS, "/DSMRindex.js");
+      httpServer.serveStatic("/DSMRgraphics.js",  FSYS, "/DSMRgraphics.js");
     }
   } else {
     DebugTln(F("Oeps! not all files found on LittleFS -> present FSmanager!\r"));
@@ -400,9 +407,9 @@ void setup()
   }
 
   setupFS();
-  //httpServer.serveStatic("/FSmanager",       LittleFS, "/FSmanager.html");
-  //httpServer.serveStatic("/FSmanager.html",  LittleFS, "/FSmanager.html");
-  httpServer.serveStatic("/FSmanager.png",   LittleFS, "/FSexplorer.png");
+  //httpServer.serveStatic("/FSmanager",       FSYS, "/FSmanager.html");
+  //httpServer.serveStatic("/FSmanager.html",  FSYS, "/FSmanager.html");
+  httpServer.serveStatic("/FSmanager.png",   FSYS, "/FSexplorer.png");
 
   httpServer.on("/api", HTTP_GET, processAPI);
   // all other api calls are catched in FSmanager onNotFounD!
@@ -438,7 +445,7 @@ void setup()
 
 //================ The final part of the Setup =====================
 
-  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", ESP.getResetReason().c_str());
+  snprintf(cMsg, sizeof(cMsg), "Last reset reason: [%s]\r", lastESPresetReason().c_str());
   DebugTln(cMsg);
 
   if (settingOledType > 0)
@@ -506,9 +513,12 @@ void doTaskTelegram()
   #else
     if (Verbose1) DebugTln("call: handleSlimmemeter()");
     //-- enable DTR to read a telegram from the Slimme Meter
-    slimmeMeter.enable(true); 
-    slimmeMeter.loop();
-    handleSlimmemeter();
+    if (ESP.getFreeHeap() > 5000)
+    {
+      slimmeMeter.enable(true); 
+      slimmeMeter.loop();
+      handleSlimmemeter();
+    }
   #endif
   if (WiFi.status() != WL_CONNECTED)
   {
@@ -521,13 +531,18 @@ void doTaskTelegram()
 void doSystemTasks()
 {
   #ifndef HAS_NO_SLIMMEMETER
-    slimmeMeter.loop();
+    if (ESP.getFreeHeap() > 5000)
+    {
+      slimmeMeter.loop();
+    }
   #endif
   #ifdef USE_MQTT
     MQTTclient.loop();
   #endif
   httpServer.handleClient();
-  MDNS.update();
+  #if defined(ESP8266)
+    MDNS.update();  // not for ESP32???
+  #endif
   events(); // trigger ezTime update etc.
   handleKeyInput();
   if (settingOledType > 0)

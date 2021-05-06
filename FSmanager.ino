@@ -28,7 +28,7 @@
   Lesser General Public License for more details.
 *******************************************************************/
 // Diese Version von LittleFS sollte als Tab eingebunden werden.
-// #include <LittleFS.h> #include <ESP8266WebServer.h> müssen im Haupttab aufgerufen werden
+// #include <FSYS.h> #include <ESP8266WebServer.h> müssen im Haupttab aufgerufen werden
 // Die Funktionalität des ESP8266 Webservers ist erforderlich.
 // "httpServer.onNotFound()" darf nicht im Setup des ESP8266 Webserver stehen.
 // Die Funktion "setupFS();" muss im Setup aufgerufen werden.
@@ -57,8 +57,9 @@ const char HELPER[]  PROGMEM = R"(
 )";
 
 
+//=====================================================================================
 void setupFS() {                                                                       // Funktionsaufruf "setupFS();" muss im Setup eingebunden werden
-  LittleFS.begin();
+  FSYS.begin();
   httpServer.on("/format", formatFS);
   httpServer.on("/listFS", listFS);
   httpServer.on("/ReBoot", reBootESP);
@@ -94,12 +95,17 @@ void setupFS() {                                                                
       }
     }
   });
-}
+  
+} //  setupFS()
 
+
+//=====================================================================================
 bool handleList() 
-{                                           // Senden aller Daten an den Client
-  FSInfo fs_info;  LittleFS.info(fs_info);  // Füllt FSInfo Struktur mit Informationen über das Dateisystem
-  Dir dir = LittleFS.openDir("/");
+{ // Senden aller Daten an den Client
+  // Füllt FSInfo Struktur mit Informationen über das Dateisystem
+#if defined(ESP8266)
+  FSInfo fs_info;  FSYS.info(fs_info);
+  Dir dir = FSYS.openDir("/");
   using namespace std;
   typedef tuple<String, String, int> records;
   list<records> dirList;
@@ -109,7 +115,7 @@ bool handleList()
     if (dir.isDirectory()) // Ordner und Dateien zur Liste hinzufügen
     {
       uint8_t ran {0};
-      Dir fold = LittleFS.openDir(dir.fileName());
+      Dir fold = FSYS.openDir(dir.fileName());
       while (fold.next())  
       {
         yield();
@@ -156,54 +162,152 @@ bool handleList()
     if (temp != "[") temp += ',';
     temp += "{\"folder\":\"" + get<0>(t) + "\",\"name\":\"" + get<1>(t) + "\",\"size\":\"" + formatBytes(get<2>(t)) + "\"}";
   }
-  temp += ",{\"usedBytes\":\"" + formatBytes(fs_info.usedBytes) +                      // Berechnet den verwendeten Speicherplatz
-          "\",\"totalBytes\":\"" + formatBytes(fs_info.totalBytes) +                   // Zeigt die Größe des Speichers
-          "\",\"freeBytes\":\"" + (fs_info.totalBytes - fs_info.usedBytes) + "\"}]";   // Berechnet den freien Speicherplatz
+              // Berechnet den verwendeten Speicherplatz
+  temp += ",{\"usedBytes\":\"" + formatBytes(fs_info.usedBytes) +   
+              // Zeigt die Größe des Speichers                  
+          "\",\"totalBytes\":\"" + formatBytes(fs_info.totalBytes) +                  
+              // Berechnet den freien Speicherplatz 
+          "\",\"freeBytes\":\"" + (fs_info.totalBytes - fs_info.usedBytes) + "\"}]"; 
+
+#elif defined(ESP32)
+  typedef struct _fileMeta {
+    char    Name[30];     
+    int32_t Size;
+  } fileMeta;
+
+  _fileMeta dirMap[30];
+  int fileNr = 0;
+  
+  File root = SPIFFS.open("/");         // List files on SPIFFS
+  if(!root){
+      DebugTln("- failed to open directory");
+      return false;
+  }
+  if(!root.isDirectory()){
+      DebugTln(" - not a directory");
+      return false;
+  }
+
+  File file = root.openNextFile();
+  while(file){
+    if(file.isDirectory()){
+        DebugT("  DIR : ");
+        DebugTln(file.name());
+        // directory is skipped
+    } else 
+    {
+      dirMap[fileNr].Name[0] = '\0';
+      strncat(dirMap[fileNr].Name, file.name(), 29); // first copy file.name() to dirMap
+      memmove(dirMap[fileNr].Name, dirMap[fileNr].Name+1, strlen(dirMap[fileNr].Name)); // remove leading '/'
+      dirMap[fileNr].Size = file.size();
+    }
+    file = root.openNextFile();
+    fileNr++;
+  }
+
+  // -- bubble sort dirMap op .Name--
+  for (int8_t y = 0; y < fileNr; y++) {
+    yield();
+    for (int8_t x = y + 1; x < fileNr; x++)  {
+      //DebugTf("y[%d], x[%d] => seq[y][%s] / seq[x][%s] ", y, x, dirMap[y].Name, dirMap[x].Name);
+      if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
+      {
+        //Debug(" !switch!");
+        fileMeta temp = dirMap[y];
+        dirMap[y] = dirMap[x];
+        dirMap[x] = temp;
+      } /* end if */
+      //Debugln();
+    } /* end for */
+  } /* end for */
+
+  DebugTln(F("\r\n"));
+  for(int f=0; f<fileNr; f++)
+  {
+    Debugf("%-25s %6d bytes \r\n", dirMap[f].Name, dirMap[f].Size);
+    yield();
+  }
+  
+  String temp = "[";
+  for (int f=0; f < fileNr; f++)  
+  {
+    if (temp != "[") temp += ",";
+    temp += R"({"name":")" + String(dirMap[f].Name) + R"(","size":")" + formatBytes(dirMap[f].Size) + R"("})";
+  }
+  //SPIFFS.info(SPIFFSinfo);
+  temp += R"(,{"usedBytes":")" + formatBytes(FSYS.usedBytes() * 1.05) + R"(",)" +       // Berechnet den verwendeten Speicherplatz + 5% Sicherheitsaufschlag
+          R"("totalBytes":")" + formatBytes(FSYS.totalBytes()) + R"(","freeBytes":")" + // Zeigt die Größe des Speichers
+          (FSYS.totalBytes() - (FSYS.usedBytes() * 1.05)) + R"("}])";                 // Berechnet den freien Speicherplatz + 5% Sicherheitsaufschlag
+
+#endif
+
   httpServer.send(200, "application/json", temp);
   return true;
   
 } //  handleList() 
 
-void deleteRecursive(const String &path) 
-{
-  if (LittleFS.remove(path)) 
-  {
-    LittleFS.open(path.substring(0, path.lastIndexOf('/')) + "/", "w");
-    return;
-  }
-  Dir dir = LittleFS.openDir(path);
-  while (dir.next()) 
-  {
-    yield();
-    deleteRecursive(path + '/' + dir.fileName());
-  }
-  LittleFS.rmdir(path);
-}
 
+#if defined(ESP8266)
+//=====================================================================================
+  void deleteRecursive(const String &path) 
+  {
+    if (FSYS.remove(path)) 
+    {
+      FSYS.open(path.substring(0, path.lastIndexOf('/')) + "/", "w");
+      return;
+    }
+    Dir dir = FSYS.openDir(path);
+    while (dir.next()) 
+    {
+      yield();
+      deleteRecursive(path + '/' + dir.fileName());
+    }
+    FSYS.rmdir(path);
+    
+  } //  deleteRecursive()
+#endif
+
+//=====================================================================================
 bool handleFile(String &&path) 
 {
   if (httpServer.hasArg("new")) 
   {
     String folderName {httpServer.arg("new")};
     for (auto& c : {34, 37, 38, 47, 58, 59, 92}) for (auto& e : folderName) if (e == c) e = 95;    // Ersetzen der nicht erlaubten Zeichen
-    LittleFS.mkdir(folderName);
+    FSYS.mkdir(folderName);
   }
   if (httpServer.hasArg("sort")) return handleList();
   if (httpServer.hasArg("delete")) 
   {
-    deleteRecursive(httpServer.arg("delete"));
+    #if defined(ESP8266)
+      deleteRecursive(httpServer.arg("delete"));
+    #elif defined(ESP32)
+      FSYS.remove(httpServer.arg("delete"));    // Datei löschen
+    #endif
     sendResponce();
     return true;
   }
-  if (!LittleFS.exists("/FSmanager.html")) 
+  if (!FSYS.exists("/FSmanager.html")) 
   {
-    httpServer.send(200, "text/html", LittleFS.begin() ? HELPER : WARNING);     // ermöglicht das hochladen der FSmanager.html
+    // ermöglicht das hochladen der FSmanager.html
+    httpServer.send(200, "text/html", FSYS.begin() ? HELPER : WARNING);     
   }
   if (path.endsWith("/")) path += "/index.html";
-  if (path == "/LittleFS.html") sendResponce(); // Vorrübergehend für den Admin Tab
-  return LittleFS.exists(path) ? ({File f = LittleFS.open(path, "r"); httpServer.streamFile(f, mime::getContentType(path)); f.close(); true;}) : false;
-}
+  // Vorrübergehend für den Admin Tab
+  //if (path == "/FSmanager.html") sendResponce(); 
+  if (path == "/admin.html") sendResponce(); 
 
+#if defined(ESP8266)
+  return FSYS.exists(path) ? ({File f = FSYS.open(path, "r"); httpServer.streamFile(f, mime::getContentType(path)); f.close(); true;}) : false;
+
+#elif defined(ESP32)
+  return FSYS.exists(path) ? ({File f = FSYS.open(path, "r"); httpServer.streamFile(f, contentType(path)); f.close(); true;}) : false;
+
+#endif
+} //  handleFile()
+
+
+//=====================================================================================
 void handleUpload() 
 {                            // Dateien ins Filesystem schreiben
   static File fsUploadFile;
@@ -216,7 +320,7 @@ void handleUpload()
       upload.filename = upload.filename.substring(upload.filename.length() - 31, upload.filename.length());
     }
     printf(PSTR("handleFileUpload Name: /%s\r\n"), upload.filename.c_str());
-    fsUploadFile = LittleFS.open(httpServer.arg(0) + "/" + httpServer.urlDecode(upload.filename), "w");
+    fsUploadFile = FSYS.open(httpServer.arg(0) + "/" + httpServer.urlDecode(upload.filename), "w");
   } 
   else if (upload.status == UPLOAD_FILE_WRITE) 
   {
@@ -228,33 +332,66 @@ void handleUpload()
     printf(PSTR("handleFileUpload Size: %u\r\n"), upload.totalSize);
     fsUploadFile.close();
   }
-}
+  
+} //  handleUpload()
 
+
+//=====================================================================================
 void formatFS()      // Formatiert das Filesystem
 {
   DebugTln("formatting littleFS ..");
-  //LittleFS.format();
+  //FSYS.format();
   sendResponce();
-}
 
+} //  formatFS()
+
+//=====================================================================================
 void listFS() 
 {
   DebugTln("send littleFS data ..");
   sendResponce();
-}
+  
+} //  listFS()
 
 
+//=====================================================================================
 void sendResponce() 
 {
   httpServer.sendHeader("Location", "/FSmanager.html");
   httpServer.send(303, "message/http");
-}
 
+} //  sendResponce()
+
+
+//=====================================================================================
 const String formatBytes(size_t const& bytes) 
 {                                        // lesbare Anzeige der Speichergrößen
   return bytes < 1024 ? static_cast<String>(bytes) + " Byte" : bytes < 1048576 ? static_cast<String>(bytes / 1024.0) + " KB" : static_cast<String>(bytes / 1048576.0) + " MB";
-}
 
+} //  formatBytes()
+
+
+#if defined(ESP32)
+  //=====================================================================================
+  const String &contentType(String& filename) 
+  {       
+    if (filename.endsWith(".htm") || filename.endsWith(".html")) filename = "text/html";
+    else if (filename.endsWith(".css"))   filename = "text/css";
+    else if (filename.endsWith(".js"))    filename = "application/javascript";
+    else if (filename.endsWith(".json"))  filename = "application/json";
+    else if (filename.endsWith(".png"))   filename = "image/png";
+    else if (filename.endsWith(".gif"))   filename = "image/gif";
+    else if (filename.endsWith(".jpg"))   filename = "image/jpeg";
+    else if (filename.endsWith(".ico"))   filename = "image/x-icon";
+    else if (filename.endsWith(".xml"))   filename = "text/xml";
+    else if (filename.endsWith(".pdf"))   filename = "application/x-pdf";
+    else if (filename.endsWith(".zip"))   filename = "application/x-zip";
+    else if (filename.endsWith(".gz"))    filename = "application/x-gzip";
+    else                                  filename = "text/plain";
+    return filename;
+  
+  } // &contentType()
+#endif
 
 
 //=====================================================================================

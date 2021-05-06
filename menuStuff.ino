@@ -63,8 +63,11 @@ void displayBoardInfo()
 //#ifdef USE_NTP_TIME
 //  Debug(F("[USE_NTP_TIME]"));
 //#endif
-#ifdef USE_BELGIUM_PROTOCOL
-  Debug(F("[USE_BELGIUM_PROTOCOL]"));
+//#ifdef USE_BELGIUM_PROTOCOL
+//  Debug(F("[USE_BELGIUM_PROTOCOL]"));
+//#endif
+#ifdef HAS_NO_SLIMMEMETER 
+  Debug(F("[HAS_NO_METER]"));
 #endif
 #ifdef SHOW_PASSWRDS
   Debug(F("[SHOW_PASSWRDS]"));
@@ -73,24 +76,27 @@ void displayBoardInfo()
   Debug(F(" \r\n   Telegrams Processed ["));  Debug( telegramCount );
   Debug(F("]\r\n           With Errors ["));  Debug( telegramErrors );
   Debug(F("]\r\n              FreeHeap ["));  Debug( ESP.getFreeHeap() );
+#if defined(ESP8266)
   Debug(F("]\r\n             max.Block ["));  Debug( ESP.getMaxFreeBlockSize() );
   Debug(F("]\r\n               Chip ID ["));  Debug( ESP.getChipId(), HEX );
   Debug(F("]\r\n          Core Version ["));  Debug( ESP.getCoreVersion() );
+#endif
   Debug(F("]\r\n           SDK Version ["));  Debug( ESP.getSdkVersion() );
   Debug(F("]\r\n        CPU Freq (MHz) ["));  Debug( ESP.getCpuFreqMHz() );
   Debug(F("]\r\n      Sketch Size (kB) ["));  Debug( ESP.getSketchSize() / 1024.0 );
   Debug(F("]\r\nFree Sketch Space (kB) ["));  Debug( ESP.getFreeSketchSpace() / 1024.0 );
 
+#if defined(ESP8266)
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
 
-  LittleFS.info(LittleFSinfo);
-
+  FSYS.info(LittleFSinfo);
   Debug(F("]\r\n         Flash Chip ID ["));  Debug( cMsg );
   Debug(F("]\r\n  Flash Chip Size (kB) ["));  Debug( ESP.getFlashChipSize() / 1024 );
   Debug(F("]\r\n   Chip Real Size (kB) ["));  Debug( ESP.getFlashChipRealSize() / 1024 );
   Debug(F("]\r\n          FS Size (kB) ["));  Debug( LittleFSinfo.totalBytes / 1024 );
+#endif
 
   Debug(F("]\r\n      Flash Chip Speed ["));  Debug( ESP.getFlashChipSpeed() / 1000 / 1000 );
   FlashMode_t ideMode = ESP.getFlashChipMode();
@@ -112,6 +118,9 @@ void displayBoardInfo()
 #ifdef ESP8266_ESP12
     Debug(F("ESP8266_ESP12"));
 #endif
+#ifdef ESP32
+    Debug(F("ESP32"));
+#endif
   Debug(F("]\r\n                  SSID ["));  Debug( WiFi.SSID() );
 #ifdef SHOW_PASSWRDS
   Debug(F("]\r\n               PSK key ["));  Debug( WiFi.psk() );
@@ -120,8 +129,9 @@ void displayBoardInfo()
 #endif
   Debug(F("]\r\n            IP Address ["));  Debug( WiFi.localIP().toString() );
   Debug(F("]\r\n              Hostname ["));  Debug( settingHostname );
-  Debug(F("]\r\n     Last reset reason ["));  Debug( ESP.getResetReason() );
   Debug(F("]\r\n                upTime ["));  Debug( upTime() );
+  Debug(F("]\r\n               reBoots ["));  Debug( nrReboots );
+  Debug(F("]\r\n     Last Reset Reason ["));  Debug( lastESPresetReason() );
   Debugln(F("]\r"));
 
 #ifdef USE_MQTT
@@ -182,7 +192,7 @@ void handleKeyInput()
                     WiFi.disconnect(true);  // deletes credentials !
                     //setupWiFi(true);
                     delay(2000);
-                    ESP.reset();
+                    ESP.restart();
                     delay(2000);
                     break;
       case 'i':
@@ -210,7 +220,7 @@ void handleKeyInput()
                     delay(3000);
                     DebugTln(F("now Rebooting. \r"));
                     DebugFlush();
-                    ESP.reset();
+                    ESP.restart();
                     break;
       case 's':
       case 'S':     listLittleFS();

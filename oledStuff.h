@@ -77,9 +77,14 @@ void checkFlashButton()
 void oled_Init() 
 {
     Wire.begin();
-    if (settingOledType == 2)
-          oled.begin(&SH1106_128x64, I2C_ADDRESS);
-    else  oled.begin(&Adafruit128x64, I2C_ADDRESS);
+    switch(settingOledType)
+    {
+      case 1: oled.begin(&Adafruit128x64, I2C_ADDRESS);
+              break;
+      case 2: oled.begin(&SH1106_128x64, I2C_ADDRESS);
+              break;
+      default:  return; // no display connected
+    }
 
     oled.setFont(X11fixed7x14B);  // this gives us 4 rows by 18 chars
     charHeight  = oled.fontHeight();

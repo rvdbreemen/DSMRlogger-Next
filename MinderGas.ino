@@ -47,7 +47,7 @@ void forceMindergasUpdate()
 
   validToken = true;
 
-  if (LittleFS.exists(MG_FILENAME))
+  if (FSYS.exists(MG_FILENAME))
   {
     writeToSysLog("found [%s] at day#[%d]", MG_FILENAME, day());
     MG_Day = day();   // make it thisDay...
@@ -96,7 +96,7 @@ void processMindermbus1_FSM()
           {
             strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "INITIAL STATE");
           }
-          if (LittleFS.exists(MG_FILENAME))
+          if (FSYS.exists(MG_FILENAME))
           {
             strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "found Mindergas.post");
             writeToSysLog(txtResponseMindergas);
@@ -189,7 +189,7 @@ void processMindermbus1_FSM()
           strCopy(txtResponseMindergas, sizeof(txtResponseMindergas), "SEND_MINDERGAS");
 
           //--- if POST response for Mindergas exists, then send it... btw it should exist by now :)
-          if ((validToken) && LittleFS.exists(MG_FILENAME)) 
+          if ((validToken) && FSYS.exists(MG_FILENAME)) 
           {
             if (!sendMindergasPostFile())
             {
@@ -209,7 +209,7 @@ void processMindermbus1_FSM()
             }
             Debugln();
             //--- delete POST file from LittleFS
-            if (LittleFS.remove(MG_FILENAME)) 
+            if (FSYS.remove(MG_FILENAME)) 
             {
               DebugTln(F("POST Mindergas file succesfully deleted!"));
               writeToSysLog("Deleted Mindergas.post !");
@@ -268,7 +268,7 @@ boolean sendMindergasPostFile()
 
   //--- create a string with the date and the meter value
   DebugTln(F("Reading POST from file:"));
-  minderGasFile = LittleFS.open(MG_FILENAME, "r");
+  minderGasFile = FSYS.open(MG_FILENAME, "r");
   String sBuffer;
   sBuffer = "";
   while(minderGasFile.available()) 
@@ -380,10 +380,12 @@ boolean sendMindergasPostFile()
 //=======================================================================
 void writePostToFile()
 {
+  float gasDelivered = 0;
+  
   //--- create POST and write to file, so it will survive a reset within the countdown period
   DebugTf("Writing to [%s] ..\r\n", MG_FILENAME);
   writeToSysLog("Writing to [%s] ..", MG_FILENAME);
-  File minderGasFile = LittleFS.open(MG_FILENAME, "a"); //  create File
+  File minderGasFile = FSYS.open(MG_FILENAME, "a"); //  create File
   if (!minderGasFile) 
   {
     //--- cannot create file, thus error

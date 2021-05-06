@@ -14,20 +14,20 @@ void convertPRD2RING()
 {
     if (DSMRfileExist("PRDhours.csv",  false) )
     {
-      LittleFS.remove(HOURS_FILE);
+      FSYS.remove(HOURS_FILE);
       convertPRDfile(HOURS);
     }
     if (DSMRfileExist("PRDdays.csv",   false) )
     {
-      LittleFS.remove(DAYS_FILE);
+      FSYS.remove(DAYS_FILE);
       convertPRDfile(DAYS);
     }
     if (DSMRfileExist("PRDmonths.csv", false) )
     {
-      LittleFS.remove(MONTHS_FILE);
+      FSYS.remove(MONTHS_FILE);
       convertPRDfile(MONTHS);
     }
-    LittleFS.remove("/!PRDconvert");
+    FSYS.remove("/!PRDconvert");
 
 } // convertPRD2RING()
 
@@ -56,7 +56,7 @@ void convertPRDfile(int8_t fileType)
                   
   } // switch()
 
-  File PRDfile  = LittleFS.open(PRDfileName, "r");    // open for Read 
+  File PRDfile  = FSYS.open(PRDfileName, "r");    // open for Read 
   if (!PRDfile) 
   {
     DebugTf("File [%s] does not exist, skip\r\n", PRDfileName);

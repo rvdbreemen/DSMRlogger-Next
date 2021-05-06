@@ -17,7 +17,7 @@ char fieldName[40] = "";
 char fieldsArray[50][35] = {{0}}; // to lookup fields 
 int  fieldsElements      = 0;
 
-int  actualElements = 24;
+//int  actualRows = 24;
 char actualArray[][35] = { 
                            "timestamp"
                           ,"energy_delivered_tariff1","energy_delivered_tariff2"
@@ -27,15 +27,19 @@ char actualArray[][35] = {
                           ,"current_l1","current_l2","current_l3"
                           ,"power_delivered_l1","power_delivered_l2","power_delivered_l3"
                           ,"power_returned_l1","power_returned_l2","power_returned_l3"
-                          ,"mbus1_delivered","mbus2_delivered"
-                          ,"mbus3_delivered","mbus4_delivered"
                           ,"\0"};
+int actualRows = sizeof(actualArray)/sizeof(actualArray[0]);
       
-int  infoElements = 10;
-char infoArray[][35]   = { "identification","p1_version","equipment_id","electricity_tariff"
-                          ,"mbus1_delivered","mbus2_delivered"
-                          ,"mbus3_delivered","mbus4_delivered"
+//int  infoRows = 10;
+char infoArray[][35]   = { "identification","p1_version"
+                          ,"electricity_tariff"
+                          ,"electricity_switch_position"
+                          ,"mbus1_device_type","mbus1_equipment_id"
+                          ,"mbus2_device_type","mbus2_equipment_id"
+                          ,"mbus3_device_type","mbus3_equipment_id"
+                          ,"mbus4_device_type","mbus4_equipment_id"
                           , "\0" };
+int infoRows = sizeof(infoArray)/sizeof(infoArray[0]);
   
 bool onlyIfPresent  = false;
 
@@ -92,9 +96,12 @@ void processAPI()
   if (words[2] == "v0" && words[3] == "sm" && words[4] == "actual")
   {
     //--- depreciated api. left here for backward compatibility
-    onlyIfPresent = true;
-    copyToFieldsArray(actualArray, actualElements);
-    sendJsonV0Fields();
+    if ((telegramCount > telegramErrors) && (telegramCount > 1) )
+    {
+      onlyIfPresent = true;
+      copyToFieldsArray(actualArray, actualRows);
+      sendJsonV0Fields();
+    }
     return;
   }
   if (words[2] != "v1")
@@ -242,24 +249,31 @@ void handleHistApi(const char *URI, const char *word4, const char *word5, const 
 //====================================================
 void handleSmApi(const char *URI, const char *word4, const char *word5, const char *word6)
 {
-  char    tlgrm[1200] = "";
+  char    tlgrm[2000] = "";
   uint8_t p=0;  
   bool    stopParsingTelegram = false;
 
-  //DebugTf("word4[%s], word5[%s], word6[%s]\r\n", word4, word5, word6);
+  DebugTf("word4[%s], word5[%s], word6[%s]\r\n", word4, word5, word6);
   if (strcmp(word4, "info") == 0)
   {
-    //sendSmInfo();
     onlyIfPresent = false;
-    copyToFieldsArray(infoArray, infoElements);
+    copyToFieldsArray(infoArray, infoRows);
     sendJsonFields(word4);
   }
   else if (strcmp(word4, "actual") == 0)
   {
-    //sendSmActual();
-    onlyIfPresent = true;
-    copyToFieldsArray(actualArray, actualElements);
-    sendJsonFields(word4);
+    if ((telegramCount > telegramErrors) && (telegramCount > 1) )
+    {
+      onlyIfPresent = true;
+      //DebugTf("copyToFieldsArray(actualArray, %d)..\r\n", actualRows);
+      //DebugFlush();
+      copyToFieldsArray(actualArray, actualRows);
+      //DebugTf("sendJsonFields(%s)..\r\n", word4);
+      //DebugFlush();
+      sendJsonFields(word4);
+      //DebugTf("sendJsonFields(%s) done!\r\n", word4);
+      //DebugFlush();
+    }
   }
   else if (strcmp(word4, "fields") == 0)
   {
@@ -288,7 +302,12 @@ void handleSmApi(const char *URI, const char *word4, const char *word5, const ch
     // The terminator character is discarded from the serial buffer.
     l = Serial.readBytesUntil('!', tlgrm, sizeof(tlgrm));
     Serial.setTimeout(1000);  // seems to be the default ..
-    DebugTf("read [%d] bytes\r\n", l);
+    DebugTf("read [%d] bytes ", l);
+    if (l >= sizeof(tlgrm)) {
+      Debugln(" => Error! telegram to long! (max bytes exeeded!)");
+      return;
+    }
+    Debugln();
     if (l == 0) 
     {
       httpServer.send(200, "application/plain", "no telegram received");
@@ -341,6 +360,9 @@ void sendDeviceInfo()
 #ifdef USE_NTP_TIME
     strConcat(compileOptions, sizeof(compileOptions), "[USE_NTP_TIME]");
 #endif
+#ifdef HAS_NO_SLIMMEMETER
+    strConcat(compileOptions, sizeof(compileOptions), "[NO_SLIMMEMETER]");
+#endif
 
   sendStartJsonObj("devinfo");
 
@@ -354,14 +376,17 @@ void sendDeviceInfo()
   sendNestedJsonObj("macaddress", WiFi.macAddress().c_str());
   sendNestedJsonObj("indexfile", settingIndexPage);
   sendNestedJsonObj("freeheap", ESP.getFreeHeap(), "bytes");
+#if defined(ESP8266)
   sendNestedJsonObj("maxfreeblock", ESP.getMaxFreeBlockSize(), "bytes");
   sendNestedJsonObj("chipid", String( ESP.getChipId(), HEX ).c_str());
   sendNestedJsonObj("coreversion", String( ESP.getCoreVersion() ).c_str() );
+#endif
   sendNestedJsonObj("sdkversion", String( ESP.getSdkVersion() ).c_str());
   sendNestedJsonObj("cpufreq", ESP.getCpuFreqMHz(), "MHz");
   sendNestedJsonObj("sketchsize", formatFloat( (ESP.getSketchSize() / 1024.0), 3), "kB");
   sendNestedJsonObj("freesketchspace", formatFloat( (ESP.getFreeSketchSpace() / 1024.0), 3), "kB");
 
+#if defined(ESP8266)
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
@@ -369,9 +394,9 @@ void sendDeviceInfo()
   sendNestedJsonObj("flashchipsize", formatFloat((ESP.getFlashChipSize() / 1024.0 / 1024.0), 3), "MB");
   sendNestedJsonObj("flashchiprealsize", formatFloat((ESP.getFlashChipRealSize() / 1024.0 / 1024.0), 3), "MB");
 
-  LittleFS.info(LittleFSinfo);
+  FSYS.info(LittleFSinfo);
   sendNestedJsonObj("spiffssize", formatFloat( (LittleFSinfo.totalBytes / (1024.0 * 1024.0)), 0), "MB");
-
+#endif
   sendNestedJsonObj("flashchipspeed", formatFloat((ESP.getFlashChipSpeed() / 1000.0 / 1000.0), 0), "MHz");
 
   FlashMode_t ideMode = ESP.getFlashChipMode();
@@ -389,6 +414,9 @@ void sendDeviceInfo()
 #ifdef ESP8266_ESP12
      "ESP8266_ESP12"
 #endif
+#ifdef ESP32
+     "ESP32"
+#endif
   );
   sendNestedJsonObj("compileoptions", compileOptions);
   sendNestedJsonObj("ssid", WiFi.SSID().c_str());
@@ -398,7 +426,10 @@ void sendDeviceInfo()
   sendNestedJsonObj("wifirssi", WiFi.RSSI());
   sendNestedJsonObj("uptime", upTime());
   sendNestedJsonObj("pre_dsmr40",       (int)settingPreDSMR40);
-  sendNestedJsonObj("mbus_nr_gas",      (int)settingMbusNrGas);
+  sendNestedJsonObj("mbus1_type",       (int)settingMbus1Type);
+  sendNestedJsonObj("mbus2_type",       (int)settingMbus2Type);
+  sendNestedJsonObj("mbus3_type",       (int)settingMbus3Type);
+  sendNestedJsonObj("mbus4_type",       (int)settingMbus4Type);
   sendNestedJsonObj("oled_type",        (int)settingOledType);
   sendNestedJsonObj("oled_flip_screen", (int)settingOledFlip);
   sendNestedJsonObj("smhasfaseinfo",    (int)settingSmHasFaseInfo);
@@ -457,7 +488,10 @@ void sendDeviceSettings()
   sendJsonSettingObj("gd_tariff",         settingGDT,             "f", 0, 10,  5);
   sendJsonSettingObj("electr_netw_costs", settingENBK,            "f", 0, 100, 2);
   sendJsonSettingObj("gas_netw_costs",    settingGNBK,            "f", 0, 100, 2);
-  sendJsonSettingObj("mbus_nr_gas",       settingMbusNrGas,       "i", 1, 4);
+  sendJsonSettingObj("mbus1_type",        settingMbus1Type,       "i", 0, 200);
+  sendJsonSettingObj("mbus2_type",        settingMbus2Type,       "i", 0, 200);
+  sendJsonSettingObj("mbus3_type",        settingMbus3Type,       "i", 0, 200);
+  sendJsonSettingObj("mbus4_type",        settingMbus4Type,       "i", 0, 200);
   sendJsonSettingObj("sm_has_fase_info",  settingSmHasFaseInfo,   "i", 0, 1);
   sendJsonSettingObj("tlgrm_interval",    settingTelegramInterval,"i", 2, 60);
   sendJsonSettingObj("oled_type",         settingOledType,        "i", 0, 2);
@@ -518,21 +552,50 @@ struct buildJsonApiV0SmActual
     template<typename Item>
     void apply(Item &i) {
       skip = false;
-      String Name = Item::name;
+      //String Name = Item::name;
+      String Name = String(Item::name);
       if (!isInFieldsArray(Name.c_str(), fieldsElements))
       {
         skip = true;
       }
+      
+      if (Name.indexOf("mbus1_") == 0)
+      {
+        if (settingMbus1Type == 0)                  skip = true;
+        if (Name.indexOf("mbus1_delivered_") == 0)  skip = true;
+      }
+      else if (Name.indexOf("mbus2_") == 0)
+      {
+        if (settingMbus2Type == 0)                  skip = true;
+        if (Name.indexOf("mbus2_delivered_") == 0)  skip = true;
+      }
+      else if (Name.indexOf("mbus3_") == 0)
+      {
+        if (settingMbus3Type == 0)                  skip = true;
+        if (Name.indexOf( "mbus3_delivered_") == 0) skip = true;
+      }
+      else if (Name.indexOf("mbus4_") == 0)
+      {
+        if (settingMbus4Type == 0)                  skip = true;
+        if (Name.indexOf("mbus4_delivered_") == 0)  skip = true;
+      }
+      
       if (!skip)
       {
         if (i.present()) 
         {
-          //String Unit = Item::unit();
-          if (Name.indexOf("_delivered") == 5)
-                sendNestedJsonV0Obj(Name.c_str(), gasDelivered);
+          if (Name.indexOf("mbus1_delivered") == 0)
+                sendNestedJsonV0Obj(Name.c_str(), mbus1Delivered);
+          else if (Name.indexOf("mbus2_delivered") == 0)
+                sendNestedJsonV0Obj(Name.c_str(), mbus2Delivered);
+          else if (Name.indexOf("mbus3_delivered") == 0)
+                sendNestedJsonV0Obj(Name.c_str(), mbus3Delivered);
+          else if (Name.indexOf("mbus4_delivered") == 0)
+                sendNestedJsonV0Obj(Name.c_str(), mbus4Delivered);
           else  sendNestedJsonV0Obj(Name.c_str(), typecastValue(i.val()));
         }
       }
+      yield();
   }
 
 };  // buildJsonApiV0SmActual()
@@ -547,6 +610,12 @@ void sendJsonV0Fields()
   httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
   httpServer.send(200, "application/json", "{\r\n");
   DSMRdata.applyEach(buildJsonApiV0SmActual());
+  if (  (settingMbus1Type == 3)||(settingMbus2Type == 3)
+      ||(settingMbus3Type == 3)||(settingMbus4Type == 3)
+     )
+  {
+     sendNestedJsonV0Obj("gas_delivered", gasDelivered);
+  }
   httpServer.sendContent("\r\n}\r\n");
 
 } // sendJsonV0Fields()
@@ -560,46 +629,41 @@ struct buildJsonApi
     template<typename Item>
     void apply(Item &i) {
       skip = false;
-      String Name = Item::name;
+      String Name = String(Item::name);
+      String Unit = Item::unit();
+
+      //ESP.wdtFeed();
+      
       if (!isInFieldsArray(Name.c_str(), fieldsElements))
       {
         skip = true;
       }
-      if (Name.indexOf("mbus") == 0)
+      else
       {
-        switch(settingMbusNrGas)
-        {
-          case 2:   if (Name.indexOf("mbus2_") != 0) skip = true;  break;
-          case 3:   if (Name.indexOf("mbus3_") != 0) skip = true;  break;
-          case 4:   if (Name.indexOf("mbus4_") != 0) skip = true;  break;
-          default:  if (Name.indexOf("mbus1_") != 0) skip = true;  break;
-        }
-      }
-      if (!skip)
-      {
+        if (Verbose2) DebugTf("-> [%s] ..\r\n", Name.c_str());
+        if (Verbose2) DebugFlush();
+
         if (i.present()) 
         {
-          String Unit = Item::unit();
-        
-          if (Unit.length() > 0)
-          {
-            if (Name.indexOf("_delivered") == 5)
-                  sendNestedJsonObj(Name.c_str(), gasDelivered, Unit.c_str());
-            else  sendNestedJsonObj(Name.c_str(), typecastValue(i.val()), Unit.c_str());
-          }
-          else 
-          {
-            sendNestedJsonObj(Name.c_str(), typecastValue(i.val()));
-          }
+            //ESP.wdtFeed();
+            if (Unit.length() > 0)
+            {
+              sendNestedJsonObj(Name.c_str(), typecastValue(i.val()), Unit.c_str());
+            }
+            else 
+            {
+              sendNestedJsonObj(Name.c_str(), typecastValue(i.val()));
+            }
         }
         else if (!onlyIfPresent)
         {
           sendNestedJsonObj(Name.c_str(), "-");
         }
       }
-  }
 
-};  // buildJsonApi()
+  } // apply()
+  
+};  // buildJsonApi
 
 
 //=======================================================================
@@ -607,7 +671,145 @@ void sendJsonFields(const char *Name)
 {
   sendStartJsonObj(Name);
   DSMRdata.applyEach(buildJsonApi());
+
+  if (settingMbus1Type > 0)
+  {
+    DebugT("DSMRdata.mbus1_device ..");
+    if (DSMRdata.mbus1_delivered_present || !onlyIfPresent)
+    {
+        Debug("present! ");
+        sendNestedJsonObj("mbus1_device_type", DSMRdata.mbus1_device_type);
+        if (DSMRdata.mbus1_equipment_id_tc_present)
+            sendNestedJsonObj("mbus1_equipment_id_tc", DSMRdata.mbus1_equipment_id_tc);
+        if (DSMRdata.mbus1_equipment_id_ntc_present)
+            sendNestedJsonObj("mbus1_equipment_id_ntc", DSMRdata.mbus1_equipment_id_ntc);
+        sendNestedJsonObj("mbus1_valve_position", DSMRdata.mbus1_valve_position);
+        if (settingMbus1Type == 3)
+            sendNestedJsonObj("mbus1_delivered", mbus1Delivered
+                                               , DSMRdata.mbus1_delivered::unit());
+        else
+        {
+          if (DSMRdata.mbus1_delivered_present)
+            sendNestedJsonObj("mbus1_delivered", mbus1Delivered
+                                               , DSMRdata.mbus1_delivered::unit());
+          else if (DSMRdata.mbus1_delivered_ntc_present)
+            sendNestedJsonObj("mbus1_delivered_ntc", DSMRdata.mbus1_delivered_ntc
+                                                   , DSMRdata.mbus1_delivered_ntc::unit());
+          else if (DSMRdata.mbus1_delivered_dbl_present)
+            sendNestedJsonObj("mbus1_delivered_dbl", DSMRdata.mbus1_delivered_dbl
+                                                   , DSMRdata.mbus1_delivered_dbl::unit());
+        }
+    }
+    Debugln("Done!");
+  } //  mbus1..
+  
+  if (settingMbus2Type > 0)
+  {
+    DebugT("DSMRdata.mbus2_device ..");
+    if (DSMRdata.mbus2_delivered_present || !onlyIfPresent)
+    {
+        Debug("present! ");
+        sendNestedJsonObj("mbus2_device_type", DSMRdata.mbus2_device_type);
+        if (DSMRdata.mbus2_equipment_id_tc_present)
+            sendNestedJsonObj("mbus2_equipment_id_tc", DSMRdata.mbus2_equipment_id_tc);
+        if (DSMRdata.mbus2_equipment_id_ntc_present)
+            sendNestedJsonObj("mbus2_equipment_id_ntc", DSMRdata.mbus2_equipment_id_ntc);
+        sendNestedJsonObj("mbus2_valve_position", DSMRdata.mbus2_valve_position);
+        if (settingMbus2Type == 3)
+            sendNestedJsonObj("mbus2_delivered", mbus2Delivered
+                                               , DSMRdata.mbus2_delivered::unit());
+        else
+        {
+          if (DSMRdata.mbus2_delivered_present)
+            sendNestedJsonObj("mbus2_delivered", mbus2Delivered
+                                               , DSMRdata.mbus2_delivered::unit());
+          else if (DSMRdata.mbus2_delivered_ntc_present)
+            sendNestedJsonObj("mbus2_delivered_ntc", DSMRdata.mbus2_delivered_ntc
+                                                   , DSMRdata.mbus2_delivered_ntc::unit());
+          else if (DSMRdata.mbus2_delivered_dbl_present)
+            sendNestedJsonObj("mbus2_delivered_dbl", DSMRdata.mbus2_delivered_dbl
+                                                   , DSMRdata.mbus2_delivered_dbl::unit());
+        }
+    }
+    Debugln("Done!");
+  } //  mbus2..
+  
+  if (settingMbus3Type > 0)
+  {
+    DebugT("DSMRdata.mbus3_device ..");
+    if (DSMRdata.mbus3_delivered_present || !onlyIfPresent)
+    {
+        Debug("present! ..");
+        sendNestedJsonObj("mbus3_device_type", DSMRdata.mbus3_device_type);
+        if (DSMRdata.mbus3_equipment_id_tc_present)
+            sendNestedJsonObj("mbus3_equipment_id_tc", DSMRdata.mbus3_equipment_id_tc);
+        if (DSMRdata.mbus3_equipment_id_ntc_present)
+            sendNestedJsonObj("mbus3_equipment_id_ntc", DSMRdata.mbus3_equipment_id_ntc);
+        sendNestedJsonObj("mbus3_valve_position", DSMRdata.mbus3_valve_position);
+        if (settingMbus3Type == 3)
+            sendNestedJsonObj("mbus3_delivered", mbus3Delivered
+                                               , DSMRdata.mbus3_delivered::unit());
+        else
+        {
+          if (DSMRdata.mbus3_delivered_present)
+            sendNestedJsonObj("mbus3_delivered", mbus3Delivered
+                                               , DSMRdata.mbus3_delivered::unit());
+          else if (DSMRdata.mbus3_delivered_ntc_present)
+            sendNestedJsonObj("mbus3_delivered_ntc", DSMRdata.mbus3_delivered_ntc
+                                                   , DSMRdata.mbus3_delivered_ntc::unit());
+          else if (DSMRdata.mbus3_delivered_dbl_present)
+            sendNestedJsonObj("mbus3_delivered_dbl", DSMRdata.mbus3_delivered_dbl
+                                                   , DSMRdata.mbus3_delivered_dbl::unit());
+        }
+    }
+    Debugln("Done!");
+  } //  mbus3..
+  
+  if (settingMbus4Type > 0)
+  {
+    DebugT("DSMRdata.mbus4_device ..");
+    if (DSMRdata.mbus4_delivered_present || !onlyIfPresent)
+    {
+        Debug("present! ");
+        sendNestedJsonObj("mbus4_device_type", DSMRdata.mbus4_device_type);
+        if (DSMRdata.mbus4_equipment_id_tc_present)
+            sendNestedJsonObj("mbus4_equipment_id_tc", DSMRdata.mbus4_equipment_id_tc);
+        if (DSMRdata.mbus4_equipment_id_ntc_present)
+            sendNestedJsonObj("mbus4_equipment_id_ntc", DSMRdata.mbus4_equipment_id_ntc);
+        sendNestedJsonObj("mbus4_valve_position", DSMRdata.mbus4_valve_position);
+        if (settingMbus4Type == 3)
+            sendNestedJsonObj("mbus4_delivered", mbus4Delivered
+                                               , DSMRdata.mbus4_delivered::unit());
+        else
+        {
+          if (DSMRdata.mbus4_delivered_present)
+            sendNestedJsonObj("mbus4_delivered", mbus4Delivered
+                                               , DSMRdata.mbus4_delivered::unit());
+          else if (DSMRdata.mbus4_delivered_ntc_present)
+            sendNestedJsonObj("mbus4_delivered_ntc", DSMRdata.mbus4_delivered_ntc
+                                                   , DSMRdata.mbus4_delivered_ntc::unit());
+          else if (DSMRdata.mbus4_delivered_dbl_present)
+            sendNestedJsonObj("mbus4_delivered_dbl", DSMRdata.mbus4_delivered_dbl
+                                                   , DSMRdata.mbus4_delivered_dbl::unit());
+        }
+    }
+    Debugln("Done");
+  } //  mbus4..
+  
+  if (strcmp(Name, "actual") == 0)
+  {
+    if (  (settingMbus1Type == 3)||(settingMbus2Type == 3)
+        ||(settingMbus3Type == 3)||(settingMbus4Type == 3)
+       )
+    {
+      DebugT("DSMRdata.gas_delivered ..");
+      sendNestedJsonObj("gas_delivered", gasDelivered, "m3");
+      Debugln("Done");
+    }
+
+  }
   sendEndJsonObj();
+  DebugTln("sendEndJsonObj() Done!!");
 
 } // sendJsonFields()
 
@@ -667,6 +869,7 @@ bool isInFieldsArray(const char* lookUp, int elemts)
   {
     //if (Verbose2) DebugTf("[%2d] Looking for [%s] in array[%s]\r\n", i, lookUp, fieldsArray[i]); 
     if (strcmp(lookUp, fieldsArray[i]) == 0) return true;
+    yield();
   }
   return false;
   
@@ -683,14 +886,14 @@ void copyToFieldsArray(const char inArray[][35], int elemts)
   {
     strncpy(fieldsArray[i], inArray[i], 34);
     //if (Verbose1) DebugTf("[%2d] => inArray[%s] fieldsArray[%s]\r\n", i, inArray[i], fieldsArray[i]); 
-
+    yield();
   }
   fieldsElements = i;
   
 } // copyToFieldsArray()
 
 
-bool listFieldsArray(char inArray[][35])
+void listFieldsArray(char inArray[][35])
 {
   int i = 0;
 

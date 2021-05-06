@@ -10,7 +10,16 @@
 ***************************************************************************      
 */
 
+//------------------------ werkt dit?? -------------------
+  char *stackStart;
+//------------------------ werkt dit?? -------------------
+
 /*---- start macro's ------------------------------------------------------------------*/
+
+
+#define DebugFlush()    ({ Serial.flush(); \
+                           TelnetStream.flush(); \
+                        })
 
 #define Debug(...)      ({ Serial.print(__VA_ARGS__);         \
                            TelnetStream.print(__VA_ARGS__);   \
@@ -22,16 +31,12 @@
                            TelnetStream.printf(__VA_ARGS__);  \
                         })
 
-#define DebugFlush()    ({ Serial.flush(); \
-                           TelnetStream.flush(); \
-                        })
-
 
 #define DebugT(...)     ({ _debugBOL(__FUNCTION__, __LINE__);  \
                            Debug(__VA_ARGS__);                 \
                         })
 #define DebugTln(...)   ({ _debugBOL(__FUNCTION__, __LINE__);  \
-                           Debugln(__VA_ARGS__);        \
+                           Debugln(__VA_ARGS__);               \
                         })
 #define DebugTf(...)    ({ _debugBOL(__FUNCTION__, __LINE__);  \
                            Debugf(__VA_ARGS__);                \
@@ -44,11 +49,18 @@
 char _bol[128];
 void _debugBOL(const char *fn, int line)
 {
-   
-  snprintf(_bol, sizeof(_bol), "[%02d:%02d:%02d][%7u|%6u] %-12.12s(%4d): ", \
+  char stack;
+   //                           [Time----][FreeHeap/Stck][Function----(line):
+  snprintf(_bol, sizeof(_bol), "[%02d:%02d:%02d][%7u|%5u] %-12.12s(%4d): ", \
                 hour(), minute(), second(), \
-                ESP.getFreeHeap(), ESP.getMaxFreeBlockSize(),\
+//              ESP.getFreeHeap(), ESP.getMaxFreeBlockSize(),
+#if defined(ESP8266)
+                ESP.getMaxFreeBlockSize(), (stackStart - &stack), \
                 fn, line);
+#else
+                ESP.getFreeHeap(), (stackStart - &stack), \
+                fn, line);
+#endif
                  
   Serial.print (_bol);
   TelnetStream.print (_bol);

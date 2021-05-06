@@ -1208,8 +1208,7 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
                   fldDiv.setAttribute("style", "margin-right: 10px;");
                   fldDiv.style.width = "250px";
                   fldDiv.style.float = 'left';
-                  //fldDiv.textContent = translateToHuman(data[i].name);
-                  fldDiv.innerText = translateToHuman(data[i].name);
+                  fldDiv.textContent = translateToHuman(data[i].name);
 
                   rowDiv.appendChild(fldDiv);
             //--- input ---
@@ -1991,23 +1990,19 @@ http://DSMR-API.local/api/v1/dev/settings</pre>", false);
           ,[ "power_returned_l1",         "Vermogen Opgewekt l1" ]
           ,[ "power_returned_l2",         "Vermogen Opgewekt l2" ]
           ,[ "power_returned_l3",         "Vermogen Opgewekt l3" ]
-          ,[ "mbus_nr_gas",               "GAS meter on MBus ID (1-4)" ]
-          ,[ "gas_device_type",           "Gas Device Type" ]
-          ,[ "gas_equipment_id",          "Gas Equipment ID" ]
-          ,[ "gas_valve_position",        "Gas Klep Positie" ]
+          ,[ "mbus1_device_type",         "Type meter op MBus ID1 (0=geen)" ]
+          ,[ "mbus1_delivered",           "MBus ID1 Gebruikt" ]
+          ,[ "mbus1_valve_position",      "MBus ID1 Klep Positie" ]
+          ,[ "mbus2_device_type",         "Type meter op MBus ID2 (0=geen)" ]
+          ,[ "mbus2_delivered",           "MBus ID2 Gebruikt" ]
+          ,[ "mbus2_valve_position",      "MBus ID2 Klep Positie" ]
+          ,[ "mbus3_device_type",         "Type meter op MBus ID3 (0=geen)" ]
+          ,[ "mbus3_delivered",           "MBus ID3 Gebruikt" ]
+          ,[ "mbus3_valve_position",      "MBus ID3 Klep Positie" ]
+          ,[ "mbus4_device_type",         "Type meter op MBus ID4 (0=geen)" ]
+          ,[ "mbus4_delivered",           "MBus ID4 Gebruikt" ]
+          ,[ "mbus4_valve_position",      "MBus ID4 Klep Positie" ]
           ,[ "gas_delivered",             "Gas Gebruikt" ]
-          ,[ "thermal_device_type",       "Thermal Device Type" ]
-          ,[ "thermal_equipment_id",      "Thermal Equipment ID" ]
-          ,[ "thermal_valve_position",    "Thermal Klep Positie" ]
-          ,[ "thermal_delivered",         "Thermal Gebruikt" ]
-          ,[ "water_device_type" ,        "Water Device Type" ]
-          ,[ "water_equipment_id",        "Water Equipment ID" ]
-          ,[ "water_valve_position",      "Water Klep Positie" ]
-          ,[ "water_delivered",           "Water Gebruikt" ]
-          ,[ "slave_device_type",         "Slave Device Type" ]
-          ,[ "slave_equipment_id",        "Slave Equipment ID" ]
-          ,[ "slave_valve_position",      "Slave Klep Positie" ]
-          ,[ "slave_delivered",           "Slave Gebruikt" ]
           ,[ "ed_tariff1",                "Energy Verbruik Tarief-1/kWh" ]
           ,[ "ed_tariff2",                "Energy Verbruik Tarief-2/kWh" ]
           ,[ "er_tariff1",                "Energy Opgewekt Tarief-1/kWh" ]

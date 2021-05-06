@@ -20,7 +20,7 @@ void readLastStatus()
   char dummy[50] = "";
   char spiffsTimestamp[20] = "";
   
-  File _file = LittleFS.open("/DSMRstatus.csv", "r");
+  File _file = FSYS.open("/DSMRstatus.csv", "r");
   if (!_file)
   {
     DebugTln("read(): No /DSMRstatus.csv found ..");
@@ -58,7 +58,7 @@ void writeLastStatus()
   char buffer[50] = "";
   DebugTf("writeLastStatus() => %s; %u; %u;\r\n", actTimestamp, nrReboots, slotErrors);
   writeToSysLog("writeLastStatus() => %s; %u; %u;", actTimestamp, nrReboots, slotErrors);
-  File _file = LittleFS.open("/DSMRstatus.csv", "w");
+  File _file = FSYS.open("/DSMRstatus.csv", "w");
   if (!_file)
   {
     DebugTln("write(): No /DSMRstatus.csv found ..");
@@ -74,13 +74,23 @@ void writeLastStatus()
 } // writeLastStatus()
 
 //===========================================================================================
-bool buildDataRecordFromSM(char *recIn) 
+void buildDataRecordFromSM(char *recIn) 
 {
   static float GG = 1;
   char record[DATA_RECLEN + 1] = "";
   char key[10] = "";
- 
+  float gasDelivered;
   uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
+
+  if ( (settingMbus1Type == 3) && (settingMbus1Type == DSMRdata.mbus1_device_type) ) 
+      gasDelivered = mbus1Delivered;
+  else if ( (settingMbus2Type == 3) && (settingMbus2Type == DSMRdata.mbus2_device_type) ) 
+      gasDelivered = mbus2Delivered;
+  else if ( (settingMbus3Type == 3) && (settingMbus3Type == DSMRdata.mbus3_device_type) ) 
+      gasDelivered = mbus3Delivered;
+  else if ( (settingMbus4Type == 3) && (settingMbus4Type == DSMRdata.mbus4_device_type) ) 
+      gasDelivered = mbus4Delivered;
+
   strCopy(key, 10, actTimestamp, 0, 8);
 
   snprintf(record, sizeof(record), (char*)DATA_FORMAT, key , (float)DSMRdata.energy_delivered_tariff1
@@ -159,7 +169,7 @@ void writeDataToFile(const char *fileName, const char *record, uint16_t slot, in
     return;
   }
   
-  if (!LittleFS.exists(fileName))
+  if (!FSYS.exists(fileName))
   {
     switch(fileType) {
       case HOURS:   createFile(fileName, _NO_HOUR_SLOTS_);
@@ -171,7 +181,7 @@ void writeDataToFile(const char *fileName, const char *record, uint16_t slot, in
     }
   }
 
-  File dataFile = LittleFS.open(fileName, "r+");  // read and write ..
+  File dataFile = FSYS.open(fileName, "r+");  // read and write ..
   if (!dataFile) 
   {
     DebugTf("Error opening [%s]\r\n", fileName);
@@ -238,13 +248,13 @@ void readOneSlot(int8_t fileType, const char *fileName, uint8_t recNr
                   break;
   }
 
-  if (!LittleFS.exists(fileName))
+  if (!FSYS.exists(fileName))
   {
     DebugTf("File [%s] does not excist!\r\n", fileName);
     return;
   }
 
-  File dataFile = LittleFS.open(fileName, "r+");  // read and write ..
+  File dataFile = FSYS.open(fileName, "r+");  // read and write ..
   if (!dataFile) 
   {
     DebugTf("Error opening [%s]\r\n", fileName);
@@ -349,7 +359,7 @@ bool createFile(const char *fileName, uint16_t noSlots)
 {
     DebugTf("fileName[%s], fileRecLen[%d]\r\n", fileName, DATA_RECLEN);
 
-    File dataFile  = LittleFS.open(fileName, "a");  // create File
+    File dataFile  = FSYS.open(fileName, "a");  // create File
     // -- first write fileHeader ----------------------------------------
     snprintf(cMsg, sizeof(cMsg), "%s", DATA_CSV_HEADER);  // you cannot modify *fileHeader!!!
     fillRecord(cMsg, DATA_RECLEN);
@@ -378,7 +388,7 @@ bool createFile(const char *fileName, uint16_t noSlots)
     } // for ..
     
     dataFile.close();
-    dataFile  = LittleFS.open(fileName, "r+");       // open for Read & writing
+    dataFile  = FSYS.open(fileName, "r+");       // open for Read & writing
     if (!dataFile) 
     {
       DebugTf("Something is very wrong writing to [%s]\r\n", fileName);
@@ -479,11 +489,14 @@ uint16_t timestampToMonthSlot(const char * TS, int8_t len)
 int32_t freeSpace() 
 {
   int32_t space;
-  
-  LittleFS.info(LittleFSinfo);
+
+#if defined(ESP8266)
+  FSYS.info(LittleFSinfo);
 
   space = (int32_t)(LittleFSinfo.totalBytes - LittleFSinfo.usedBytes);
-
+#elif defined(ESP32)
+  space = 2048; // resolve later
+#endif
   return space;
   
 } // freeSpace()
@@ -498,8 +511,9 @@ void listLittleFS()
 
   _fileMeta dirMap[30];
   int fileNr = 0;
-  
-  Dir dir = LittleFS.openDir("/");         // List files on LittleFS
+
+#if defined(ESP8266)
+  Dir dir = FSYS.openDir("/");         // List files on LittleFS
   while (dir.next())  
   {
     dirMap[fileNr].Name[0] = '\0';
@@ -508,6 +522,39 @@ void listLittleFS()
     dirMap[fileNr].Size = dir.fileSize();
     fileNr++;
   }
+  
+#elif defined(ESP32)
+  File root = SPIFFS.open("/");         // List files on SPIFFS
+  if(!root){
+      DebugTln("- failed to open directory");
+      return;
+  }
+  if(!root.isDirectory()){
+      DebugTln(" - not a directory");
+      return;
+  }
+
+  File file = root.openNextFile();
+  while(file){
+    if(file.isDirectory()){
+        DebugT("  DIR : ");
+        DebugTln(file.name());
+        // directory is skipped
+    } else {
+      //Debug("  FILE: ");
+      //Debug(file.name());
+      //Debug("\tSIZE: ");
+      //Debugln(file.size());
+      dirMap[fileNr].Name[0] = '\0';
+      strncat(dirMap[fileNr].Name, file.name(), 29); // first copy file.name() to dirMap
+      memmove(dirMap[fileNr].Name, dirMap[fileNr].Name+1, strlen(dirMap[fileNr].Name)); // remove leading '/'
+      dirMap[fileNr].Size = file.size();
+    }
+    file = root.openNextFile();
+    fileNr++;
+  }
+
+#endif
 
   // -- bubble sort dirMap op .Name--
   for (int8_t y = 0; y < fileNr; y++) {
@@ -531,7 +578,8 @@ void listLittleFS()
     yield();
   }
 
-  LittleFS.info(LittleFSinfo);
+#if defined(ESP8266)
+  FSYS.info(LittleFSinfo);
 
   Debugln(F("\r"));
   if (freeSpace() < (10 * LittleFSinfo.blockSize))
@@ -541,7 +589,13 @@ void listLittleFS()
   Debugf("     FS block Size [%6d]bytes\r\n", LittleFSinfo.blockSize);
   Debugf("      FS page Size [%6d]bytes\r\n", LittleFSinfo.pageSize);
   Debugf(" FS max.Open Files [%6d]\r\n\r\n", LittleFSinfo.maxOpenFiles);
-
+#elif defined(ESP32)
+  Debugln("Available FS space [unknown]kB\r");
+  Debugln("           FS Size [unknown]kB\r");
+  Debugln("     FS block Size [unknown]bytes\r");
+  Debugln("      FS page Size [unknown]bytes\r");
+  Debugln(" FS max.Open Files [unknown]\r\n\r");
+#endif
 
 } // listLittleFS()
 
@@ -573,10 +627,10 @@ bool eraseFile()
   //--- add leading slash on position 0
   eName[0] = '/';
 
-  if (LittleFS.exists(eName))
+  if (FSYS.exists(eName))
   {
     Debugf("\r\nErasing [%s] from LittleFS\r\n\n", eName);
-    LittleFS.remove(eName);
+    FSYS.remove(eName);
   }
   else
   {
@@ -589,6 +643,8 @@ bool eraseFile()
     (char)TelnetStream.read();
   }
 
+  return true;
+  
 } // eraseFile()
 
 
@@ -610,7 +666,7 @@ bool DSMRfileExist(const char* fileName, bool doDisplay)
     oled_Print_Msg(3, "op LittleFS?", 250);
   }
 
-  if (!LittleFS.exists(fName) )
+  if (!FSYS.exists(fName) )
   {
     if (doDisplay)
     {
