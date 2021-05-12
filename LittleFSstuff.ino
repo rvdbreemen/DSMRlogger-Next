@@ -1,9 +1,9 @@
 /* 
 ***************************************************************************  
-**  Program  : SPIFFSstuff, part of DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : littleFSstuff, part of DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -11,7 +11,7 @@
 
 int16_t bytesWritten;
 
-//static    FSInfo SPIFFSinfo;
+//static    FSInfo LittleFSinfo;
 
 //====================================================================
 void readLastStatus()
@@ -19,8 +19,8 @@ void readLastStatus()
   char buffer[50] = "";
   char dummy[50] = "";
   char spiffsTimestamp[20] = "";
-
-  File _file = SPIFFS.open("/DSMRstatus.csv", "r");
+  
+  File _file = FSYS.open("/DSMRstatus.csv", "r");
   if (!_file)
   {
     DebugTln("read(): No /DSMRstatus.csv found ..");
@@ -57,7 +57,7 @@ void writeLastStatus()
   char buffer[50] = "";
   DebugTf("writeLastStatus() => %s; %u; %u;\r\n", actTimestamp, nrReboots, slotErrors);
   writeToSysLog("writeLastStatus() => %s; %u; %u;", actTimestamp, nrReboots, slotErrors);
-  File _file = SPIFFS.open("/DSMRstatus.csv", "w");
+  File _file = FSYS.open("/DSMRstatus.csv", "w");
   if (!_file)
   {
     DebugTln("write(): No /DSMRstatus.csv found ..");
@@ -70,15 +70,14 @@ void writeLastStatus()
 } // writeLastStatus()
 
 //===========================================================================================
-bool buildDataRecordFromSM(char *recIn)
+void buildDataRecordFromSM(char *recIn) 
 {
   static float GG = 1;
   char record[DATA_RECLEN + 1] = "";
   char key[10] = "";
-
+  float gasDelivered;
   uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
-  
-  
+
   if ( (settingMbus1Type == 3) && (settingMbus1Type == DSMRdata.mbus1_device_type) ) 
       gasDelivered = mbus1Delivered;
   else if ( (settingMbus2Type == 3) && (settingMbus2Type == DSMRdata.mbus2_device_type) ) 
@@ -89,13 +88,14 @@ bool buildDataRecordFromSM(char *recIn)
       gasDelivered = mbus4Delivered;
 
   strlcpy(key, actTimestamp + 0, 9);
+  //strCopy(key, 10, actTimestamp, 0, 8);
 
   snprintf(record, sizeof(record), (char*)DATA_FORMAT, key , (float)DSMRdata.energy_delivered_tariff1
                                           , (float)DSMRdata.energy_delivered_tariff2
                                           , (float)DSMRdata.energy_returned_tariff1
                                           , (float)DSMRdata.energy_returned_tariff2
                                           , (float)gasDelivered);
-  // DATA + \n + \0       
+  // DATA + \n + \0                                        
   fillRecord(record, DATA_RECLEN);
 
   strlcpy(recIn, record, DATA_RECLEN);
@@ -167,8 +167,8 @@ void writeDataToFile(const char *fileName, const char *record, uint16_t slot, in
     slotErrors++;
     return;
   }
-
-  if (!SPIFFS.exists(fileName))
+  
+  if (!FSYS.exists(fileName))
   {
     switch (fileType)
     {
@@ -184,8 +184,8 @@ void writeDataToFile(const char *fileName, const char *record, uint16_t slot, in
     }
   }
 
-  File dataFile = SPIFFS.open(fileName, "r+"); // read and write ..
-  if (!dataFile)
+  File dataFile = FSYS.open(fileName, "r+");  // read and write ..
+  if (!dataFile) 
   {
     DebugTf("Error opening [%s]\r\n", fileName);
     return;
@@ -255,14 +255,14 @@ void readOneSlot(int8_t fileType, const char *fileName, uint8_t recNr, uint8_t r
     break;
   }
 
-  if (!SPIFFS.exists(fileName))
+  if (!FSYS.exists(fileName))
   {
     DebugTf("File [%s] does not excist!\r\n", fileName);
     return;
   }
 
-  File dataFile = SPIFFS.open(fileName, "r+"); // read and write ..
-  if (!dataFile)
+  File dataFile = FSYS.open(fileName, "r+");  // read and write ..
+  if (!dataFile) 
   {
     DebugTf("Error opening [%s]\r\n", fileName);
     return;
@@ -366,7 +366,7 @@ bool createFile(const char *fileName, uint16_t noSlots)
 {
   DebugTf("fileName[%s], fileRecLen[%d]\r\n", fileName, DATA_RECLEN);
 
-  File dataFile = SPIFFS.open(fileName, "a"); // create File
+  File dataFile = FSYS.open(fileName, "a"); // create File
   // -- first write fileHeader ----------------------------------------
   snprintf(cMsg, sizeof(cMsg), "%s", DATA_CSV_HEADER); // you cannot modify *fileHeader!!!
   fillRecord(cMsg, DATA_RECLEN);
@@ -396,7 +396,7 @@ bool createFile(const char *fileName, uint16_t noSlots)
   } // for ..
 
   dataFile.close();
-  dataFile = SPIFFS.open(fileName, "r+"); // open for Read & writing
+  dataFile = FSYS.open(fileName, "r+"); // open for Read & writing
   if (!dataFile)
   {
     DebugTf("Something is very wrong writing to [%s]\r\n", fileName);
@@ -517,7 +517,7 @@ int32_t freeSpace()
 //===========================================================================================
 #if defined(ESP8266)
 
-void ESP8266_listFiles()
+void ESP8266_listLittleFS()
 {
   typedef struct _fileMeta
   {
@@ -528,14 +528,49 @@ void ESP8266_listFiles()
   _fileMeta dirMap[30];
   int fileNr = 0;
 
-  Dir dir = SPIFFS.openDir("/"); // List files on SPIFFS
-  while (dir.next())
+#if defined(ESP8266)
+  Dir dir = FSYS.openDir("/");         // List files on LittleFS
+  while (dir.next())  
   {
     dirMap[fileNr].Name[0] = '\0';
-    strncat(dirMap[fileNr].Name, dir.fileName().substring(1).c_str(), 19); // remove leading '/'
+    //SPIFFS-strncat(dirMap[fileNr].Name, dir.fileName().substring(0).c_str(), 19); // remove leading '/'
+    strncat(dirMap[fileNr].Name, dir.fileName().c_str(), 19); 
     dirMap[fileNr].Size = dir.fileSize();
     fileNr++;
   }
+  
+#elif defined(ESP32)
+  File root = SPIFFS.open("/");         // List files on SPIFFS
+  if(!root){
+      DebugTln("- failed to open directory");
+      return;
+  }
+  if(!root.isDirectory()){
+      DebugTln(" - not a directory");
+      return;
+  }
+
+  File file = root.openNextFile();
+  while(file){
+    if(file.isDirectory()){
+        DebugT("  DIR : ");
+        DebugTln(file.name());
+        // directory is skipped
+    } else {
+      //Debug("  FILE: ");
+      //Debug(file.name());
+      //Debug("\tSIZE: ");
+      //Debugln(file.size());
+      dirMap[fileNr].Name[0] = '\0';
+      strncat(dirMap[fileNr].Name, file.name(), 29); // first copy file.name() to dirMap
+      memmove(dirMap[fileNr].Name, dirMap[fileNr].Name+1, strlen(dirMap[fileNr].Name)); // remove leading '/'
+      dirMap[fileNr].Size = file.size();
+    }
+    file = root.openNextFile();
+    fileNr++;
+  }
+
+#endif
 
   // -- bubble sort dirMap op .Name--
   for (int8_t y = 0; y < fileNr; y++)
@@ -561,7 +596,8 @@ void ESP8266_listFiles()
     yield();
   }
 
-  SPIFFS.info(SPIFFSinfo);
+#if defined(ESP8266)
+  FSYS.info(LittleFSinfo);
 
   Debugln(F("\r"));
   if (freeSpace() < (10 * SPIFFSinfo.blockSize))
@@ -577,7 +613,7 @@ void ESP8266_listFiles()
 
 #elif defined(ESP32)
 
-void ESP32_listFiles()
+void ESP32_listLittleFS()
 {
   typedef struct _fileMeta
   {
@@ -588,7 +624,7 @@ void ESP32_listFiles()
   _fileMeta dirMap[30];
   int fileNr = 0;
 
-  File root = SPIFFS.open("/"); // List files on SPIFFS
+  File root = FSYS.open("/"); // List files on SPIFFS
   if (!root)
   {
     DebugTln("- failed to open directory");
@@ -655,15 +691,15 @@ void ESP32_listFiles()
   //  Debugf("      SPIFFS page Size [%6d]bytes\r\n", SPIFFS.pageSize());
   //  Debugf(" SPIFFS max.Open Files [%6d]\r\n\r\n", SPIFFS.maxOpenFiles());
 
-} // ESP32_listFiles()
+} // ESP32_listLittleFS()
 #endif
 
-void listFiles() // Senden aller Daten an den Client
+void listLittleFS() // Senden aller Daten an den Client
 {
 #if defined(ESP8266)
-  ESP8266_listFiles();
+  ESP8266_listLittleFS();
 #elif defined(ESP32)
-  ESP32_listFiles();
+  ESP32_listLittleFS();
 #endif
 } // listFiles()
 
@@ -695,10 +731,10 @@ bool eraseFile()
   //--- add leading slash on position 0
   eName[0] = '/';
 
-  if (SPIFFS.exists(eName))
+  if (FSYS.exists(eName))
   {
-    Debugf("\r\nErasing [%s] from SPIFFS\r\n\n", eName);
-    SPIFFS.remove(eName);
+    Debugf("\r\nErasing [%s] from LittleFS\r\n\n", eName);
+    FSYS.remove(eName);
   }
   else
   {
@@ -711,6 +747,8 @@ bool eraseFile()
     (char)TelnetStream.read();
   }
 
+  return true;
+  
 } // eraseFile()
 
 //===========================================================================================
@@ -728,10 +766,10 @@ bool DSMRfileExist(const char *fileName, bool doDisplay)
   {
     oled_Print_Msg(1, "Bestaat:", 10);
     oled_Print_Msg(2, fName, 10);
-    oled_Print_Msg(3, "op SPIFFS?", 250);
+    oled_Print_Msg(3, "op LittleFS?", 250);
   }
 
-  if (!SPIFFS.exists(fName))
+  if (!FSYS.exists(fName) )
   {
     if (doDisplay)
     {

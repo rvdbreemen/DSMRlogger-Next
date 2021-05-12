@@ -1,9 +1,9 @@
 /*
 ***************************************************************************  
-**  Program  : oledStuff.h, part of DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : oledStuff.h, part of DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -87,9 +87,14 @@ void oled_Init()
       Wire.begin();
     #endif 
 
-    if (settingOledType == 2)
-          oled.begin(&SH1106_128x64, I2C_ADDRESS);
-    else  oled.begin(&Adafruit128x64, I2C_ADDRESS);
+    switch(settingOledType)
+    {
+      case 1: oled.begin(&Adafruit128x64, I2C_ADDRESS);
+              break;
+      case 2: oled.begin(&SH1106_128x64, I2C_ADDRESS);
+              break;
+      default:  return; // no display connected
+    }
 
     oled.setFont(X11fixed7x14B);  // this gives us 4 rows by 18 chars
     charHeight  = oled.fontHeight();

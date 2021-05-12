@@ -98,6 +98,20 @@ Documentation of DSMRloggerAPI can be found [here](https://mrwheel-docs.gitbook.
    <br>Implementing direct InfluxDB support 
    <br>Bugfix reading DSMR 4.2 correctly (timing issues) 
    <br>Improvement: Send MQTT once per telegram (no repeats)
+   <td valign="top">3.0.Beta</td>
+   <td>BETA release! Don't use for production!
+   <br>Trying to make the firmware more "settings" driven.
+   <br>In the settings tab you can now:
+   <ul>
+     <li>Choose the DSMR version to use (Pré 40, 4+ or Belgium 5+). No more need for 
+         compiler switches and different firmware versions (one fits all).
+     </li>
+     <li>Choose on which MBus channel the Gas meter is connected and what type
+         of format it uses to present meter values (Temp. Corrected or not, value
+         on second record).  </li>
+   </ul>
+   Switching to LittleFS (SPIFFS is depreciated in the ESP8266 core).
+   <br>New File System Manager (FSmanager) to replace FSexplorer.
    </td>
 </tr>
 <tr>

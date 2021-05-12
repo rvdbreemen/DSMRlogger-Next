@@ -1,13 +1,55 @@
 /* 
 ***************************************************************************  
-**  Program  : helperStuff, part of DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : helperStuff, part of DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
 */
+
+
+//===========================================================================================
+String lastESPresetReason()
+{
+#if defined(ESP8266)
+  return ESP.getResetReason();
+
+#elif defined(ESP32)
+   switch(esp_reset_reason())
+   {
+    case ESP_RST_UNKNOWN:   return "Reset reason can not be determined"; break;
+    case ESP_RST_POWERON:   return "Reset due to power-on event"; break;
+    case ESP_RST_EXT:       return "Reset by external pin (not applicable for ESP32)"; break;
+    case ESP_RST_SW:        return "Software reset via esp_restart"; break;
+    case ESP_RST_PANIC:     return "Software reset due to exception/panic"; break;
+    case ESP_RST_INT_WDT:   return "Reset (software or hardware) due to interrupt watchdog"; break;
+    case ESP_RST_TASK_WDT:  return "Reset due to task watchdog"; break;
+    case ESP_RST_WDT:       return "Reset due to other watchdogs"; break;
+    case ESP_RST_DEEPSLEEP: return "Reset after exiting deep sleep mode"; break;
+    case ESP_RST_BROWNOUT:  return "Brownout reset (software or hardware)"; break;
+    case ESP_RST_SDIO:      return "Reset over SDIO"; break;
+   }  // switch
+#endif
+
+   return "Reset unknown"; 
+
+} //  lastESPresetReason()
+
+//===========================================================================================
+// bool compare(String x, String y) 
+// { 
+//     for (int i = 0; i < min(x.length(), y.length()); i++) { 
+//       if (x[i] != y[i]) 
+//       {
+//         return (bool)(x[i] < y[i]); 
+//       }
+//     } 
+//     return x.length() < y.length(); 
+    
+// } // compare()
+
 
 //===========================================================================================
 boolean isValidIP(IPAddress ip)

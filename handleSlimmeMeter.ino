@@ -1,9 +1,9 @@
 /*
 ***************************************************************************  
-**  Program  : handleSlimmeMeter - part of DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : handleSlimmeMeter - part of DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -70,7 +70,8 @@ void tiggerNextTelegram()
 //==================================================================================
 void processSlimmemeterRaw()
 {
-  char    tlgrm[1200] = "";
+  char    tlgrm[1200]   = "";
+  char    checkSum[10]  = "";
    
   DebugTf("handleSlimmerMeter RawCount=[%4d]\r\n", showRawCount);
   showRawCount++;
@@ -93,7 +94,7 @@ void processSlimmemeterRaw()
   slimmeMeter.enable(true);
   SM_SERIAL.setTimeout(10000);  // 10 seconds must be enough ..
   memset(tlgrm, 0, sizeof(tlgrm));
-  int l = 0;
+  int l = 0, lc = 0;
   // The terminator character is discarded from the serial buffer.
   l = SM_SERIAL.readBytesUntil('/', tlgrm, sizeof(tlgrm));
   // now read from '/' to '!'
@@ -108,16 +109,19 @@ void processSlimmemeterRaw()
   }
 
   tlgrm[l++] = '!';
-#if !defined( USE_PRE40_PROTOCOL )
   // next 6 bytes are "<CRC>\r\n"
-  for (int i=0; ( i<6 && (i<(sizeof(tlgrm)-7)) ); i++)
+  lc = Serial.readBytesUntil('\n', checkSum, sizeof(checkSum));
+  for (int i=0; i<lc; i++)
   {
     tlgrm[l++] = (char)SM_SERIAL.read();
-  }
-#else
-  tlgrm[l++]    = '\r';
+    // @@ ===beta3.0===
+    // tlgrm[l++] = checkSum[i];
+    // //if (checkSum[i] == '\r')      DebugTf("added '\\r' at pos[%d]\r\n", l);
+    // //else if (checkSum[i] == '\n') DebugTf("added '\\n' at pos[%d]\r\n", l);
+    // //else  DebugTf("added [%c] at pos[%d]\r\n", checkSum[i], l);
+    // @@ ===beta3.0===
+    }
   tlgrm[l++]    = '\n';
-#endif
   tlgrm[(l +1)] = '\0';
   // shift telegram 1 char to the right (make room at pos [0] for '/')
   for (int i=strlen(tlgrm); i>=0; i--) { tlgrm[i+1] = tlgrm[i]; yield(); }
@@ -132,8 +136,13 @@ void processSlimmemeterRaw()
 //==================================================================================
 void processSlimmemeter()
 {
+  bool doParseChecksum = true;
+  
+  if (settingPreDSMR40 == 1) doParseChecksum = false;
+
   slimmeMeter.loop();
-  if (slimmeMeter.available()) 
+
+  if (slimmeMeter.available() ) 
   {
     if (Verbose2) DebugTf("Telegram received [%d] ms after DTR enable.\r\n",  (timerTlg-millis()));
     Debugln(F("\r\n[Time----][FreeHea| Frags| mBlck] Function----(line):\r"));
@@ -164,15 +173,12 @@ void processSlimmemeter()
           yield();
         }
       }
-
       if (DSMRdata.p1_version_be_present)
       {
         DSMRdata.p1_version = DSMRdata.p1_version_be;
         DSMRdata.p1_version_be_present  = false;
         DSMRdata.p1_version_present     = true;
       }
-
-      modifySmFaseInfo();
 
       modifySmFaseInfo();
 
@@ -187,10 +193,13 @@ void processSlimmemeter()
       }                                                       //USE_NTP
 #endif
 
+      //-- handle mbus delivered values
+      gasDelivered = modifyMbusDelivered();
 
       processTelegram();
       if (Verbose2) 
       {
+        DebugTln("Show Values:");
         DSMRdata.applyEach(showValues());
       }
           
@@ -303,7 +312,93 @@ float modifyMbusDelivered()
     
 } //  modifyMbusDelivered()
 
-#endif
+#endif  // HAS_NO_SLIMMEMETER
+
+
+//==================================================================================
+void modifySmFaseInfo()
+{
+  if (!settingSmHasFaseInfo)
+  {
+        if (DSMRdata.power_delivered_present && !DSMRdata.power_delivered_l1_present)
+        {
+          DSMRdata.power_delivered_l1 = DSMRdata.power_delivered;
+          DSMRdata.power_delivered_l1_present = true;
+          DSMRdata.power_delivered_l2_present = true;
+          DSMRdata.power_delivered_l3_present = true;
+        }
+        if (DSMRdata.power_returned_present && !DSMRdata.power_returned_l1_present)
+        {
+          DSMRdata.power_returned_l1 = DSMRdata.power_returned;
+          DSMRdata.power_returned_l1_present = true;
+          DSMRdata.power_returned_l2_present = true;
+          DSMRdata.power_returned_l3_present = true;
+        }
+  } // No Fase Info
+  
+} //  modifySmFaseInfo()
+
+
+//==================================================================================
+float modifyMbusDelivered()
+{
+  float gasDelivered = 0;
+  
+      mbus1Delivered =  (float)DSMRdata.mbus1_delivered
+                      + (float)DSMRdata.mbus1_delivered_ntc
+                      + (float)DSMRdata.mbus1_delivered_dbl;
+      DebugTf("mbus1Delivered [%.2f]\r\n", mbus1Delivered);
+      DSMRdata.mbus1_delivered_present     = true;
+      DSMRdata.mbus1_delivered_ntc_present = false;
+      DSMRdata.mbus1_delivered_dbl_present = false;
+      if ( (settingMbus1Type == 3) && (DSMRdata.mbus1_device_type == 3) )
+      {
+        gasDelivered = mbus1Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+      mbus2Delivered =  (float)DSMRdata.mbus2_delivered
+                      + (float)DSMRdata.mbus2_delivered_ntc
+                      + (float)DSMRdata.mbus2_delivered_dbl;
+      DebugTf("mbus2Delivered [%.2f]\r\n", mbus2Delivered);
+      DSMRdata.mbus2_delivered_present     = true;
+      DSMRdata.mbus2_delivered_ntc_present = false;
+      DSMRdata.mbus2_delivered_dbl_present = false;
+      if ( (settingMbus2Type == 3) && (DSMRdata.mbus2_device_type == 3) )
+      {
+        gasDelivered = mbus2Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+      mbus3Delivered =  (float)DSMRdata.mbus3_delivered
+                      + (float)DSMRdata.mbus3_delivered_ntc
+                      + (float)DSMRdata.mbus3_delivered_dbl;
+      DebugTf("mbus3Delivered [%.2f]\r\n", mbus3Delivered);
+      DSMRdata.mbus3_delivered_present     = true;
+      DSMRdata.mbus3_delivered_ntc_present = false;
+      DSMRdata.mbus3_delivered_dbl_present = false;
+      if ( (settingMbus3Type == 3) && (DSMRdata.mbus3_device_type == 3) )
+      {
+        gasDelivered = mbus3Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+      mbus4Delivered =  (float)DSMRdata.mbus4_delivered
+                      + (float)DSMRdata.mbus4_delivered_ntc
+                      + (float)DSMRdata.mbus4_delivered_dbl;
+      DebugTf("mbus4Delivered [%.2f]\r\n", mbus4Delivered);
+      DSMRdata.mbus4_delivered_present     = true;
+      DSMRdata.mbus4_delivered_ntc_present = false;
+      DSMRdata.mbus4_delivered_dbl_present = false;
+      if ( (settingMbus4Type == 3) && (DSMRdata.mbus4_device_type == 3) )
+      {
+        gasDelivered = mbus4Delivered;
+        //DebugTf("gasDelivered [%f]\r\n", gasDelivered);
+      }
+
+    return gasDelivered;
+    
+} //  modifyMbusDelivered()
 
 /***************************************************************************
 *

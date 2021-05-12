@@ -3,7 +3,7 @@
 **  Filename  : safeTimers.h
 **  Version  : v2.3.0-rc5
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2020, 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      

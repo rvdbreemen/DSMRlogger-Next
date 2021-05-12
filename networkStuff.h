@@ -1,13 +1,37 @@
 /*
 ***************************************************************************  
-**  Program  : networkStuff.h, part of DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : networkStuff.h, part of DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
 */
+
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>        // ESP8266 Core WiFi Library         
+  #include <ESP8266WebServer.h>   // Version 1.0.0 - part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <ESP8266mDNS.h>        // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #ifdef USE_UPDATE_SERVER
+    #include "ModUpdateServer.h"  // https://github.com/mrWheel/ModUpdateServer
+    #include "UpdateServerHtml.h"
+  #endif
+
+#elif defined(ESP32)
+  #include <WiFi.h>        // ESP32 Core WiFi Library         
+  #include <WebServer.h>   // Version 1.0.0 - part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <ESPmDNS.h>        // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
+  #ifdef USE_UPDATE_SERVER
+    #include "esp32ModUpdateServer.h"  // see: https://github.com/mrWheel/ModUpdateServer
+    #include "UpdateServerHtml.h"
+#endif
+
+#else
+    #error wrong processor type!
+#endif 
 
 
 #if defined(ESP8266)
@@ -58,12 +82,15 @@
   #error unexpected / unsupported architecture, make sure to compile for ESP32 or ESP8266
 #endif
 
+#include <WiFiManager.h>        // version 0.15.0 - https://github.com/tzapu/WiFiManager
+// included in main program: #include <TelnetStream.h>       // Version 0.0.1 - https://github.com/jandrassy/TelnetStream
+#include <FS.h>                 // part of ESP8266 Core https://github.com/esp8266/Arduino
+
 
 #if defined(ESP8266)
-  static      FSInfo SPIFFSinfo;
-#elif defined(ESP32)
+  static      FSInfo LittleFSinfo;
 #endif
-bool        SPIFFSmounted = false; 
+bool        LittleFSmounted; 
 bool        isConnected = false;
 
 //gets called when WiFiManager enters configuration mode
@@ -93,7 +120,7 @@ void startWiFi(const char* hostname, int timeOut)
   uint32_t lTime = millis();
   String thisAP = String(hostname) + "-" + WiFi.macAddress();
 
-  DebugT("start ...");
+  DebugTln("start ...");
   
   manageWiFi.setDebugOutput(true);
   
@@ -123,7 +150,7 @@ void startWiFi(const char* hostname, int timeOut)
 
     //reset and try again, or maybe put it to deep sleep
     //delay(3000);
-    esp_reboot();
+    //esp_reboot();
     //delay(2000);
     DebugTf(" took [%d] seconds ==> ERROR!\r\n", (millis() - lTime) / 1000);
     return;
@@ -135,12 +162,21 @@ void startWiFi(const char* hostname, int timeOut)
     oled_Clear();
   }
 
-#ifdef USE_UPDATE_SERVER
-  httpUpdater.setup(&httpServer);
-  httpUpdater.setIndexPage(UpdateServerIndex);
-  httpUpdater.setSuccessPage(UpdateServerSuccess);
+#if defined(ESP8266)
+  #ifdef USE_UPDATE_SERVER
+    httpUpdater.setup(&httpServer);
+    httpUpdater.setIndexPage(updateServerIndex);
+    httpUpdater.setSuccessPage(updateServerSuccess);
+  #endif
+
+#elif defined(ESP32)
+  #ifdef USE_UPDATE_SERVER
+    httpUpdater.setup(&httpServer);
+    httpUpdater.setIndexPage(updateServerIndex);
+    httpUpdater.setSuccessPage(updateServerSuccess);
+  #endif
 #endif
-  DebugTf(" took [%d] seconds => OK!\r\n", (millis() - lTime) / 1000);
+  DebugTf(" took [%d] milli-seconds => OK!\r\n", (millis() - lTime) / 1);
   
 } // startWiFi()
 

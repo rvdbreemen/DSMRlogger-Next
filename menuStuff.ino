@@ -1,9 +1,9 @@
 /* 
 ***************************************************************************  
-**  Program  : menuStuff, part of DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : menuStuff, part of DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -43,11 +43,7 @@ void displayBoardInfo()
   Debug(F("]\r\n              Compiled ["));  Debug( __DATE__ ); 
                                                Debug( "  " );
                                                Debug( __TIME__ );
-#ifdef USE_PRE40_PROTOCOL
-  Debug(F("]\r\n         compiled with [dsmr30.h] [USE_PRE40_PROTOCOL"));
-#else
-  Debug(F("]\r\n         compiled with [dsmr.h"));
-#endif
+  Debug(F("]\r\n         compiled with [dsmr2.h"));
   Debug(F("]\r\n              #defines "));
 #ifdef USE_REQUEST_PIN
   Debug(F("[USE_REQUEST_PIN]"));
@@ -67,11 +63,14 @@ void displayBoardInfo()
 #ifdef USE_SYSLOGGER
   Debug(F("[USE_SYSLOGGER]"));
 #endif
-#ifdef USE_NTP_TIME
-  Debug(F("[USE_NTP_TIME]"));
-#endif
-#ifdef USE_BELGIUM_PROTOCOL
-  Debug(F("[USE_BELGIUM_PROTOCOL]"));
+//#ifdef USE_NTP_TIME
+//  Debug(F("[USE_NTP_TIME]"));
+//#endif
+//#ifdef USE_BELGIUM_PROTOCOL
+//  Debug(F("[USE_BELGIUM_PROTOCOL]"));
+//#endif
+#ifdef HAS_NO_SLIMMEMETER 
+  Debug(F("[HAS_NO_METER]"));
 #endif
 #ifdef SHOW_PASSWRDS
   Debug(F("[SHOW_PASSWRDS]"));
@@ -107,19 +106,17 @@ void displayBoardInfo()
   Debug(F("]\r\n              FreeHeap ["));  Debug( ESP.getFreeHeap() );
   Debug(F("]\r\n             max.Block ["));  Debug( ESP_GET_FREE_BLOCK() );
 
-#if defined(ESP8266) 
+#if defined(ESP8266)
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
-  Debug(F("]\r\n         Flash Chip ID ["));  Debug( cMsg );
-  SPIFFS.info(SPIFFSinfo);
-#endif
-  
 
+  FSYS.info(LittleFSinfo);
+  Debug(F("]\r\n         Flash Chip ID ["));  Debug( cMsg );
   Debug(F("]\r\n  Flash Chip Size (kB) ["));  Debug( ESP.getFlashChipSize() / 1024 );
 #if defined(ESP8266) 
   Debug(F("]\r\n   Chip Real Size (kB) ["));  Debug( ESP.getFlashChipRealSize() / 1024 );
-  Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFSinfo.totalBytes / 1024 );
+  Debug(F("]\r\n          FS Size (kB) ["));  Debug( LittleFSinfo.totalBytes / 1024 );
 #elif defined(ESP32)
   Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFS.totalBytes() / 1024 );
 #endif
@@ -141,6 +138,8 @@ void displayBoardInfo()
   Debug(F("]\r\n              Hostname ["));  Debug( settingHostname );
   Debug(F("]\r\n     Last reset reason ["));  Debug( getResetReason().c_str() );
   Debug(F("]\r\n                upTime ["));  Debug( upTime() );
+  Debug(F("]\r\n               reBoots ["));  Debug( nrReboots );
+  Debug(F("]\r\n     Last Reset Reason ["));  Debug( lastESPresetReason() );
   Debugln(F("]\r"));
 
 #ifdef USE_MQTT
@@ -239,7 +238,7 @@ void handleKeyInput()
                     esp_reboot();
                     break;
       case 's':
-      case 'S':     listFiles();
+      case 'S':     listLittleFS();
                     break;
       case 'v':
       case 'V':     if (Verbose2) 
@@ -279,11 +278,11 @@ void handleKeyInput()
                     break;
       default:      Debugln(F("\r\nCommands are:\r\n"));
                     Debugln(F("   B - Board Info\r"));
-                    Debugln(F("  *E - erase file from SPIFFS\r"));
+                    Debugln(F("  *E - erase file from LittleFS\r"));
                     Debugln(F("   L - list Settings\r"));
-                    Debugln(F("   D - Display Day table from SPIFFS\r"));
-                    Debugln(F("   H - Display Hour table from SPIFFS\r"));
-                    Debugln(F("   M - Display Month table from SPIFFS\r"));
+                    Debugln(F("   D - Display Day table from LittleFS\r"));
+                    Debugln(F("   H - Display Hour table from LittleFS\r"));
+                    Debugln(F("   M - Display Month table from LittleFS\r"));
                   #if defined(HAS_NO_SLIMMEMETER)
                     Debugln(F("  *F - Force build RING files\r"));
                   #endif
@@ -302,8 +301,8 @@ void handleKeyInput()
                     Debugln(F("   Q - dump sysLog file\r"));
 #endif
                     Debugln(F("  *R - Reboot\r"));
-                    Debugln(F("   S - File info on SPIFFS\r"));
-                    Debugln(F("  *U - Update SPIFFS (save Data-files)\r"));
+                    Debugln(F("   S - File info on LittleFS\r"));
+                    Debugln(F("  *U - Update LittleFS (save Data-files)\r"));
                     Debugln(F("  *Z - Zero counters\r\n"));
                     if (Verbose1 & Verbose2)  Debugln(F("   V - Toggle Verbose Off\r"));
                     else if (Verbose1)        Debugln(F("   V - Toggle Verbose 2\r"));

@@ -9,7 +9,7 @@
 ***************************************************************************      
 */
 
-static const char UpdateServerIndex[] PROGMEM =
+static const char updateServerIndex[] PROGMEM =
   R"(<html charset="UTF-8">
      <style type='text/css'>
         body {background-color: lightblue;}
@@ -22,15 +22,15 @@ static const char UpdateServerIndex[] PROGMEM =
           <input type='submit' value='Flash Firmware'>
       </form>
       <form method='POST' action='?cmd=100' enctype='multipart/form-data'> 
-          Selecteer een "<b>.spiffs.bin</b>" bestand<br/>
-          <input type='file' accept='spiffs.bin' name='filesystem'>
-          <input type='submit' value='Flash Spiffs'>
+          Selecteer een "<b>.mklittlefs.bin</b>" bestand<br/>
+          <input type='file' accept='mklittlefs.bin' name='filesystem'>
+          <input type='submit' value='Flash LittleFS'>
       </form>
       <hr>
       <br/><font color='red'>Let op!!!</font>
-      <br/>Bij het flashen van SPIFFS raakt u de RING-bestanden kwijt. 
-      <br/>Maak daarom eerst een kopie van deze bestanden (met de FSexplorer) 
-      en zet de data-bestanden na het flashen van SPIFFS weer terug.
+      <br/>Bij het flashen van LittleFS raakt u de RING-bestanden kwijt. 
+      <br/>Maak daarom eerst een kopie van deze bestanden (met de FSmanager) 
+      en zet de data-bestanden na het flashen van LittleFS weer terug.
       <hr>
       <br/>
       <br/>Wacht nog <span style='font-size: 1.3em;' id="waitSeconds">120</span> seconden ..
@@ -50,7 +50,7 @@ static const char UpdateServerIndex[] PROGMEM =
      </script>
      </html>)";
 
-static const char UpdateServerSuccess[] PROGMEM = 
+static const char updateServerSuccess[] PROGMEM = 
   R"(<html charset="UTF-8">
      <style type='text/css'>
         body {background-color: lightgray;}

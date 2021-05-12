@@ -1,10 +1,9 @@
 /* 
 ***************************************************************************  
-**  Program  : MQTTstuff, part of DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : MQTTstuff, part of DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Robert van den Breemen
-**   Based on (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -178,10 +177,6 @@ struct buildJsonMQTT {
       if (i.present()) 
       {
         String Name = String(Item::name);
-        #if defined( USE_PRE40_PROTOCOL )
-          //-- for dsmr30 ----------------------------------------------- 
-          if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";
-        #endif
         String Unit = Item::unit();
 
         if (settingMQTTtopTopic[strlen(settingMQTTtopTopic)-1] == '/')
@@ -208,6 +203,7 @@ struct buildJsonMQTT {
         }
       }
   }
+
 #endif
 
 };  // struct buildJsonMQTT
@@ -264,6 +260,26 @@ void sendMQTTData()
   DebugTf("Sending data to MQTT server [%s]:[%d]\r\n", settingMQTTbroker, settingMQTTbrokerPort);
   
   DSMRdata.applyEach(buildJsonMQTT());
+
+  //-- if any of the mBus types is 3 (gas-meter)
+  if (  (settingMbus1Type == 3)||(settingMbus2Type == 3)
+      ||(settingMbus3Type == 3)||(settingMbus4Type == 3) )
+  {
+    if (settingMQTTtopTopic[strlen(settingMQTTtopTopic)-1] == '/')
+          snprintf(cMsg, sizeof(cMsg), "%s",  settingMQTTtopTopic);
+    else  snprintf(cMsg, sizeof(cMsg), "%s/", settingMQTTtopTopic);
+    strConcat(cMsg, sizeof(cMsg), "gas_delivered");
+    if (Verbose1) DebugTf("topicId[%s]\r\n", cMsg);
+
+    createMQTTjsonMessage(mqttBuff, "gas_delivered", gasDelivered, "m3");
+    //snprintf(cMsg, sizeof(cMsg), "%s", jsonString.c_str());
+    //DebugTf("topicId[%s] -> [%s]\r\n", topicId, mqttBuff);
+    if (!MQTTclient.publish(cMsg, mqttBuff) )
+    {
+      DebugTf("Error publish(%s) [%s] [%d bytes]\r\n", cMsg, mqttBuff, (strlen(cMsg) + strlen(mqttBuff)));
+    }
+   
+  }
 
 #endif
 

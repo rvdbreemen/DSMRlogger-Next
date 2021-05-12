@@ -1,7 +1,7 @@
 /*
 **************************************************************************
 **  Program  : MinderGas.ino
-**  Version  : v2.3.0-rc5
+**  Version  : v3.0.0
 **
 **  Copyright (c) 2020 Robert van den Breemen
 **
@@ -16,7 +16,7 @@
 void handleMindergas()
 {
   #ifdef USE_MINDERGAS
-    processMindergas_FSM();
+    processMindermbus1_FSM();
   #endif
 
 } // handleMindergas()
@@ -47,7 +47,7 @@ void forceMindergasUpdate()
 
   validToken = true;
 
-  if (SPIFFS.exists(MG_FILENAME))
+  if (FSYS.exists(MG_FILENAME))
   {
     writeToSysLog("found [%s] at day#[%d]", MG_FILENAME, day());
     MG_Day = day();   // make it thisDay...
@@ -56,7 +56,7 @@ void forceMindergasUpdate()
     MGminuten=1;
     CHANGE_INTERVAL_MIN(minderGasTimer, 1);
     stateMindergas = MG_DO_COUNTDOWN;
-    processMindergas_FSM();
+    processMindermbus1_FSM();
   }
   else
   {
@@ -65,7 +65,7 @@ void forceMindergasUpdate()
     writeToSysLog("Force Write Data to [%s]", MG_FILENAME);
     CHANGE_INTERVAL_MIN(minderGasTimer, 1);
     stateMindergas = MG_WRITE_TO_FILE;  // write file is next state
-    processMindergas_FSM();
+    processMindermbus1_FSM();
   }
   
 } // forceMindergasUpdate()
@@ -73,7 +73,7 @@ void forceMindergasUpdate()
 
 //=======================================================================
 // handle finite state machine of mindergas
-void processMindergas_FSM()
+void processMindermbus1_FSM()
 {
   if (handleMindergasSemaphore) // if already running ? then return...
   {
@@ -96,7 +96,7 @@ void processMindergas_FSM()
           {
             strlcpy(txtResponseMindergas, "INITIAL STATE", sizeof(txtResponseMindergas));
           }
-          if (SPIFFS.exists(MG_FILENAME))
+          if (FSYS.exists(MG_FILENAME))
           {
             strlcpy(txtResponseMindergas, "found Mindergas.post", sizeof(txtResponseMindergas));
             writeToSysLog(txtResponseMindergas);
@@ -189,7 +189,7 @@ void processMindergas_FSM()
           strlcpy(txtResponseMindergas, "SEND_MINDERGAS", sizeof(txtResponseMindergas));
 
           //--- if POST response for Mindergas exists, then send it... btw it should exist by now :)
-          if ((validToken) && SPIFFS.exists(MG_FILENAME)) 
+          if ((validToken) && FSYS.exists(MG_FILENAME)) 
           {
             if (!sendMindergasPostFile())
             {
@@ -208,8 +208,8 @@ void processMindergas_FSM()
               }
             }
             Debugln();
-            //--- delete POST file from SPIFFS
-            if (SPIFFS.remove(MG_FILENAME)) 
+            //--- delete POST file from LittleFS
+            if (FSYS.remove(MG_FILENAME)) 
             {
               DebugTln(F("POST Mindergas file succesfully deleted!"));
               writeToSysLog("Deleted Mindergas.post !");
@@ -253,7 +253,7 @@ void processMindergas_FSM()
   //on exit, allow next handle state event
   handleMindergasSemaphore = false;
   
-} // processMindergas_FSM()
+} // processMindermbus1_FSM()
 
 
 //=======================================================================
@@ -268,7 +268,7 @@ boolean sendMindergasPostFile()
 
   //--- create a string with the date and the meter value
   DebugTln(F("Reading POST from file:"));
-  minderGasFile = SPIFFS.open(MG_FILENAME, "r");
+  minderGasFile = FSYS.open(MG_FILENAME, "r");
   String sBuffer;
   sBuffer = "";
   while(minderGasFile.available()) 
@@ -380,10 +380,12 @@ boolean sendMindergasPostFile()
 //=======================================================================
 void writePostToFile()
 {
+  float gasDelivered = 0;
+  
   //--- create POST and write to file, so it will survive a reset within the countdown period
   DebugTf("Writing to [%s] ..\r\n", MG_FILENAME);
   writeToSysLog("Writing to [%s] ..", MG_FILENAME);
-  File minderGasFile = SPIFFS.open(MG_FILENAME, "a"); //  create File
+  File minderGasFile = FSYS.open(MG_FILENAME, "a"); //  create File
   if (!minderGasFile) 
   {
     //--- cannot create file, thus error
@@ -407,7 +409,7 @@ void writePostToFile()
                                                           , day(t)
                                                           , gasDelivered);
   //--- write the POST to a file...
-  minderGasFile.println(F("POST /api/gas_meter_readings HTTP/1.1"));
+  minderGasFile.println(F("POST /api/mbus1_meter_readings HTTP/1.1"));
   minderGasFile.print(F("AUTH-TOKEN:")); minderGasFile.println(settingMindergasToken);
   minderGasFile.println(F("Host: mindergas.nl"));
   minderGasFile.println(F("User-Agent: DSMRAPI"));

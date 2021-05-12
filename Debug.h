@@ -3,7 +3,7 @@
 **  Program  : Debug.h, part of DSMRlogger-Next
 **  Version  : v2.3.0-rc5
 **
-**  Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **  Met dank aan Erik
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
@@ -28,6 +28,11 @@
 #endif
 
 /*---- start macro's ------------------------------------------------------------------*/
+
+
+#define DebugFlush()    ({ Serial.flush(); \
+                           TelnetStream.flush(); \
+                        })
 
 #define Debug(...)      ({ Serial.print(__VA_ARGS__);         \
                            TelnetStream.print(__VA_ARGS__);   \
@@ -60,11 +65,13 @@
 char _bol[128];
 void _debugBOL(const char *fn, int line)
 {
-   
-  snprintf(_bol, sizeof(_bol), "[%02d:%02d:%02d][%7u|%6u] %-12.12s(%4d): ", \
+  char stack;
+   //                           [Time----][FreeHeap/Stck][Function----(line):
+  snprintf(_bol, sizeof(_bol), "[%02d:%02d:%02d][%7u|%5u] %-12.12s(%4d): ", \
                 hour(), minute(), second(), \
                 ESP.getFreeHeap(), esp_get_free_block(),\
                 fn, line);
+#endif
                  
   DEBUG_PORT.print (_bol);
   TelnetStream.print(_bol);

@@ -1,12 +1,9 @@
 /*
 ***************************************************************************  
-**  Program  : DSMRlogger-Next.h - definitions for DSMRlogger-Next
-**  Version  : v2.3.0-rc5
+**  Program  : DSMRloggerAPI.h - definitions for DSMRloggerAPI
+**  Version  : v3.0.0
 **
-**  Copyright (c) 2020 Robert van den Breemen
-**
-**  Based on the original:
-**          DSMRLoggerAPI - Copyright (c) 2020 Willem Aandewiel
+**  Copyright (c) 2021 Willem Aandewiel
 **
 **  TERMS OF USE: MIT License. See bottom of file.                                                            
 ***************************************************************************      
@@ -60,8 +57,20 @@
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "safeTimers.h"
 
+#include "FS.h"
+#if defined(ESP8266)
+  #include "LittleFS.h"
+  #define FSYS  LittleFS
+  
+#elif defined(ESP32)
+  #include "SPIFFS.h"
+  #define FSYS  SPIFFS
+  
+#endif
+
 #ifdef USE_SYSLOGGER
-  #include "ESP_SysLogger.h"      // https://github.com/mrWheel/ESP_SysLogger
+  // https://github.com/mrWheel/ESP_SysLogger
+  #include "ESP_SysLogger.h"      
   ESPSL sysLog;                   // Create instance of the ESPSL object
   #define writeToSysLog(...) ({ sysLog.writeDbg( sysLog.buildD("[%02d:%02d:%02d][%7d][%-12.12s] " \
                                                                , hour(), minute(), second()     \
@@ -94,6 +103,10 @@
 #define MAXCOLORNAME       15
 #define JSON_BUFF_MAX     255
 #define MQTT_BUFF_MAX     200
+
+#if defined(ESP32)
+  #define LED_BUILTIN 2 // GPIO-02
+#endif
 
 //-------------------------.........1....1....2....2....3....3....4....4....5....5....6....6....7....7
 //-------------------------1...5....0....5....0....5....0....5....0....5....0....5....0....5....0....5
@@ -241,6 +254,7 @@ void delayms(unsigned long);
   WiFiClient  wifiClient;
   MyData      DSMRdata;
   uint32_t    readTimer;
+  Timezone    CET;
   time_t      actT, newT;
   char        actTimestamp[20] = "";
   char        newTimestamp[20] = "";
@@ -277,7 +291,7 @@ void delayms(unsigned long);
 
 
 String    lastReset           = "";
-bool      spiffsNotPopulated  = false;
+bool      FSnotPopulated      = false;
 bool      hasAlternativeIndex = false;
 bool      mqttIsConnected     = false;
 bool      Verbose1 = false, Verbose2 = false;
@@ -288,7 +302,7 @@ IPAddress ipDNS, ipGateWay, ipSubnet;
 float     settingEDT1, settingEDT2, settingERT1, settingERT2, settingGDT;
 float     settingENBK, settingGNBK;
 uint8_t   settingTelegramInterval;
-uint8_t   settingSmHasFaseInfo = 1;
+uint8_t   settingSmHasFaseInfo  = 1;
 uint8_t   settingMbus1Type      = 3;
 uint8_t   settingMbus2Type      = 0;
 uint8_t   settingMbus3Type      = 0;
