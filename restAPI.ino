@@ -41,7 +41,7 @@ void processAPI()
 {
   char fName[40] = "";
   char URI[50]   = "";
-  char buff[60] = "";
+  
   String words[10];
 
   strlcpy( URI, httpServer.uri().c_str(), sizeof(URI) );
@@ -557,7 +557,7 @@ struct buildJsonApiV0SmActual
     template<typename Item>
     void apply(Item &i) {
       skip = false;
-      String Name = Item::name;
+      String Name = String(Item::name);
       //-- for dsmr30 -----------------------------------------------
 #if defined( USE_PRE40_PROTOCOL )
       if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";
@@ -601,7 +601,7 @@ struct buildJsonApi
     template<typename Item>
     void apply(Item &i) {
       skip = false;
-      String Name = Item::name;
+      String Name = String(Item::name);
       //-- for dsmr30 -----------------------------------------------
 #if defined( USE_PRE40_PROTOCOL )
       if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";

@@ -177,7 +177,7 @@ struct buildJsonMQTT {
     void apply(Item &i) {
       if (i.present()) 
       {
-        String Name = Item::name;
+        String Name = String(Item::name);
         #if defined( USE_PRE40_PROTOCOL )
           //-- for dsmr30 ----------------------------------------------- 
           if (Name.indexOf("gas_delivered2") == 0) Name = "gas_delivered";

@@ -77,17 +77,25 @@ bool buildDataRecordFromSM(char *recIn)
   char key[10] = "";
 
   uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
+  
+  
+  if ( (settingMbus1Type == 3) && (settingMbus1Type == DSMRdata.mbus1_device_type) ) 
+      gasDelivered = mbus1Delivered;
+  else if ( (settingMbus2Type == 3) && (settingMbus2Type == DSMRdata.mbus2_device_type) ) 
+      gasDelivered = mbus2Delivered;
+  else if ( (settingMbus3Type == 3) && (settingMbus3Type == DSMRdata.mbus3_device_type) ) 
+      gasDelivered = mbus3Delivered;
+  else if ( (settingMbus4Type == 3) && (settingMbus4Type == DSMRdata.mbus4_device_type) ) 
+      gasDelivered = mbus4Delivered;
+
   strlcpy(key, actTimestamp + 0, 9);
 
-  snprintf(record, sizeof(record), (char *)DATA_FORMAT, key, (float)DSMRdata.energy_delivered_tariff1, (float)DSMRdata.energy_delivered_tariff2, (float)DSMRdata.energy_returned_tariff1, (float)DSMRdata.energy_returned_tariff2
-#ifdef USE_PRE40_PROTOCOL
-           ,
-           (float)DSMRdata.gas_delivered2);
-#else
-           ,
-           (float)DSMRdata.gas_delivered);
-#endif
-  // DATA + \n + \0
+  snprintf(record, sizeof(record), (char*)DATA_FORMAT, key , (float)DSMRdata.energy_delivered_tariff1
+                                          , (float)DSMRdata.energy_delivered_tariff2
+                                          , (float)DSMRdata.energy_returned_tariff1
+                                          , (float)DSMRdata.energy_returned_tariff2
+                                          , (float)gasDelivered);
+  // DATA + \n + \0       
   fillRecord(record, DATA_RECLEN);
 
   strlcpy(recIn, record, DATA_RECLEN);
