@@ -71,7 +71,6 @@ void _debugBOL(const char *fn, int line)
                 hour(), minute(), second(), \
                 ESP.getFreeHeap(), esp_get_free_block(),\
                 fn, line);
-#endif
                  
   DEBUG_PORT.print (_bol);
   TelnetStream.print(_bol);

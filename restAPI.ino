@@ -389,7 +389,7 @@ void sendDeviceInfo()
     strlcat(compileOptions, "[USE_NTP_TIME]", sizeof(compileOptions));
 #endif
 #ifdef HAS_NO_SLIMMEMETER
-    strConcat(compileOptions, sizeof(compileOptions), "[NO_SLIMMEMETER]");
+    strlcat(compileOptions,  "[NO_SLIMMEMETER]", sizeof(compileOptions));
 #endif
 
   sendStartJsonObj("devinfo");

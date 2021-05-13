@@ -110,7 +110,7 @@ void displayBoardInfo()
   if ((ESP.getFlashChipId() & 0x000000ff) == 0x85) 
         snprintf(cMsg, sizeof(cMsg), "%08X (PUYA)", ESP.getFlashChipId());
   else  snprintf(cMsg, sizeof(cMsg), "%08X", ESP.getFlashChipId());
-
+#endif
   FSYS.info(LittleFSinfo);
   Debug(F("]\r\n         Flash Chip ID ["));  Debug( cMsg );
   Debug(F("]\r\n  Flash Chip Size (kB) ["));  Debug( ESP.getFlashChipSize() / 1024 );
@@ -118,7 +118,7 @@ void displayBoardInfo()
   Debug(F("]\r\n   Chip Real Size (kB) ["));  Debug( ESP.getFlashChipRealSize() / 1024 );
   Debug(F("]\r\n          FS Size (kB) ["));  Debug( LittleFSinfo.totalBytes / 1024 );
 #elif defined(ESP32)
-  Debug(F("]\r\n      SPIFFS Size (kB) ["));  Debug( SPIFFS.totalBytes() / 1024 );
+  Debug(F("]\r\n    LittleFS Size (kB) ["));  Debug( SPIFFS.totalBytes() / 1024 );
 #endif
 
   Debug(F("]\r\n      Flash Chip Speed ["));  Debug( ESP.getFlashChipSpeed() / 1000 / 1000 );

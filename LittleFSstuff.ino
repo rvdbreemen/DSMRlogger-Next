@@ -528,7 +528,6 @@ void ESP8266_listLittleFS()
   _fileMeta dirMap[30];
   int fileNr = 0;
 
-#if defined(ESP8266)
   Dir dir = FSYS.openDir("/");         // List files on LittleFS
   while (dir.next())  
   {
@@ -538,17 +537,7 @@ void ESP8266_listLittleFS()
     dirMap[fileNr].Size = dir.fileSize();
     fileNr++;
   }
-  
-#elif defined(ESP32)
-  File root = SPIFFS.open("/");         // List files on SPIFFS
-  if(!root){
-      DebugTln("- failed to open directory");
-      return;
-  }
-  if(!root.isDirectory()){
-      DebugTln(" - not a directory");
-      return;
-  }
+ 
 
   File file = root.openNextFile();
   while(file){
@@ -569,8 +558,6 @@ void ESP8266_listLittleFS()
     file = root.openNextFile();
     fileNr++;
   }
-
-#endif
 
   // -- bubble sort dirMap op .Name--
   for (int8_t y = 0; y < fileNr; y++)
@@ -596,7 +583,6 @@ void ESP8266_listLittleFS()
     yield();
   }
 
-#if defined(ESP8266)
   FSYS.info(LittleFSinfo);
 
   Debugln(F("\r"));
@@ -622,8 +608,8 @@ void ESP32_listLittleFS()
   } fileMeta;
 
   _fileMeta dirMap[30];
+ 
   int fileNr = 0;
-
   File root = FSYS.open("/"); // List files on SPIFFS
   if (!root)
   {

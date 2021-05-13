@@ -377,14 +377,14 @@ void updateSetting(const char *field, const char *newValue)
   if (!strcasecmp(field, "gd_tariff"))         settingGDT          = atof(newValue);
   if (!strcasecmp(field, "gas_netw_costs"))    settingGNBK         = atof(newValue);
 
-  if (!stricmp(field, "pre_DSMR40"))        settingPreDSMR40    = atoi(newValue);  
-  if (!stricmp(field, "mbus1_type"))        settingMbus1Type    = atoi(newValue);  
-  if (!stricmp(field, "mbus2_type"))        settingMbus2Type    = atoi(newValue);  
-  if (!stricmp(field, "mbus3_type"))        settingMbus3Type    = atoi(newValue);  
-  if (!stricmp(field, "mbus4_type"))        settingMbus4Type    = atoi(newValue);  
+  if (!strcasecmp(field, "pre_DSMR40"))        settingPreDSMR40    = atoi(newValue);  
+  if (!strcasecmp(field, "mbus1_type"))        settingMbus1Type    = atoi(newValue);  
+  if (!strcasecmp(field, "mbus2_type"))        settingMbus2Type    = atoi(newValue);  
+  if (!strcasecmp(field, "mbus3_type"))        settingMbus3Type    = atoi(newValue);  
+  if (!strcasecmp(field, "mbus4_type"))        settingMbus4Type    = atoi(newValue);  
 
 
-  //if (!stricmp(field, "pre_DSMR40")) 
+  //if (!strcasecmp(field, "pre_DSMR40")) 
   //{
   //  settingPreDSMR40 = String(newValue).toInt(); 
   //  DebugTf("pre_DSMR40 new value [%d]\r\n", settingPreDSMR40);
@@ -392,7 +392,7 @@ void updateSetting(const char *field, const char *newValue)
   //  else                        settingPreDSMR40 = 1;  
   //}
   
-  if (!stricmp(field, "sm_has_fase_info")) 
+  if (!strcasecmp(field, "sm_has_fase_info")) 
   {
     settingSmHasFaseInfo = atoi(newValue); 
     if (settingSmHasFaseInfo != 0)  settingSmHasFaseInfo = 1;

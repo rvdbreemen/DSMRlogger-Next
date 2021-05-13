@@ -268,7 +268,7 @@ void sendMQTTData()
     if (settingMQTTtopTopic[strlen(settingMQTTtopTopic)-1] == '/')
           snprintf(cMsg, sizeof(cMsg), "%s",  settingMQTTtopTopic);
     else  snprintf(cMsg, sizeof(cMsg), "%s/", settingMQTTtopTopic);
-    strConcat(cMsg, sizeof(cMsg), "gas_delivered");
+    strlcat(cMsg, "gas_delivered", sizeof(cMsg));
     if (Verbose1) DebugTf("topicId[%s]\r\n", cMsg);
 
     createMQTTjsonMessage(mqttBuff, "gas_delivered", gasDelivered, "m3");

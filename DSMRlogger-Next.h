@@ -254,7 +254,6 @@ void delayms(unsigned long);
   WiFiClient  wifiClient;
   MyData      DSMRdata;
   uint32_t    readTimer;
-  Timezone    CET;
   time_t      actT, newT;
   char        actTimestamp[20] = "";
   char        newTimestamp[20] = "";
