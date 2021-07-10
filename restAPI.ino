@@ -99,7 +99,7 @@ void processAPI()
       {
         //--- depreciated api. left here for backward compatibility
         onlyIfPresent = true;
-        copyToFieldsArray(actualArray, actualElements);
+        //copyToFieldsArray(actualArray, actualElements);
         sendJsonV0Fields();
       }
     } 

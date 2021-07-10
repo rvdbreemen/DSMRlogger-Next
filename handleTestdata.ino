@@ -104,7 +104,7 @@ void handleTestdata()
   }
 
   epochToTimestamp(nt, newTimestamp, sizeof(newTimestamp));
-  strConcat(newTimestamp, sizeof(newTimestamp), "X");
+  strlcat(newTimestamp, "X", sizeof(newTimestamp));
   Debugf("==>> new date/time [%s] is [%s]\r\n", newTimestamp, buildDateTimeString(newTimestamp, sizeof(newTimestamp)).c_str());
   
   updateMeterValues(SNormal);

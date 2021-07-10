@@ -9,6 +9,9 @@
 ***************************************************************************      
 */
 
+#ifndef UPDATESERVERHTML_H
+#define UPDATESERVERHTML_H
+
 static const char updateServerIndex[] PROGMEM =
   R"(<html charset="UTF-8">
      <style type='text/css'>
@@ -80,7 +83,8 @@ static const char updateServerSuccess[] PROGMEM =
      </script>
      </html>)";
 
-     
+#endif
+  
 /***************************************************************************
 *
 * Permission is hereby granted, free of charge, to any person obtaining a

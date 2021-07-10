@@ -26,7 +26,7 @@
   #define ESP_GET_CHIPID()        ((uint32_t)ESP.getEfuseMac()) //The chipID is essentially its MAC address (length: 6 bytes) 
   const char *flashMode[]         { "QIO", "QOUT", "DIO", "DOUT", "FAST READ", "SLOWREAD", "Unknown" };
 
-  #include "SPIFFS.h"
+  //#include "FS.h"
   #include <rom/rtc.h>          // SDK ESP32 for reset reason function (see helper function)
   // ESP32 JDJ REV2 
   // LED PIN  24              //GPIO  --  data pin for WS2812B pixel
@@ -61,11 +61,9 @@
 #if defined(ESP8266)
   #include "LittleFS.h"
   #define FSYS  LittleFS
-  
 #elif defined(ESP32)
   #include "SPIFFS.h"
-  #define FSYS  SPIFFS
-  
+  #define FSYS SPIFFS
 #endif
 
 #ifdef USE_SYSLOGGER

@@ -1,543 +1,192 @@
 /* 
 ***************************************************************************  
-**  Program  : littleFSstuff, part of DSMRloggerAPI
-**  Version  : v3.0.0
+**  Program  : FSmanager, part of DSMRloggerAPI
+**  Version  : v2.0.1
 **
-**  Copyright (c) 2021 Willem Aandewiel
-**
-**  TERMS OF USE: MIT License. See bottom of file.                                                            
-***************************************************************************      
-*/
+**  Mostly stolen from: https://fipsok.de/Esp8266-Webserver/littlefs-esp8266-270.tab
+*/  
+// ****************************************************************
+// Sketch Esp8266 Filesystem Manager spezifisch sortiert Modular(Tab)
+// created: Jens Fleischer, 2020-06-08
+// last mod: Jens Fleischer, 2020-09-02
+// For more information visit: https://fipsok.de/Esp8266-Webserver/littlefs-esp8266-270.tab
+// ****************************************************************
+// Hardware: Esp8266
+// Software: Esp8266 Arduino Core 2.7.0 - 2.7.4
+// Geprüft: von 1MB bis 2MB Flash
+// Getestet auf: Nodemcu
+/******************************************************************
+  Copyright (c) 2020 Jens Fleischer. All rights reserved.
 
-int16_t bytesWritten;
+  This file is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+  This file is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+*******************************************************************/
+// Diese Version von LittleFS sollte als Tab eingebunden werden.
+// #include <FSYS.h> #include <ESP8266WebServer.h> müssen im Haupttab aufgerufen werden
+// Die Funktionalität des ESP8266 Webservers ist erforderlich.
+// "httpServer.onNotFound()" darf nicht im Setup des ESP8266 Webserver stehen.
+// Die Funktion "setupFS();" muss im Setup aufgerufen werden.
+/**************************************************************************************/
 
-//static    FSInfo LittleFSinfo;
+#include <list>
+#include <tuple>
 
-//====================================================================
-void readLastStatus()
-{
-  char buffer[50] = "";
-  char dummy[50] = "";
-  char spiffsTimestamp[20] = "";
-  
-  File _file = FSYS.open("/DSMRstatus.csv", "r");
-  if (!_file)
+const char WARNING[] PROGMEM = R"(<h2>Check! Sketch is compiled with "FS:none"!)";
+const char HELPER[]  PROGMEM = R"(
+  <br>You first need to upload these two files:
+  <ul>
+    <li>FSmanager.html</li>
+    <li>FSmanager.css</li>
+  </ul>
+  <hr>
+  <form method="POST" action="/upload" enctype="multipart/form-data">
+    <input type="file" name="upload">
+    <input type="submit" value="Upload">
+  </form>
+  <hr>
+  <br/><b>or</b> you can use the <i>Flash Utility</i> to flash firmware or litleFS!
+  <form action='/update' method='GET'>
+    <input type='submit' name='SUBMIT' value='Flash Utility'/>
+  </form>
+)";
+
+
+//=====================================================================================
+void setupFS() {                                                                       // Funktionsaufruf "setupFS();" muss im Setup eingebunden werden
+  FSYS.begin();
+  httpServer.on("/format", formatFS);
+  httpServer.on("/listFS", listFS);
+  httpServer.on("/ReBoot", reBootESP);
+  httpServer.on("/upload", HTTP_POST, sendResponce, handleUpload);
+  httpServer.on("/update", updateFirmware);
+  httpServer.onNotFound([]() 
   {
-    DebugTln("read(): No /DSMRstatus.csv found ..");
-  }
-  if (_file.available())
-  {
-    int l = _file.readBytesUntil('\n', buffer, sizeof(buffer));
-    buffer[l] = 0;
-    DebugTf("read lastUpdate[%s]\r\n", buffer);
-    sscanf(buffer, "%[^;]; %u; %u; %[^;]", spiffsTimestamp, &nrReboots, &slotErrors, dummy);
-    DebugTf("values timestamp[%s], nrReboots[%u], slotErrors[%u], dummy[%s]\r\n", spiffsTimestamp, nrReboots, slotErrors, dummy);
-    yield();
-  }
-  _file.close();
-  if (strlen(spiffsTimestamp) != 13)
-  {
-    strncpy(spiffsTimestamp, "010101010101X", sizeof(spiffsTimestamp));
-  }
-  snprintf(actTimestamp, sizeof(actTimestamp), "%s", spiffsTimestamp);
-
-} // readLastStatus()
-
-//====================================================================
-void writeLastStatus()
-{
-  if (ESP.getFreeHeap() < 7000) // to prevent firmware from crashing!
-  {
-    DebugTf("Bailout due to low heap (%d bytes)\r\n", ESP.getFreeHeap());
-    writeToSysLog("Bailout low heap (%d bytes)", ESP.getFreeHeap());
-    esp_reboot(); //due to low memory, let's restart.
-    return;
-  }
-
-  char buffer[50] = "";
-  DebugTf("writeLastStatus() => %s; %u; %u;\r\n", actTimestamp, nrReboots, slotErrors);
-  writeToSysLog("writeLastStatus() => %s; %u; %u;", actTimestamp, nrReboots, slotErrors);
-  File _file = FSYS.open("/DSMRstatus.csv", "w");
-  if (!_file)
-  {
-    DebugTln("write(): No /DSMRstatus.csv found ..");
-  }
-  snprintf(buffer, sizeof(buffer), "%-13.13s; %010u; %010u; %s;\n", actTimestamp, nrReboots, slotErrors, "meta data");
-  _file.print(buffer);
-  _file.flush();
-  _file.close();
-
-} // writeLastStatus()
-
-//===========================================================================================
-void buildDataRecordFromSM(char *recIn) 
-{
-  static float GG = 1;
-  char record[DATA_RECLEN + 1] = "";
-  char key[10] = "";
-  float gasDelivered;
-  uint16_t recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
-
-  if ( (settingMbus1Type == 3) && (settingMbus1Type == DSMRdata.mbus1_device_type) ) 
-      gasDelivered = mbus1Delivered;
-  else if ( (settingMbus2Type == 3) && (settingMbus2Type == DSMRdata.mbus2_device_type) ) 
-      gasDelivered = mbus2Delivered;
-  else if ( (settingMbus3Type == 3) && (settingMbus3Type == DSMRdata.mbus3_device_type) ) 
-      gasDelivered = mbus3Delivered;
-  else if ( (settingMbus4Type == 3) && (settingMbus4Type == DSMRdata.mbus4_device_type) ) 
-      gasDelivered = mbus4Delivered;
-
-  strlcpy(key, actTimestamp + 0, 9);
-  //strCopy(key, 10, actTimestamp, 0, 8);
-
-  snprintf(record, sizeof(record), (char*)DATA_FORMAT, key , (float)DSMRdata.energy_delivered_tariff1
-                                          , (float)DSMRdata.energy_delivered_tariff2
-                                          , (float)DSMRdata.energy_returned_tariff1
-                                          , (float)DSMRdata.energy_returned_tariff2
-                                          , (float)gasDelivered);
-  // DATA + \n + \0                                        
-  fillRecord(record, DATA_RECLEN);
-
-  strlcpy(recIn, record, DATA_RECLEN);
-
-} // buildDataRecordFromSM()
-
-//===========================================================================================
-uint16_t buildDataRecordFromJson(char *recIn, String jsonIn)
-{
-  //static float GG = 1;
-  char record[DATA_RECLEN + 1] = "";
-  String wOut[10];
-  String wPair[5];
-  char uKey[15] = "";
-  float uEDT1 = 0.0;
-  float uEDT2 = 0.0;
-  float uERT1 = 0.0;
-  float uERT2 = 0.0;
-  float uGDT = 0.0;
-  uint16_t recSlot;
-
-  DebugTln(jsonIn);
-
-  jsonIn.replace("{", "");
-  jsonIn.replace("}", "");
-  jsonIn.replace("\"", "");
-  int8_t wp = splitString(jsonIn.c_str(), ',', wOut, 9);
-  for (int f = 0; f < wp; f++)
-  {
-    splitString(wOut[f].c_str(), ':', wPair, 4);
-    if (Verbose2)
-      DebugTf("[%d] -> [%s]\r\n", f, wOut[f].c_str());
-    if (wPair[0].indexOf("recid") == 0)
-      strlcpy(uKey, wPair[1].c_str(), 10);
-    if (wPair[0].indexOf("edt1") == 0)
-      uEDT1 = wPair[1].toFloat();
-    if (wPair[0].indexOf("edt2") == 0)
-      uEDT2 = wPair[1].toFloat();
-    if (wPair[0].indexOf("ert1") == 0)
-      uERT1 = wPair[1].toFloat();
-    if (wPair[0].indexOf("ert2") == 0)
-      uERT2 = wPair[1].toFloat();
-    if (wPair[0].indexOf("gdt") == 0)
-      uGDT = wPair[1].toFloat();
-  }
-  strlcat(uKey, "0101X", 15);
-  recSlot = timestampToMonthSlot(uKey, strlen(uKey));
-
-  DebugTf("MONTHS: Write [%s] to slot[%02d] in %s\r\n", uKey, recSlot, MONTHS_FILE);
-  snprintf(record, sizeof(record), (char *)DATA_FORMAT, uKey, (float)uEDT1, (float)uEDT2, (float)uERT1, (float)uERT2, (float)uGDT);
-
-  // DATA + \n + \0
-  fillRecord(record, DATA_RECLEN);
-
-  strlcpy(recIn, record, DATA_RECLEN);
-
-  return recSlot;
-
-} // buildDataRecordFromJson()
-
-//===========================================================================================
-void writeDataToFile(const char *fileName, const char *record, uint16_t slot, int8_t fileType)
-{
-  uint16_t offset = 0;
-
-  if (!isNumericp(record, 8))
-  {
-    DebugTf("timeStamp [%-13.13s] not valid\r\n", record);
-    slotErrors++;
-    return;
-  }
-  
-  if (!FSYS.exists(fileName))
-  {
-    switch (fileType)
+    if (Verbose1) DebugTf("in 'onNotFound()'!! [%s] => \r\n", String(httpServer.uri()).c_str());
+    /**
+    if (httpServer.uri() == "/main") 
     {
-    case HOURS:
-      createFile(fileName, _NO_HOUR_SLOTS_);
-      break;
-    case DAYS:
-      createFile(fileName, _NO_DAY_SLOTS_);
-      break;
-    case MONTHS:
-      createFile(fileName, _NO_MONTH_SLOTS_);
-      break;
+      if (Verbose1) DebugTf("next: index.html\r\n", String(httpServer.uri()).c_str());
+      doRedirect("Back in .. ", 0, "/", false);
     }
-  }
-
-  File dataFile = FSYS.open(fileName, "r+");  // read and write ..
-  if (!dataFile) 
-  {
-    DebugTf("Error opening [%s]\r\n", fileName);
-    return;
-  }
-  // slot goes from 0 to _NO_OF_SLOTS_
-  // we need to add 1 to slot to skip header record!
-  offset = ((slot + 1) * DATA_RECLEN);
-  dataFile.seek(offset, SeekSet);
-  int32_t bytesWritten = dataFile.print(record);
-  if (bytesWritten != DATA_RECLEN)
-  {
-    DebugTf("ERROR! slot[%02d]: written [%d] bytes but should have been [%d]\r\n", slot, bytesWritten, DATA_RECLEN);
-    writeToSysLog("ERROR! slot[%02d]: written [%d] bytes but should have been [%d]", slot, bytesWritten, DATA_RECLEN);
-  }
-  dataFile.close();
-
-} // writeDataToFile()
-
-//===========================================================================================
-void writeDataToFiles()
-{
-  char record[DATA_RECLEN + 1] = "";
-  uint16_t recSlot;
-
-  buildDataRecordFromSM(record);
-  DebugTf(">%s\r\n", record); // record ends in a \n
-
-  // update HOURS
-  recSlot = timestampToHourSlot(actTimestamp, strlen(actTimestamp));
-  if (Verbose1)
-    DebugTf("HOURS:  Write to slot[%02d] in %s\r\n", recSlot, HOURS_FILE);
-  writeDataToFile(HOURS_FILE, record, recSlot, HOURS);
-  writeToSysLog("HOURS: actTimestamp[%s], recSlot[%d]", actTimestamp, recSlot);
-
-  // update DAYS
-  recSlot = timestampToDaySlot(actTimestamp, strlen(actTimestamp));
-  if (Verbose1)
-    DebugTf("DAYS:   Write to slot[%02d] in %s\r\n", recSlot, DAYS_FILE);
-  writeDataToFile(DAYS_FILE, record, recSlot, DAYS);
-
-  // update MONTHS
-  recSlot = timestampToMonthSlot(actTimestamp, strlen(actTimestamp));
-  if (Verbose1)
-    DebugTf("MONTHS: Write to slot[%02d] in %s\r\n", recSlot, MONTHS_FILE);
-  writeDataToFile(MONTHS_FILE, record, recSlot, MONTHS);
-
-} // writeDataToFiles(fileType, dataStruct newDat, int8_t slotNr)
-
-//===========================================================================================
-void readOneSlot(int8_t fileType, const char *fileName, uint8_t recNr, uint8_t readSlot, bool doJson, const char *rName)
-{
-  uint16_t slot, maxSlots = 0, offset;
-  char buffer[DATA_RECLEN + 2] = "";
-  char recID[10] = "";
-  float EDT1, EDT2, ERT1, ERT2, GDT;
-
-  switch (fileType)
-  {
-  case HOURS:
-    maxSlots = _NO_HOUR_SLOTS_;
-    break;
-  case DAYS:
-    maxSlots = _NO_DAY_SLOTS_;
-    break;
-  case MONTHS:
-    maxSlots = _NO_MONTH_SLOTS_;
-    break;
-  }
-
-  if (!FSYS.exists(fileName))
-  {
-    DebugTf("File [%s] does not excist!\r\n", fileName);
-    return;
-  }
-
-  File dataFile = FSYS.open(fileName, "r+");  // read and write ..
-  if (!dataFile) 
-  {
-    DebugTf("Error opening [%s]\r\n", fileName);
-    return;
-  }
-
-  slot = (readSlot % maxSlots);
-  // slot goes from 0 to _NO_OF_SLOTS_
-  // we need to add 1 to slot to skip header record!
-  offset = ((slot + 1) * DATA_RECLEN);
-  dataFile.seek(offset, SeekSet);
-  int l = dataFile.readBytesUntil('\n', buffer, sizeof(buffer));
-  buffer[l] = 0;
-  if (l >= (DATA_RECLEN - 1)) // '\n' is skipped by readBytesUntil()
-  {
-    if (!isNumericp(buffer, 8)) // first 8 bytes is YYMMDDHH
+    if (httpServer.uri() == "/update") 
     {
-      {
-        Debugf("slot[%02d]==>timeStamp [%-13.13s] not valid!!\r\n", slot, buffer);
-        writeToSysLog("slot[%02d]==>timeStamp [%-13.13s] not valid!!", slot, buffer);
-      }
+      if (Verbose1) DebugTf("next: update\r\n", String(httpServer.uri()).c_str());
+      doRedirect("Back in .. ", 0, "/updateIndex", false);
+    }
+    **/
+    if (httpServer.uri().indexOf("/api/") == 0) 
+    {
+      if (Verbose1) DebugTf("next: processAPI(%s)\r\n", String(httpServer.uri()).c_str());
+      processAPI();
     }
     else
     {
-      if (doJson)
+      DebugTf("next: handleFile(%s)\r\n"
+                      , String(httpServer.urlDecode(httpServer.uri())).c_str());
+      if (!handleFile(httpServer.urlDecode(httpServer.uri())))
       {
-        sscanf(buffer, "%[^;];%f;%f;%f;%f;%f", recID, &EDT1, &EDT2, &ERT1, &ERT2, &GDT);
-        sendNestedJsonObj(recNr++, recID, slot, EDT1, EDT2, ERT1, ERT2, GDT);
-      }
-      else
-      {
-        Debugf("slot[%02d]->[%s]\r\n", slot, buffer);
+        httpServer.send(404, "text/plain", "FileNotFound\r\n");
       }
     }
-  }
-  dataFile.close();
+  });
+  
+} //  setupFS()
 
-} // readOneSlot()
 
-//===========================================================================================
-void readSlotFromTimestamp(int8_t fileType, const char *fileName, const char *timeStamp, bool doJson, const char *rName)
-{
-  uint16_t firstSlot = 0, maxSlots = 0;
-
-  DebugTf("timeStamp[%s]\r\n", timeStamp);
-
-  switch (fileType)
-  {
-  case HOURS:
-    firstSlot = timestampToHourSlot(timeStamp, strlen(timeStamp));
-    maxSlots = _NO_HOUR_SLOTS_;
-    break;
-  case DAYS:
-    firstSlot = timestampToDaySlot(timeStamp, strlen(timeStamp));
-    maxSlots = _NO_DAY_SLOTS_;
-    break;
-  case MONTHS:
-    firstSlot = timestampToMonthSlot(timeStamp, strlen(timeStamp));
-    maxSlots = _NO_MONTH_SLOTS_;
-    break;
-  }
-
-  firstSlot += maxSlots;
-  DebugTf("firstSlot[%d] -> slot[%d]\r\n", firstSlot, (firstSlot % maxSlots));
-  readOneSlot(fileType, fileName, firstSlot, 0, doJson, rName);
-
-} // readSlotFromTimestamp()
-
-//===========================================================================================
-void readAllSlots(int8_t fileType, const char *fileName, const char *timeStamp, bool doJson, const char *rName)
-{
-  int16_t startSlot, endSlot, nrSlots, recNr = 0;
-
-  switch (fileType)
-  {
-  case HOURS:
-    startSlot = timestampToHourSlot(timeStamp, strlen(timeStamp));
-    nrSlots = _NO_HOUR_SLOTS_;
-    break;
-  case DAYS:
-    startSlot = timestampToDaySlot(timeStamp, strlen(timeStamp));
-    nrSlots = _NO_DAY_SLOTS_;
-    break;
-  case MONTHS:
-    startSlot = timestampToMonthSlot(timeStamp, strlen(timeStamp));
-    nrSlots = _NO_MONTH_SLOTS_;
-    break;
-  }
-
-  endSlot = nrSlots + startSlot;
-  //startSlot += nrSlots;
-  DebugTf("start[%02d], endSlot[%02d]\r\n", (startSlot % nrSlots), endSlot);
-  for (uint16_t s = startSlot; s < endSlot; s++)
-  {
-    readOneSlot(fileType, fileName, s, recNr++, false, "");
-  }
-
-} // readAllSlots()
-
-//===========================================================================================
-bool createFile(const char *fileName, uint16_t noSlots)
-{
-  DebugTf("fileName[%s], fileRecLen[%d]\r\n", fileName, DATA_RECLEN);
-
-  File dataFile = FSYS.open(fileName, "a"); // create File
-  // -- first write fileHeader ----------------------------------------
-  snprintf(cMsg, sizeof(cMsg), "%s", DATA_CSV_HEADER); // you cannot modify *fileHeader!!!
-  fillRecord(cMsg, DATA_RECLEN);
-  DebugT(cMsg);
-  Debugln(F("\r"));
-  bytesWritten = dataFile.print(cMsg);
-  if (bytesWritten != DATA_RECLEN)
-  {
-    DebugTf("ERROR!! slotNr[%d]: written [%d] bytes but should have been [%d] for Header\r\n", 0, bytesWritten, DATA_RECLEN);
-  }
-  DebugTln(F(".. that went well! Now add next record ..\r"));
-  // -- as this file is empty, write one data record ------------
-  snprintf(cMsg, sizeof(cMsg), "%02d%02d%02d%02d", 0, 0, 0, 0);
-
-  snprintf(cMsg, sizeof(cMsg), DATA_FORMAT, cMsg, 0.000, 0.000, 0.000, 0.000, 0.000);
-
-  fillRecord(cMsg, DATA_RECLEN);
-  for (int r = 1; r <= noSlots; r++)
-  {
-    DebugTf("Write [%s] Data[%-9.9s]\r\n", fileName, cMsg);
-    dataFile.seek((r * DATA_RECLEN), SeekSet);
-    bytesWritten = dataFile.print(cMsg);
-    if (bytesWritten != DATA_RECLEN)
+//=====================================================================================
+bool handleList() 
+{ // Senden aller Daten an den Client
+  // Füllt FSInfo Struktur mit Informationen über das Dateisystem
+#if defined(ESP8266)
+  FSInfo fs_info;  FSYS.info(fs_info);
+  Dir dir = FSYS.openDir("/");
+  using namespace std;
+  typedef tuple<String, String, int> records;
+  list<records> dirList;
+  while (dir.next()) 
+  { 
+    yield();  
+    if (dir.isDirectory()) // Ordner und Dateien zur Liste hinzufügen
     {
-      DebugTf("ERROR!! recNo[%d]: written [%d] bytes but should have been [%d] \r\n", r, bytesWritten, DATA_RECLEN);
+      uint8_t ran {0};
+      Dir fold = FSYS.openDir(dir.fileName());
+      while (fold.next())  
+      {
+        yield();
+        ran++;
+        dirList.emplace_back(dir.fileName(), fold.fileName(), fold.fileSize());
+      }
+      if (!ran) dirList.emplace_back(dir.fileName(), "", 0);
     }
-  } // for ..
-
-  dataFile.close();
-  dataFile = FSYS.open(fileName, "r+"); // open for Read & writing
-  if (!dataFile)
-  {
-    DebugTf("Something is very wrong writing to [%s]\r\n", fileName);
+    else {
+      dirList.emplace_back("", dir.fileName(), dir.fileSize());
+    }
+  }
+  dirList.sort([](const records & f, const records & l) 
+  {                              // Dateien sortieren
+    if (httpServer.arg(0) == "1") 
+    {
+      return get<2>(f) > get<2>(l);
+    } else 
+    {
+      for (uint8_t i = 0; i < 31; i++) 
+      {
+        if (tolower(get<1>(f)[i]) < tolower(get<1>(l)[i])) return true;
+        else if (tolower(get<1>(f)[i]) > tolower(get<1>(l)[i])) return false;
+      }
+      return false;
+    }
+  });
+  dirList.sort([](const records & f, const records & l) 
+  {                              // Ordner sortieren
+    if (get<0>(f)[0] != 0x00 || get<0>(l)[0] != 0x00) 
+    {
+      for (uint8_t i = 0; i < 31; i++) 
+      {
+          if (tolower(get<0>(f)[i]) < tolower(get<0>(l)[i])) return true;
+          else if (tolower(get<0>(f)[i]) > tolower(get<0>(l)[i])) return false;
+      }
+    }
     return false;
-  }
-  dataFile.close();
-
-  return true;
-
-} //  createFile()
-
-//===========================================================================================
-void fillRecord(char *record, int8_t len)
-{
-  int8_t s = 0, l = 0;
-  while (record[s] != '\0' && record[s] != '\n')
+  });
+  
+  String temp = "[";
+  for (auto& t : dirList) 
   {
-    s++;
+    if (temp != "[") temp += ',';
+    temp += "{\"folder\":\"" + get<0>(t) + "\",\"name\":\"" + get<1>(t) + "\",\"size\":\"" + formatBytes(get<2>(t)) + "\"}";
   }
-  if (Verbose1)
-    DebugTf("Length of record is [%d] bytes\r\n", s);
-  for (l = s; l < (len - 2); l++)
-  {
-    record[l] = ' ';
-  }
-  record[l] = ';';
-  record[l + 1] = '\n';
-  record[len] = '\0';
+              // Berechnet den verwendeten Speicherplatz
+  temp += ",{\"usedBytes\":\"" + formatBytes(fs_info.usedBytes) +   
+              // Zeigt die Größe des Speichers                  
+          "\",\"totalBytes\":\"" + formatBytes(fs_info.totalBytes) +                  
+              // Berechnet den freien Speicherplatz 
+          "\",\"freeBytes\":\"" + (fs_info.totalBytes - fs_info.usedBytes) + "\"}]"; 
 
-  while (record[l] != '\0')
-  {
-    l++;
-  }
-  if (Verbose1)
-    DebugTf("Length of record is now [%d] bytes\r\n", l);
-
-} // fillRecord()
-
-//====================================================================
-uint16_t timestampToHourSlot(const char *TS, int8_t len)
-{
-  //char      aSlot[5];
-  time_t t1 = epoch((char *)TS, strlen(TS), false);
-  uint32_t nrHours = t1 / SECS_PER_HOUR;
-  //sprintf(aSlot, "%d", ((nrDays % KEEP_DAYS_HOURS) *24) + hour(t1));
-  //uint8_t   uSlot  = String(aSlot).toInt();
-  uint8_t recSlot = (nrHours % _NO_HOUR_SLOTS_);
-
-  if (Verbose1)
-    DebugTf("===>>>>>  HOUR[%02d] => recSlot[%02d]\r\n", hour(t1), recSlot);
-
-  if (recSlot < 0 || recSlot >= _NO_HOUR_SLOTS_)
-  {
-    DebugTf("HOUR: Some serious error! Slot is [%d]\r\n", recSlot);
-    recSlot = _NO_HOUR_SLOTS_;
-    slotErrors++;
-  }
-  return recSlot;
-
-} // timestampToHourSlot()
-
-//====================================================================
-uint16_t timestampToDaySlot(const char *TS, int8_t len)
-{
-  //char      aSlot[5];
-  time_t t1 = epoch((char *)TS, strlen(TS), false);
-  uint32_t nrDays = t1 / SECS_PER_DAY;
-  uint16_t recSlot = (nrDays % _NO_DAY_SLOTS_);
-
-  if (Verbose1)
-    DebugTf("===>>>>>   DAY[%02d] => recSlot[%02d]\r\n", day(t1), recSlot);
-
-  if (recSlot < 0 || recSlot >= _NO_DAY_SLOTS_)
-  {
-    DebugTf("DAY: Some serious error! Slot is [%d]\r\n", recSlot);
-    recSlot = _NO_DAY_SLOTS_;
-    slotErrors++;
-  }
-  return recSlot;
-
-} // timestampToDaySlot()
-
-//====================================================================
-uint16_t timestampToMonthSlot(const char *TS, int8_t len)
-{
-  //char      aSlot[5];
-  time_t t1 = epoch((char *)TS, strlen(TS), false);
-  uint32_t nrMonths = ((year(t1) - 1) * 12) + month(t1); // eg: year(2023) * 12 = 24276 + month(9) = 202309
-  uint16_t recSlot = (nrMonths % _NO_MONTH_SLOTS_);      // eg: 24285 % _NO_MONTH_SLOT_
-
-  if (Verbose1)
-    DebugTf("===>>>>> MONTH[%02d] => recSlot[%02d]\r\n", month(t1), recSlot);
-
-  if (recSlot < 0 || recSlot >= _NO_MONTH_SLOTS_)
-  {
-    DebugTf("MONTH: Some serious error! Slot is [%d]\r\n", recSlot);
-    recSlot = _NO_MONTH_SLOTS_;
-    slotErrors++;
-  }
-  return recSlot;
-
-} // timestampToMonthSlot()
-
-//===========================================================================================
-int32_t freeSpace()
-{
-#if defined(ESP8266)
-  FSInfo SPIFFSinfo;
-  SPIFFS.info(SPIFFSinfo);
-  Debugln((int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes) + " bytes ruimte in SPIFFS");
-  return (int32_t)(SPIFFSinfo.totalBytes - SPIFFSinfo.usedBytes);
 #elif defined(ESP32)
-  return (SPIFFS.totalBytes() - SPIFFS.usedBytes());
-#endif
-
-} // freeSpace()
-
-//===========================================================================================
-#if defined(ESP8266)
-
-void ESP8266_listLittleFS()
-{
-  typedef struct _fileMeta
-  {
-    char Name[20];
+  typedef struct _fileMeta {
+    char    Name[30];     
     int32_t Size;
   } fileMeta;
 
   _fileMeta dirMap[30];
   int fileNr = 0;
-
-  Dir dir = FSYS.openDir("/");         // List files on LittleFS
-  while (dir.next())  
-  {
-    dirMap[fileNr].Name[0] = '\0';
-    //SPIFFS-strncat(dirMap[fileNr].Name, dir.fileName().substring(0).c_str(), 19); // remove leading '/'
-    strncat(dirMap[fileNr].Name, dir.fileName().c_str(), 19); 
-    dirMap[fileNr].Size = dir.fileSize();
-    fileNr++;
+  
+  File root = SPIFFS.open("/");         // List files on SPIFFS
+  if(!root){
+      DebugTln("- failed to open directory");
+      return false;
   }
- 
+  if(!root.isDirectory()){
+      DebugTln(" - not a directory");
+      return false;
+  }
 
   File file = root.openNextFile();
   while(file){
@@ -545,11 +194,8 @@ void ESP8266_listLittleFS()
         DebugT("  DIR : ");
         DebugTln(file.name());
         // directory is skipped
-    } else {
-      //Debug("  FILE: ");
-      //Debug(file.name());
-      //Debug("\tSIZE: ");
-      //Debugln(file.size());
+    } else 
+    {
       dirMap[fileNr].Name[0] = '\0';
       strncat(dirMap[fileNr].Name, file.name(), 29); // first copy file.name() to dirMap
       memmove(dirMap[fileNr].Name, dirMap[fileNr].Name+1, strlen(dirMap[fileNr].Name)); // remove leading '/'
@@ -560,255 +206,280 @@ void ESP8266_listLittleFS()
   }
 
   // -- bubble sort dirMap op .Name--
-  for (int8_t y = 0; y < fileNr; y++)
-  {
+  for (int8_t y = 0; y < fileNr; y++) {
     yield();
-    for (int8_t x = y + 1; x < fileNr; x++)
-    {
-      //DebugTf("y[%d], x[%d] => seq[x][%s] ", y, x, dirMap[x].Name);
-      if (strcasecmp(dirMap[x].Name, dirMap[y].Name) <= 0)
+    for (int8_t x = y + 1; x < fileNr; x++)  {
+      //DebugTf("y[%d], x[%d] => seq[y][%s] / seq[x][%s] ", y, x, dirMap[y].Name, dirMap[x].Name);
+      if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
       {
+        //Debug(" !switch!");
         fileMeta temp = dirMap[y];
         dirMap[y] = dirMap[x];
         dirMap[x] = temp;
       } /* end if */
       //Debugln();
     } /* end for */
-  }   /* end for */
+  } /* end for */
 
   DebugTln(F("\r\n"));
-  for (int f = 0; f < fileNr; f++)
+  for(int f=0; f<fileNr; f++)
   {
     Debugf("%-25s %6d bytes \r\n", dirMap[f].Name, dirMap[f].Size);
     yield();
   }
-
-  FSYS.info(LittleFSinfo);
-
-  Debugln(F("\r"));
-  if (freeSpace() < (10 * SPIFFSinfo.blockSize))
-    Debugf("Available SPIFFS space [%6d]kB (LOW ON SPACE!!!)\r\n", (freeSpace() / 1024));
-  else
-    Debugf("Available SPIFFS space [%6d]kB\r\n", (freeSpace() / 1024));
-  Debugf("           SPIFFS Size [%6d]kB\r\n", (SPIFFSinfo.totalBytes / 1024));
-  Debugf("     SPIFFS block Size [%6d]bytes\r\n", SPIFFSinfo.blockSize);
-  Debugf("      SPIFFS page Size [%6d]bytes\r\n", SPIFFSinfo.pageSize);
-  Debugf(" SPIFFS max.Open Files [%6d]\r\n\r\n", SPIFFSinfo.maxOpenFiles);
-
-} // ESP8266_listFiles()
-
-#elif defined(ESP32)
-
-void ESP32_listLittleFS()
-{
-  typedef struct _fileMeta
+  
+  String temp = "[";
+  for (int f=0; f < fileNr; f++)  
   {
-    char Name[20];
-    int32_t Size;
-  } fileMeta;
-
-  _fileMeta dirMap[30];
- 
-  int fileNr = 0;
-  File root = FSYS.open("/"); // List files on SPIFFS
-  if (!root)
-  {
-    DebugTln("- failed to open directory");
-    return;
+    if (temp != "[") temp += ",";
+    temp += R"({"name":")" + String(dirMap[f].Name) + R"(","size":")" + formatBytes(dirMap[f].Size) + R"("})";
   }
-  if (!root.isDirectory())
-  {
-    DebugTln(" - not a directory");
-    return;
-  }
+  //SPIFFS.info(SPIFFSinfo);
+  temp += R"(,{"usedBytes":")" + formatBytes(FSYS.usedBytes() * 1.05) + R"(",)" +       // Berechnet den verwendeten Speicherplatz + 5% Sicherheitsaufschlag
+          R"("totalBytes":")" + formatBytes(FSYS.totalBytes()) + R"(","freeBytes":")" + // Zeigt die Größe des Speichers
+          (FSYS.totalBytes() - (FSYS.usedBytes() * 1.05)) + R"("}])";                 // Berechnet den freien Speicherplatz + 5% Sicherheitsaufschlag
 
-  File file = root.openNextFile();
-  while (file)
-  {
-    if (file.isDirectory())
-    {
-      DebugT("  DIR : ");
-      Debugln(file.name());
-      // directory is skipped
-    }
-    else
-    {
-      DebugT("  FILE: ");
-      Debug(file.name());
-      Debug("\tSIZE: ");
-      Debugln(file.size());
-      dirMap[fileNr].Name[0] = '\0';
-      strncat(dirMap[fileNr].Name, file.name(), 29);                                      // first copy file.name() to dirMap
-      memmove(dirMap[fileNr].Name, dirMap[fileNr].Name + 1, strlen(dirMap[fileNr].Name)); // remove leading '/'
-      dirMap[fileNr].Size = file.size();
-    }
-    file = root.openNextFile();
-    fileNr++;
-  }
-
-  // -- bubble sort dirMap op .Name--
-  for (int8_t y = 0; y < fileNr; y++)
-  {
-    yield();
-    for (int8_t x = y + 1; x < fileNr; x++)
-    {
-      //DebugTf("y[%d], x[%d] => seq[x][%s] ", y, x, dirMap[x].Name);
-      if (strcasecmp(dirMap[x].Name, dirMap[y].Name) <= 0)
-      {
-        fileMeta temp = dirMap[y];
-        dirMap[y] = dirMap[x];
-        dirMap[x] = temp;
-      } /* end if */
-      //Debugln();
-    } /* end for */
-  }   /* end for */
-
-  DebugTln(F("\r\n"));
-  for (int f = 0; f < fileNr; f++)
-  {
-    Debugf("%-25s %6d bytes \r\n", dirMap[f].Name, dirMap[f].Size);
-    yield();
-  }
-
-  Debugln(F("\r"));
-  Debugf("Available SPIFFS space [%6d]kB\r\n", (freeSpace() / 1024));
-  Debugf("           SPIFFS Size [%6d]kB\r\n", (SPIFFS.totalBytes() / 1024));
-  //  Debugf("     SPIFFS block Size [%6d]bytes\r\n", SPIFFS.blockSize());
-  //  Debugf("      SPIFFS page Size [%6d]bytes\r\n", SPIFFS.pageSize());
-  //  Debugf(" SPIFFS max.Open Files [%6d]\r\n\r\n", SPIFFS.maxOpenFiles());
-
-} // ESP32_listLittleFS()
 #endif
 
-void listLittleFS() // Senden aller Daten an den Client
-{
-#if defined(ESP8266)
-  ESP8266_listLittleFS();
-#elif defined(ESP32)
-  ESP32_listLittleFS();
-#endif
-} // listFiles()
-
-//===========================================================================================
-bool eraseFile()
-{
-  char eName[30] = "";
-
-  //--- erase buffer
-  while (TelnetStream.available() > 0)
-  {
-    yield();
-    (char)TelnetStream.read();
-  }
-
-  Debug("Enter filename to erase: ");
-  TelnetStream.setTimeout(10000);
-  TelnetStream.readBytesUntil('\n', eName, sizeof(eName));
-  TelnetStream.setTimeout(1000);
-
-  //--- remove control chars like \r and \n ----
-  //--- and shift all char's one to the right --
-  for (int i = strlen(eName); i > 0; i--)
-  {
-    eName[i] = eName[i - 1];
-    if (eName[i] < ' ')
-      eName[i] = '\0';
-  }
-  //--- add leading slash on position 0
-  eName[0] = '/';
-
-  if (FSYS.exists(eName))
-  {
-    Debugf("\r\nErasing [%s] from LittleFS\r\n\n", eName);
-    FSYS.remove(eName);
-  }
-  else
-  {
-    Debugf("\r\nfile [%s] not found..\r\n\n", eName);
-  }
-  //--- empty buffer ---
-  while (TelnetStream.available() > 0)
-  {
-    yield();
-    (char)TelnetStream.read();
-  }
-
+  httpServer.send(200, "application/json", temp);
   return true;
   
-} // eraseFile()
+} //  handleList() 
 
-//===========================================================================================
-bool DSMRfileExist(const char *fileName, bool doDisplay)
+
+#if defined(ESP8266)
+//=====================================================================================
+  void deleteRecursive(const String &path) 
+  {
+    if (FSYS.remove(path)) 
+    {
+      FSYS.open(path.substring(0, path.lastIndexOf('/')) + "/", "w");
+      return;
+    }
+    Dir dir = FSYS.openDir(path);
+    while (dir.next()) 
+    {
+      yield();
+      deleteRecursive(path + '/' + dir.fileName());
+    }
+    FSYS.rmdir(path);
+    
+  } //  deleteRecursive()
+#endif
+
+//=====================================================================================
+bool handleFile(String &&path) 
 {
-  char fName[30] = "";
-  if (fileName[0] != '/')
+  if (httpServer.hasArg("new")) 
   {
-    strlcat(fName, "/", 5);
+    String folderName {httpServer.arg("new")};
+    for (auto& c : {34, 37, 38, 47, 58, 59, 92}) for (auto& e : folderName) if (e == c) e = 95;    // Ersetzen der nicht erlaubten Zeichen
+    FSYS.mkdir(folderName);
   }
-  strlcat(fName, fileName, 29);
-
-  DebugTf("check if [%s] exists .. ", fName);
-  if (settingOledType > 0)
+  if (httpServer.hasArg("sort")) return handleList();
+  if (httpServer.hasArg("delete")) 
   {
-    oled_Print_Msg(1, "Bestaat:", 10);
-    oled_Print_Msg(2, fName, 10);
-    oled_Print_Msg(3, "op LittleFS?", 250);
+    #if defined(ESP8266)
+      deleteRecursive(httpServer.arg("delete"));
+    #elif defined(ESP32)
+      FSYS.remove(httpServer.arg("delete"));    // Datei löschen
+    #endif
+    sendResponce();
+    return true;
   }
-
-  if (!FSYS.exists(fName) )
+  if (!FSYS.exists("/FSmanager.html")) 
   {
-    if (doDisplay)
-    {
-      Debugln(F("NO! Error!!"));
-      if (settingOledType > 0)
-      {
-        oled_Print_Msg(3, "Nee! FOUT!", 6000);
-      }
-      writeToSysLog("Error! File [%s] not found!", fName);
-      return false;
+    // ermöglicht das hochladen der FSmanager.html
+    httpServer.send(200, "text/html", FSYS.begin() ? HELPER : WARNING);     
+  }
+  if (path.endsWith("/")) path += "/index.html";
+  // Vorrübergehend für den Admin Tab
+  //if (path == "/FSmanager.html") sendResponce(); 
+  if (path == "/admin.html") sendResponce(); 
+
+#if defined(ESP8266)
+  return FSYS.exists(path) ? ({File f = FSYS.open(path, "r"); httpServer.streamFile(f, mime::getContentType(path)); f.close(); true;}) : false;
+
+#elif defined(ESP32)
+  return FSYS.exists(path) ? ({File f = FSYS.open(path, "r"); httpServer.streamFile(f, contentType(path)); f.close(); true;}) : false;
+
+#endif
+} //  handleFile()
+
+
+//=====================================================================================
+void handleUpload() 
+{                            // Dateien ins Filesystem schreiben
+  static File fsUploadFile;
+  
+  HTTPUpload& upload = httpServer.upload();
+  if (upload.status == UPLOAD_FILE_START) 
+  {
+    if (upload.filename.length() > 31) 
+    {  // Dateinamen kürzen
+      upload.filename = upload.filename.substring(upload.filename.length() - 31, upload.filename.length());
     }
-    else
-    {
-      Debugln(F("NO! "));
-      if (settingOledType > 0)
-      {
-        oled_Print_Msg(3, "Nee! ", 6000);
-      }
-      writeToSysLog("File [%s] not found!", fName);
-      return false;
-    }
-  }
-  else
+    printf(PSTR("handleFileUpload Name: /%s\r\n"), upload.filename.c_str());
+    fsUploadFile = FSYS.open(httpServer.arg(0) + "/" + httpServer.urlDecode(upload.filename), "w");
+  } 
+  else if (upload.status == UPLOAD_FILE_WRITE) 
   {
-    Debugln(F("Yes! OK!"));
-    if (settingOledType > 0)
-    {
-      oled_Print_Msg(3, "JA! (OK!)", 250);
-    }
+    printf(PSTR("handleFileUpload Data: %u\r\n"), upload.currentSize);
+    fsUploadFile.write(upload.buf, upload.currentSize);
+  } 
+  else if (upload.status == UPLOAD_FILE_END) 
+  {
+    printf(PSTR("handleFileUpload Size: %u\r\n"), upload.totalSize);
+    fsUploadFile.close();
   }
-  return true;
+  
+} //  handleUpload()
 
-} //  DSMRfileExist()
 
-/***************************************************************************
-*
-* Permission is hereby granted, free of charge, to any person obtaining a
-* copy of this software and associated documentation files (the
-* "Software"), to deal in the Software without restriction, including
-* without limitation the rights to use, copy, modify, merge, publish,
-* distribute, sublicense, and/or sell copies of the Software, and to permit
-* persons to whom the Software is furnished to do so, subject to the
-* following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-* OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-* 
-***************************************************************************/
+//=====================================================================================
+void formatFS()      // Formatiert das Filesystem
+{
+  DebugTln("formatting littleFS ..");
+  //FSYS.format();
+  sendResponce();
+
+} //  formatFS()
+
+//=====================================================================================
+void listFS() 
+{
+  DebugTln("send littleFS data ..");
+  sendResponce();
+  
+} //  listFS()
+
+
+//=====================================================================================
+void sendResponce() 
+{
+  httpServer.sendHeader("Location", "/FSmanager.html");
+  httpServer.send(303, "message/http");
+
+} //  sendResponce()
+
+
+//=====================================================================================
+const String formatBytes(size_t const& bytes) 
+{                                        // lesbare Anzeige der Speichergrößen
+  return bytes < 1024 ? static_cast<String>(bytes) + " Byte" : bytes < 1048576 ? static_cast<String>(bytes / 1024.0) + " KB" : static_cast<String>(bytes / 1048576.0) + " MB";
+
+} //  formatBytes()
+
+
+#if defined(ESP32)
+  //=====================================================================================
+  const String &contentType(String& filename) 
+  {       
+    if (filename.endsWith(".htm") || filename.endsWith(".html")) filename = "text/html";
+    else if (filename.endsWith(".css"))   filename = "text/css";
+    else if (filename.endsWith(".js"))    filename = "application/javascript";
+    else if (filename.endsWith(".json"))  filename = "application/json";
+    else if (filename.endsWith(".png"))   filename = "image/png";
+    else if (filename.endsWith(".gif"))   filename = "image/gif";
+    else if (filename.endsWith(".jpg"))   filename = "image/jpeg";
+    else if (filename.endsWith(".ico"))   filename = "image/x-icon";
+    else if (filename.endsWith(".xml"))   filename = "text/xml";
+    else if (filename.endsWith(".pdf"))   filename = "application/x-pdf";
+    else if (filename.endsWith(".zip"))   filename = "application/x-zip";
+    else if (filename.endsWith(".gz"))    filename = "application/x-gzip";
+    else                                  filename = "text/plain";
+    return filename;
+  
+  } // &contentType()
+#endif
+
+
+//=====================================================================================
+void updateFirmware()
+{
+#ifdef USE_UPDATE_SERVER
+  DebugTln(F("Redirect to updateIndex .."));
+  doRedirect("wait ... ", 0, "/updateIndex", false);
+#else
+  doRedirect("UpdateServer not available", 10, "/", false);
+#endif
+      
+} // updateFirmware()
+
+//=====================================================================================
+void reBootESP()
+{
+  DebugTln(F("Redirect and ReBoot .."));
+  doRedirect("Reboot DSMR-logger ..", 30, "/", true);
+      
+} // reBootESP()
+
+//=====================================================================================
+void doRedirect(String msg, int wait, const char* URL, bool reboot)
+{
+  String redirectHTML = 
+    "<!DOCTYPE HTML><html lang='en-US'>"
+    "<head>"
+    "<meta charset='UTF-8'>"
+    "<style type='text/css'>"
+    "body {background-color: lightblue;}"
+    "</style>"
+    "<title>Redirect to Main Program</title>"
+    "</head>"
+    "<body>";
+
+  if (wait > 0)
+  {
+    redirectHTML += 
+      "<h1>"+String(settingHostname)+"</h1>"
+      "<h3>"+msg+"</h3>"
+      "<br><div style='width: 500px; position: relative; font-size: 25px;'>"
+      "  <div style='float: left;'>Redirect over &nbsp;</div>"
+      "  <div style='float: left;' id='counter'>"+String(wait)+"</div>"
+      "  <div style='float: left;'>&nbsp; seconden ...</div>"
+      "  <div style='float: right;'>&nbsp;</div>"
+      "</div>"
+      "<!-- Note: don't tell people to `click` the link, just tell them that it is a link. -->"
+      "<br><br><hr>If you are not redirected automatically, click this <a href='/'>Main Program</a>."
+      "  <script>"
+      "      setInterval(function() {"
+      "          var div = document.querySelector('#counter');"
+      "          var count = div.textContent * 1 - 1;"
+      "          div.textContent = count;"
+      "          if (count <= 0) {"
+      "              window.location.replace('"+String(URL)+"'); "
+      "          } "
+      "      }, 1000); "
+      "  </script> "
+      "</body></html>\r\n";
+  }
+  else  
+  {
+    redirectHTML += 
+      "  <div style='position:absolute; bottom:0; right:0;' id='counter'>3</div>"
+      "  <script>"
+      "      setInterval(function() {"
+      "          var div = document.querySelector('#counter');"
+      "          var count =  div.textContent * 1 - 1;"
+      "          div.textContent = count;"
+      "          if (count <= 0) {"
+      "              window.location.replace('"+String(URL)+"'); "
+      "          } "
+      "      }, 500); "
+      "  </script> "
+      "</body></html>\r\n";
+  }
+  
+  DebugTln(msg);
+  Debugln(redirectHTML);
+  
+  httpServer.send(200, "text/html", redirectHTML);
+  if (reboot) 
+  {
+    delay(5000);
+    ESP.restart();
+    delay(5000);
+  }
+  
+} // doRedirect()
+/* eof */

@@ -210,7 +210,8 @@ bool handleList()
     yield();
     for (int8_t x = y + 1; x < fileNr; x++)  {
       //DebugTf("y[%d], x[%d] => seq[y][%s] / seq[x][%s] ", y, x, dirMap[y].Name, dirMap[x].Name);
-      if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
+      //if (compare(String(dirMap[x].Name), String(dirMap[y].Name)))  
+      if (strcasecmp(dirMap[x].Name, dirMap[y].Name) <= 0)
       {
         //Debug(" !switch!");
         fileMeta temp = dirMap[y];
